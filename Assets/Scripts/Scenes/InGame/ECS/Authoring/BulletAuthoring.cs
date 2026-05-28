@@ -21,5 +21,6 @@ public class BulletAuthoring : MonoBehaviour
 
 public struct Bullet : IComponentData
 {
+    public Entity Shooter;  // 発射者のEntity
     public float3 Velocity;
 }

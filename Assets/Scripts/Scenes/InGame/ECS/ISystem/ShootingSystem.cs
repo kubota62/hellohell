@@ -12,6 +12,8 @@ using Unity.Transforms;
 [UpdateBefore(typeof(TransformSystemGroup))]
 public partial struct ShootingSystem : ISystem
 {
+    private static readonly float ShootTimer = 0.6f;
+    
     private float timer;
 
     [BurstCompile]
@@ -23,7 +25,7 @@ public partial struct ShootingSystem : ISystem
             return;
         }
 
-        timer = 0.3f;
+        timer = ShootTimer;
 
         var config = SystemAPI.GetSingleton<Config>();
         var ballTransform = state.EntityManager.GetComponentData<LocalTransform>(config.BulletPrefab);
@@ -32,36 +34,42 @@ public partial struct ShootingSystem : ISystem
         EnemyShoot(ref state, config, ballTransform);
     }
 
+    [BurstCompile]
     private void EnemyShoot(ref SystemState state, Config config, LocalTransform ballTransform)
     {
         // すべての戦車の砲塔ごとに砲弾を生成し、その初速度を設定します
-        foreach (var (tank, transform, color) in
-                 SystemAPI.Query<RefRO<Tank>, RefRO<LocalToWorld>, RefRO<URPMaterialPropertyBaseColor>>()
+        foreach (var (tank, color, tankEntity) in
+                 SystemAPI.Query<RefRO<Tank>, RefRO<URPMaterialPropertyBaseColor>>()
                      .WithAll<Tank>()
-                     .WithNone<Player>())
+                     .WithNone<Player>()
+                     .WithEntityAccess())
         {
-            Shoot(state, config.BulletPrefab, color.ValueRO, tank.ValueRO, ballTransform);
+            Shoot(state, config.BulletPrefab, tankEntity, color.ValueRO, tank.ValueRO, ballTransform);
         }
     }
 
+    [BurstCompile]
     private void PlayerShoot(ref SystemState state, Config config, LocalTransform ballTransform)
     {
         // すべての戦車の砲塔ごとに砲弾を生成し、その初速度を設定します
-        foreach (var (tank, color) in
+        foreach (var (tank, color, tankEntity) in
                  SystemAPI.Query<RefRO<Tank>, RefRO<URPMaterialPropertyBaseColor>>()
-                    .WithAll<Player>())
+                    .WithAll<Player>()
+                    .WithEntityAccess())
         {
             var input = SystemAPI.GetSingleton<PlayerInput>();
             if (input.IsFire)
             {
-                Shoot(state, config.BulletPrefab, color.ValueRO, tank.ValueRO, ballTransform);
+                Shoot(state, config.BulletPrefab, tankEntity, color.ValueRO, tank.ValueRO, ballTransform);
             }
         }
     }
 
+    [BurstCompile]
     private void Shoot(
         SystemState state,
         Entity bulletPrefab,
+        Entity tankEntity,
         URPMaterialPropertyBaseColor color,
         Tank tank,
         LocalTransform ballTransform)
@@ -79,6 +87,7 @@ public partial struct ShootingSystem : ISystem
         state.EntityManager.SetComponentData(bulletEntity,
             new Bullet
             {
+                Shooter = tankEntity,
                 Velocity = math.normalize(canonTransform.Up) * 10f
             }
         );

@@ -31,7 +31,7 @@ public partial struct TankMovementSystem : ISystem
             var dir = float3.zero;
             math.sincos(angle, out dir.x, out dir.z);
 
-            UnityEngine.Debug.Log($"pos: {transform.ValueRO.Position}, angle: {angle}, dir: {dir}");
+            // UnityEngine.Debug.Log($"pos: {transform.ValueRO.Position}, angle: {angle}, dir: {dir}");
             transform.ValueRW.Position += dir * dt * 2.0f;
             transform.ValueRW.Rotation = quaternion.RotateY(angle);
         }
