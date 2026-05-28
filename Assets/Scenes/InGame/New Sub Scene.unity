@@ -150,7 +150,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ConfigAuthoring
   TankPrefab: {fileID: 4754354258013592061, guid: 5e6c447bddc6a224da9556a5ae4ac8b4, type: 3}
   BulletPrefab: {fileID: 4353848829067927188, guid: c8e9df3feb4b5464c87db4f3daef006b, type: 3}
-  TankCount: 10
+  TankCount: 100
 --- !u!4 &1909425939
 Transform:
   m_ObjectHideFlags: 0

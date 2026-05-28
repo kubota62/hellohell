@@ -6,6 +6,12 @@ using Unity.Transforms;
 public partial struct BulletSystem : ISystem
 {
     [BurstCompile]
+    public void OnCreate(ref SystemState state)
+    {
+        state.RequireForUpdate<Config>();  // Configがあるまで実行しない
+    }
+    
+    [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
         var ecb = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();

@@ -15,7 +15,13 @@ public partial struct ShootingSystem : ISystem
     private static readonly float ShootTimer = 0.6f;
     
     private float timer;
-
+    
+    [BurstCompile]
+    public void OnCreate(ref SystemState state)
+    {
+        state.RequireForUpdate<Config>();  // Configがあるまで実行しない
+    }
+    
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {

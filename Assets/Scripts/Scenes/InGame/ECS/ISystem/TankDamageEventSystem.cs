@@ -25,6 +25,8 @@ public partial struct TankDamageEventSystem : ISystem
             var pos = transform.ValueRO.Position;
             foreach (var damage in damageEventBuffer)
             {
+                // ダメージを表示
+                DamageBridge.Instance.ShowDamage(damage.Damage, pos);
             }
             
             damageEventBuffer.Clear();
