@@ -42,7 +42,7 @@ public partial struct BulletCollisionSystem : ISystem
                 {
                     // 当たり
                     Debug.Log($"Bullet hit Tank {bulletEntity.Index} -> {tankEntity.Index}");
-                    ECB.AppendToBuffer(tankEntity, new TankDamage
+                    ECB.AppendToBuffer(tankEntity, new DamageEvent
                     {
                         Damage = 10,
                         Attacker = bulletEntity,

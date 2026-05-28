@@ -16,7 +16,7 @@ public class TankAuthoring : MonoBehaviour
                 Turret = GetEntity(authoring.Turret, TransformUsageFlags.Dynamic),
                 Canon = GetEntity(authoring.Canon, TransformUsageFlags.Dynamic),
             });
-            AddBuffer<TankDamage>(entity);
+            AddBuffer<DamageEvent>(entity);
         }
     }
 }
@@ -25,10 +25,4 @@ public struct Tank: IComponentData
 {
     public Entity Turret;
     public Entity Canon;
-}　
-
-public struct TankDamage: IBufferElementData
-{
-    public int Damage;
-    public Entity Attacker;
-}　
+}
