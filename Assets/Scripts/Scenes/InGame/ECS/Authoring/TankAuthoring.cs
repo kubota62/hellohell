@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Unity.Entities;
 using UnityEngine;
 
@@ -10,13 +11,20 @@ public class TankAuthoring : MonoBehaviour
     {
         public override void Bake(TankAuthoring authoring)
         {
-            var entity = GetEntity(authoring, TransformUsageFlags.Dynamic);
-            AddComponent(entity, new Tank
+            var tankEntity = GetEntity(authoring, TransformUsageFlags.Dynamic);
+            var turretEntity = GetEntity(authoring.Turret, TransformUsageFlags.Dynamic);
+            var canonEntity = GetEntity(authoring.Canon, TransformUsageFlags.Dynamic);
+            AddComponent(tankEntity, new Tank
             {
-                Turret = GetEntity(authoring.Turret, TransformUsageFlags.Dynamic),
-                Canon = GetEntity(authoring.Canon, TransformUsageFlags.Dynamic),
+                Turret = turretEntity,
+                Canon = canonEntity,
             });
-            AddBuffer<DamageEvent>(entity);
+            AddBuffer<DamageEvent>(tankEntity);
+            
+            // DynamicBufferを自分自身のEntityに追加
+            var buffer = AddBuffer<SyncColor>(tankEntity);
+            buffer.Add(new SyncColor{SyncTarget = turretEntity});
+            buffer.Add(new SyncColor{SyncTarget = canonEntity});
         }
     }
 }
@@ -25,4 +33,9 @@ public struct Tank: IComponentData
 {
     public Entity Turret;
     public Entity Canon;
+}
+
+public struct SyncColor: IBufferElementData
+{
+    public Entity SyncTarget;
 }

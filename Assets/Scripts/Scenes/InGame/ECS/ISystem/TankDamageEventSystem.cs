@@ -6,13 +6,11 @@ using Unity.Transforms;
 [BurstCompile]
 public partial struct TankDamageEventSystem : ISystem
 {
-    [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
         UpdateTankMovement(ref state);
     }
 
-    [BurstCompile]
     private void UpdateTankMovement(ref SystemState state)
     {
         var dt = SystemAPI.Time.DeltaTime;

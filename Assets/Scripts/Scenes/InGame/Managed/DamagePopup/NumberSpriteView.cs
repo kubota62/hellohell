@@ -6,7 +6,7 @@ public class NumberSpriteView : MonoBehaviour
     public Sprite[] digitSprites;
 
     [Header("桁の間隔")]
-    public float spacing = 0.6f;
+    public float spacing = 1f;
 
     SpriteRenderer[] renderers;
 
