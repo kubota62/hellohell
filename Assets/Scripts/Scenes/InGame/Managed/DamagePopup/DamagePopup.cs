@@ -18,9 +18,11 @@ public class DamagePopup : MonoBehaviour
         numberView = GetComponent<NumberSpriteView>();
     }
 
-    public void Setup(int value)
+    public void Setup(int value, Action<DamagePopup> action)
     {
+        t = 0;
         numberView.SetNumber(value);
+        onReturn = action;
     }
 
     void Update()
@@ -30,7 +32,7 @@ public class DamagePopup : MonoBehaviour
         t += Time.deltaTime;
         if (t > life)
         {
-            onReturn(this);
+            onReturn?.Invoke(this);
         }
     }
 }

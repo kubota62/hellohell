@@ -12,7 +12,7 @@ using Unity.Transforms;
 [UpdateBefore(typeof(TransformSystemGroup))]
 public partial struct ShootingSystem : ISystem
 {
-    private static readonly float ShootTimer = 0.6f;
+    private static readonly float ShootInterval = 0.6f;
     
     private float timer;
     
@@ -26,76 +26,81 @@ public partial struct ShootingSystem : ISystem
     public void OnUpdate(ref SystemState state)
     {
         timer -= SystemAPI.Time.DeltaTime;
-        if (timer > 0)
-        {
-            return;
-        }
-
-        timer = ShootTimer;
+        if (timer > 0) return;
+        timer = ShootInterval;
 
         var config = SystemAPI.GetSingleton<Config>();
-        var ballTransform = state.EntityManager.GetComponentData<LocalTransform>(config.BulletPrefab);
 
-        PlayerShoot(ref state, config, ballTransform);
-        EnemyShoot(ref state, config, ballTransform);
+        var ecb = new EntityCommandBuffer(Unity.Collections.Allocator.Temp);
+
+        PlayerShoot(ref state, config, ecb);
+        EnemyShoot(ref state, config, ecb);
+
+        ecb.Playback(state.EntityManager);
+        ecb.Dispose();
     }
 
-    [BurstCompile]
-    private void EnemyShoot(ref SystemState state, Config config, LocalTransform ballTransform)
+    private void PlayerShoot(
+        ref SystemState state,
+        Config config,
+        EntityCommandBuffer ecb)
     {
-        // すべての戦車の砲塔ごとに砲弾を生成し、その初速度を設定します
-        foreach (var (tank, color, tankEntity) in
-                 SystemAPI.Query<RefRO<Tank>, RefRO<URPMaterialPropertyBaseColor>>()
-                     .WithAll<Tank>()
+        var input = SystemAPI.GetSingleton<PlayerInput>();
+
+        if (!input.IsFire) return;
+
+        foreach (var (tank, tankEntity) in
+                 SystemAPI.Query<RefRO<Tank>>()
+                     .WithAll<Player>()
+                     .WithEntityAccess())
+        {
+            Shoot(ref state, config, tankEntity, ecb);
+        }
+    }
+
+    private void EnemyShoot(
+        ref SystemState state,
+        Config config,
+        EntityCommandBuffer ecb)
+    {
+        foreach (var (tank, tankEntity) in
+                 SystemAPI.Query<RefRO<Tank>>()
                      .WithNone<Player>()
                      .WithEntityAccess())
         {
-            Shoot(state, config.BulletPrefab, tankEntity, color.ValueRO, tank.ValueRO, ballTransform);
+            Shoot(ref state, config, tankEntity, ecb);
         }
     }
 
-    [BurstCompile]
-    private void PlayerShoot(ref SystemState state, Config config, LocalTransform ballTransform)
-    {
-        // すべての戦車の砲塔ごとに砲弾を生成し、その初速度を設定します
-        foreach (var (tank, color, tankEntity) in
-                 SystemAPI.Query<RefRO<Tank>, RefRO<URPMaterialPropertyBaseColor>>()
-                    .WithAll<Player>()
-                    .WithEntityAccess())
-        {
-            var input = SystemAPI.GetSingleton<PlayerInput>();
-            if (input.IsFire)
-            {
-                Shoot(state, config.BulletPrefab, tankEntity, color.ValueRO, tank.ValueRO, ballTransform);
-            }
-        }
-    }
-
-    [BurstCompile]
     private void Shoot(
-        SystemState state,
-        Entity bulletPrefab,
+        ref SystemState state,
+        Config config,
         Entity tankEntity,
-        URPMaterialPropertyBaseColor color,
-        Tank tank,
-        LocalTransform ballTransform)
+        EntityCommandBuffer ecb)
     {
-        Entity bulletEntity = state.EntityManager.Instantiate(bulletPrefab);
+        var tank = SystemAPI.GetComponent<Tank>(tankEntity);
+        var canonLtw = SystemAPI.GetComponent<LocalToWorld>(tank.Canon);
 
-        // 砲弾を発射した戦車に合わせて砲弾の色を設定します。
-        state.EntityManager.SetComponentData(bulletEntity, color);
+        // 生成
+        Entity bullet = ecb.Instantiate(config.BulletPrefab);
 
-        // ワールド空間での大砲の変換が必要なので、LocalTransform の代わりに LocalToWorld を取得します。
-        var canonTransform = state.EntityManager.GetComponentData<LocalToWorld>(tank.Canon);
-        ballTransform.Position = canonTransform.Position;
+        // 位置
+        var transform = LocalTransform.FromPosition(canonLtw.Position);
+        transform.Scale = 0.5f;
+        ecb.SetComponent(bullet, transform);
 
-        state.EntityManager.SetComponentData(bulletEntity, ballTransform);
-        state.EntityManager.SetComponentData(bulletEntity,
-            new Bullet
-            {
-                Shooter = tankEntity,
-                Velocity = math.normalize(canonTransform.Up) * 10f
-            }
-        );
+        // 色（あれば）
+        if (SystemAPI.HasComponent<URPMaterialPropertyBaseColor>(tankEntity))
+        {
+            var color = SystemAPI.GetComponent<URPMaterialPropertyBaseColor>(tankEntity);
+            ecb.SetComponent(bullet, color);
+        }
+
+        // 弾データ
+        ecb.SetComponent(bullet, new Bullet
+        {
+            Shooter = tankEntity,
+            Velocity = math.normalize(canonLtw.Up) * 10f
+        });
     }
 }

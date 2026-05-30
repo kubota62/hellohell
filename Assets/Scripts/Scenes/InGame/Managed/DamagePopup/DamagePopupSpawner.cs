@@ -25,7 +25,7 @@ public class DamagePopupSpawner : MonoBehaviour
         popup.gameObject.SetActive(true);
         popup.transform.position = pos;
 
-        popup.Setup(value);
+        popup.Setup(value, Return);
     }
 
     void Return(DamagePopup popup)

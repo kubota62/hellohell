@@ -47,6 +47,8 @@ public partial struct BulletCollisionSystem : ISystem
                         Damage = 10,
                         Attacker = bulletEntity,
                     });
+                    
+                    ECB.DestroyEntity(bulletEntity);
                 }
             }
         }
