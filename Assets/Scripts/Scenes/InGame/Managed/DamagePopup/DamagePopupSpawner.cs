@@ -21,7 +21,7 @@ public class DamagePopupSpawner : MonoBehaviour
     public void Spawn(int value, Vector3 pos)
     {
         var popup = pool.Dequeue();
-        Debug.Log($"Spawn: {pool.Count}");
+        // Debug.Log($"Spawn: {pool.Count}");
 
         popup.gameObject.SetActive(true);
         popup.Setup(value, pos, Return);
@@ -31,6 +31,6 @@ public class DamagePopupSpawner : MonoBehaviour
     {
         popup.gameObject.SetActive(false);
         pool.Enqueue(popup);
-        Debug.Log($"Return:  {pool.Count}");
+        // Debug.Log($"Return:  {pool.Count}");
     }
 }

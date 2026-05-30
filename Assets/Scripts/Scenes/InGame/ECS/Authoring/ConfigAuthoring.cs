@@ -1,11 +1,15 @@
-﻿using Unity.Entities;
+using Unity.Entities;
 using UnityEngine;
 
 public class ConfigAuthoring : MonoBehaviour
 {
     public GameObject TankPrefab;
     public GameObject BulletPrefab;
-    public int TankCount;
+
+    [Header("Enemy Spawn")]
+    public float SpawnTime = 0.5f;
+    public float MinSpawnDistance = 15f;
+    public float MaxSpawnDistance = 25f;
 
     class Baker : Baker<ConfigAuthoring>
     {
@@ -16,7 +20,9 @@ public class ConfigAuthoring : MonoBehaviour
             {
                 TankPrefab = GetEntity(authoring.TankPrefab, TransformUsageFlags.Dynamic),
                 BulletPrefab = GetEntity(authoring.BulletPrefab, TransformUsageFlags.Dynamic),
-                TankCount = authoring.TankCount,
+                SpawnTime = authoring.SpawnTime,
+                MinSpawnDistance = authoring.MinSpawnDistance,
+                MaxSpawnDistance = authoring.MaxSpawnDistance,
             });
         }
     }
@@ -26,5 +32,7 @@ public struct Config : IComponentData
 {
     public Entity TankPrefab;
     public Entity BulletPrefab;
-    public int TankCount;
+    public float SpawnTime;
+    public float MinSpawnDistance;
+    public float MaxSpawnDistance;
 }

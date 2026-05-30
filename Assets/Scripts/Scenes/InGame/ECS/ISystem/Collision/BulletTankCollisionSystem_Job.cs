@@ -10,7 +10,7 @@ public partial struct BulletCollisionSystem_Job : ISystem
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
-        state.Enabled = false;
+        state.Enabled = true;
         
         state.RequireForUpdate<Bullet>();
         state.RequireForUpdate<Tank>();

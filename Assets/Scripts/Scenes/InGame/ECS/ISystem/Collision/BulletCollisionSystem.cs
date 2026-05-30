@@ -9,7 +9,7 @@ public partial struct BulletCollisionSystem : ISystem
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
-        state.Enabled = true;
+        state.Enabled = false;
         
         state.RequireForUpdate<Bullet>();
         state.RequireForUpdate<Tank>();
