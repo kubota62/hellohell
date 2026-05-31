@@ -34,6 +34,7 @@ public partial struct SyncColorSystem : ISystem
     }
 }
 
+[BurstCompile]
 public partial struct SyncColorWithParentJob : IJobEntity
 { 
     [ReadOnly] public ComponentLookup<URPMaterialPropertyBaseColor> ColorLookup;

@@ -3,6 +3,7 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
+using UnityEngine;
 
 [BurstCompile]
 public partial struct BulletCollisionSystem_Job : ISystem
@@ -55,8 +56,13 @@ public partial struct BulletCollisionJob : IJobEntity
 
     // このExecuteが「弾」の数だけ並列に呼ばれる
     // [EntityIndexInQuery] はParallelWriterの第一引数（sortKey）として必須
+    [BurstCompile]
     private void Execute([EntityIndexInQuery] int sortKey, Entity bulletEntity, in Bullet bullet, in LocalTransform bulletTransform)
     {
+        // var hoge = "aaa";
+        // var fuga = hoge.Substring(0, 1);
+        // Debug.Log(hoge);
+        // Debug.Log(fuga);
         float3 bulletPos = bulletTransform.Position;
 
         // 全てのタンクに対して距離をチェック
@@ -73,7 +79,7 @@ public partial struct BulletCollisionJob : IJobEntity
                 // sortKeyを渡すことで、並列処理でも実行順序が保証される
                 ECB.AppendToBuffer(sortKey, TankEntities[i], new DamageEvent
                 {
-                    Damage = 10,
+                    Damage = 34,
                     Attacker = bulletEntity,
                 });
                 

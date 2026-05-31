@@ -23,9 +23,9 @@ public class DamagePopup : MonoBehaviour
         onReturn = action;
 
         // --- パラメータ調整（ここを変えると手触りが変わる） ---
-        float outTime = 0.3f;        // 飛び出す速さ（短いほど鋭い）
+        float outTime = 0.25f;        // 飛び出す速さ（短いほど鋭い）
         float jumpHeight = 2.0f;     // 跳ねる高さ
-        float spreadX = 0.6f;        // 左右の散らばり幅
+        float spreadX = 0.2f;        // 左右の散らばり幅
         float randomX = UnityEngine.Random.Range(-spreadX, spreadX);
 
         activeSequence = DOTween.Sequence();
@@ -40,9 +40,9 @@ public class DamagePopup : MonoBehaviour
             .Append(transform.DOScale(1.0f, 0.05f))
         
             // 3. 自由落下しながら消える (InQuad = 重力で加速しながら落ちる)
-            .Append(transform.DOMoveY(-0.5f, 0.3f).SetRelative().SetEase(Ease.InQuad))
-            .Join(transform.DOScale(0.5f, 0.3f)) // 落ちながら小さくなる
-            .Join(GetComponent<CanvasGroup>() != null ? GetComponent<CanvasGroup>().DOFade(0, 0.3f) : transform.DOScale(0, 0.3f)) 
+            .Append(transform.DOMoveY(-0.5f, 0.1f).SetRelative().SetEase(Ease.InQuad))
+            .Join(transform.DOScale(0.5f, 0.1f)) // 落ちながら小さくなる
+            .Join(GetComponent<CanvasGroup>() != null ? GetComponent<CanvasGroup>().DOFade(0, 0.1f) : transform.DOScale(0, 0.1f)) 
 
             .OnComplete(() => onReturn?.Invoke(this));
     }

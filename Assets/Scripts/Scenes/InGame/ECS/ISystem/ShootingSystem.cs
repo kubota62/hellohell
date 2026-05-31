@@ -15,6 +15,7 @@ public partial struct ShootingSystem : ISystem
     private static readonly float ShootInterval = 0.6f;
     
     private float timer;
+    private int count;
     
     [BurstCompile]
     public void OnCreate(ref SystemState state)
