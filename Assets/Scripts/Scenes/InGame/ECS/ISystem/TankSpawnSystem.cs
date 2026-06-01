@@ -72,17 +72,37 @@ public partial struct TankSpawnSystem : ISystem
             .CreateCommandBuffer(state.WorldUnmanaged);
 
         var tankEntity = ecb.Instantiate(config.TankPrefab);
-        ecb.SetComponent(tankEntity, LocalTransform.FromPosition(position));
+        Quaternion rot = Quaternion.Euler(0f, Rand.NextInt() % 360f, 0f);
+        ecb.SetComponent(tankEntity, LocalTransform.FromPositionRotation(position, rot));
 
-        // プレイヤー設定
         if (isPlayer)
         {
+            // プレイヤー設定
             ecb.AddComponent<Player>(tankEntity);
             ecb.AddComponent<CameraTarget>(tankEntity);
-        }
 
-        var color = new URPMaterialPropertyBaseColor { Value = RamdomColor(ref Rand) };
-        ecb.AddComponent(tankEntity, color);
+            var playerColor = new URPMaterialPropertyBaseColor { Value = new(255, 255, 255, 255) };
+            ecb.AddComponent(tankEntity, playerColor);
+        }
+        else
+        {
+            // NPCタンク
+            if (spawndCount % 2 == 0)
+            {
+                ecb.AddComponent<TankMovementRandom>(tankEntity);
+                var color1 = new URPMaterialPropertyBaseColor { Value = new(1f, 1f, 0, 0) };
+                ecb.AddComponent(tankEntity, color1);
+            }
+            else
+            {
+                ecb.AddComponent<TankMovementForward>(tankEntity);
+                var color2 = new URPMaterialPropertyBaseColor { Value = new(1f, 0, 1f, 0) };
+                ecb.AddComponent(tankEntity, color2);
+            }
+
+            // var color = new URPMaterialPropertyBaseColor { Value = RamdomColor(ref Rand) };
+            // ecb.AddComponent(tankEntity, color);
+        }
     }
 
     // 視覚的に区別できるランダムな色を返します。

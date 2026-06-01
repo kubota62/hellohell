@@ -12,7 +12,7 @@ using Unity.Transforms;
 [UpdateBefore(typeof(TransformSystemGroup))]
 public partial struct ShootingSystem : ISystem
 {
-    private static readonly float ShootInterval = 0.6f;
+    private static readonly float ShootInterval = 1.0f;
     
     private float timer;
     private int count;

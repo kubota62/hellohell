@@ -1,3 +1,5 @@
+using System;
+using DG.Tweening;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
@@ -5,7 +7,20 @@ using UnityEngine.InputSystem;
 
 public class PlayerInputManager : MonoBehaviour
 {
-    private void Update()
+    EntityManager entityManager;
+    private Entity entity;
+
+    private void Start()
+    {
+        DOTween.Init();
+        DOTween.SetTweensCapacity(10000, 5000);
+
+        // PlayerInputを持ったentityを作成
+        entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+        entity = entityManager.CreateEntity(typeof(PlayerInput));
+    }
+
+    void Update()
     {
         var keyboard = Keyboard.current;
         if (keyboard == null) return;
@@ -14,31 +29,15 @@ public class PlayerInputManager : MonoBehaviour
             (keyboard.dKey.isPressed ? 1f : 0f) - (keyboard.aKey.isPressed ? 1f : 0f),
             (keyboard.wKey.isPressed ? 1f : 0f) - (keyboard.sKey.isPressed ? 1f : 0f)
         );
+        movement = math.normalizesafe(movement);
 
         var isFire = keyboard.spaceKey.isPressed;
-        
-        var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
-        var query = entityManager.CreateEntityQuery(typeof(PlayerInput));
 
-        if (query.IsEmpty)
+        // entityのPlayerInputを更新
+        entityManager.SetComponentData(entity, new PlayerInput
         {
-            var entity = entityManager.CreateEntity(typeof(PlayerInput));
-            entityManager.SetComponentData(
-                entity, 
-                new PlayerInput
-                {
-                    IsFire = isFire,
-                    Movement = movement,
-                });
-        }
-        else
-        {
-            query.SetSingleton(
-                new PlayerInput
-                {
-                    IsFire = isFire,
-                    Movement = movement,
-                });
-        }
+            IsFire = isFire,
+            Movement = movement,
+        });
     }
 }
