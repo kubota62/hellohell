@@ -5,29 +5,31 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 
+/// <summary>
+/// TankMovementForward を持つ敵タンクを Player へまっすぐ接近させるシステム。
+/// Player 自身は Job 側の WithNone(Player) で対象から外し、操作入力による移動と分離する。
+/// </summary>
 [BurstCompile]
 public partial struct TankMovementForwardSystem : ISystem
 {
-    // コンポーネントへのランダムアクセス用ルックアップ
-    private ComponentLookup<LocalTransform> m_LocalTransformLookup;
-
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
         state.RequireForUpdate<Config>();
-        // ルックアップの初期化
-        m_LocalTransformLookup = state.GetComponentLookup<LocalTransform>();
+        state.RequireForUpdate<Player>();
     }
 
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
+        var playerEntity = SystemAPI.GetSingletonEntity<Player>();
+        var playerPosition = SystemAPI.GetComponent<LocalTransform>(playerEntity).Position;
         var dt = SystemAPI.Time.DeltaTime;
 
         var job = new TankMovementForwardJob
         {
+            PlayerPosition = playerPosition,
             DeltaTime = dt,
-            // ここで「他のエンティティ（砲塔）を書き換えるよ」というコンポーネント情報を渡す
             TransformLookup = SystemAPI.GetComponentLookup<LocalTransform>(false)
         };
 
@@ -35,36 +37,56 @@ public partial struct TankMovementForwardSystem : ISystem
     }
 }
 
+/// <summary>
+/// 直進型の敵タンクを移動させる Job。
+/// 少しだけ横方向のレーン差を入れて、敵同士が完全に重なりにくい接近軌道にする。
+/// </summary>
 [BurstCompile]
 [WithAll(typeof(Tank))]
 [WithAll(typeof(TankMovementForward))]
 [WithNone(typeof(Player))]
 public partial struct TankMovementForwardJob : IJobEntity
 {
+    public float3 PlayerPosition;
     public float DeltaTime;
     
-    // [NativeDisableParallelForRestriction] で「並列書き込み制限」を解除
-    [NativeDisableParallelForRestriction] // 並列書き込みを許可
-    [NativeDisableContainerSafetyRestriction] // エイリアシング（二重アクセス）エラーを回避
+    // 各タンクは自分の子階層の砲塔だけを書き換える前提なので、並列書き込みを許可する。
+    [NativeDisableParallelForRestriction]
+    [NativeDisableContainerSafetyRestriction]
     public ComponentLookup<LocalTransform> TransformLookup;
 
     [BurstCompile]
     public void Execute(Entity entity, ref LocalTransform transform, in Tank tank)
     {
-        // --- 移動処理 ---
-        var pos = transform.Position;
-        pos.y += (float)entity.Index;
-        
-        transform.Position += transform.Forward() * DeltaTime * 2.0f;
-        
-        // --- 砲塔の回転処理 ---
+        var toPlayer = PlayerPosition - transform.Position;
+        toPlayer.y = 0f;
+
+        var distance = math.length(toPlayer);
+        if (distance < 0.001f)
+        {
+            return;
+        }
+
+        var forward = toPlayer / distance;
+        var tangent = new float3(-forward.z, 0f, forward.x);
+        var laneOffset = ((entity.Index % 7) - 3) * 0.04f;
+        var desiredDirection = math.normalizesafe(forward + tangent * laneOffset, forward);
+
+        var speed = math.lerp(1.6f, 2.8f, math.saturate(distance / 18f));
+        if (distance < 2.0f)
+        {
+            speed *= 0.35f;
+        }
+
+        transform.Position += desiredDirection * speed * DeltaTime;
+        transform.Rotation = quaternion.LookRotationSafe(desiredDirection, math.up());
+
+        // 接近中も敵のシルエットが読めるように砲塔を回転させる。
         if (TransformLookup.HasComponent(tank.Turret))
         {
             var spin = quaternion.RotateY(DeltaTime * math.PI);
             var turretTrans = TransformLookup[tank.Turret];
             turretTrans.Rotation = math.mul(spin, turretTrans.Rotation);
-            
-            // Lookupへ書き込み
             TransformLookup[tank.Turret] = turretTrans;
         }
     }

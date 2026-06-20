@@ -1,24 +1,29 @@
-﻿using Unity.Burst;
+using Unity.Burst;
 using Unity.Entities;
-using Unity.Mathematics;
-using Unity.Transforms;
 
 [BurstCompile]
 public partial struct HUDSystem : ISystem
 {
     EntityQuery tankCountQuery;
     EntityQuery bulletCountQuery;
-    
+
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
         tankCountQuery = SystemAPI.QueryBuilder().WithAll<Tank>().Build();
         bulletCountQuery = SystemAPI.QueryBuilder().WithAll<Bullet>().Build();
     }
-    
+
     public void OnUpdate(ref SystemState state)
     {
-        HUDBridge.Instance.SetTankCount(tankCountQuery.CalculateEntityCount());
-        HUDBridge.Instance.SetBulletCount(bulletCountQuery.CalculateEntityCount());
+        // PlayMode テストでは、Canvas の Awake より先に ECS が更新されることがある。
+        var hudBridge = HUDBridge.Instance;
+        if (hudBridge == null)
+        {
+            return;
+        }
+
+        hudBridge.SetTankCount(tankCountQuery.CalculateEntityCount());
+        hudBridge.SetBulletCount(bulletCountQuery.CalculateEntityCount());
     }
 }
