@@ -1,28 +1,29 @@
-﻿using Unity.Burst;
+using Unity.Burst;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Rendering;
 using Unity.Transforms;
 
-// この属性は、更新順序でこのシステムを TransformSystemGroup の前に置きます。
-// ShootingSystem は砲弾のローカル変換のみを設定しますが、変換システムは
-// TransformSystemGroup でワールド変換 (LocalToWorld) を設定します。
-// フレーム内の TransformSystemGroup の後に ShootingSystem が更新された場合、砲弾は
-// 生成されたオブジェクトは単一フレームの原点でレンダリングされます。
+/// <summary>
+/// Player と Enemy の ActorBody から Projectile 攻撃を発射するシステム。
+/// 将来は WeaponDefinition や AbilityDefinition から発射条件と攻撃内容を受け取る想定。
+/// </summary>
+// この属性は、更新順序でこのシステムを TransformSystemGroup の前に置く。
+// 発射位置に LocalToWorld を使うため、Projectile の生成は変換更新より前に済ませる。
 [UpdateBefore(typeof(TransformSystemGroup))]
 public partial struct ShootingSystem : ISystem
 {
     private static readonly float ShootInterval = 1.0f;
-    
+
     private float timer;
-    
+
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
-        state.RequireForUpdate<Config>();  // Configがあるまで実行しない
-        state.RequireForUpdate<PlayerInput>();  // 入力Entityが作られるまで実行しない
+        state.RequireForUpdate<Config>();
+        state.RequireForUpdate<PlayerInput>();
     }
-    
+
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
@@ -31,7 +32,6 @@ public partial struct ShootingSystem : ISystem
         timer = ShootInterval;
 
         var config = SystemAPI.GetSingleton<Config>();
-
         var ecb = new EntityCommandBuffer(Unity.Collections.Allocator.Temp);
 
         PlayerShoot(ref state, config, ecb);
@@ -47,15 +47,14 @@ public partial struct ShootingSystem : ISystem
         EntityCommandBuffer ecb)
     {
         var input = SystemAPI.GetSingleton<PlayerInput>();
-
         if (!input.IsFire) return;
 
-        foreach (var (tank, tankEntity) in
-                 SystemAPI.Query<RefRO<Tank>>()
+        foreach (var (_, actorEntity) in
+                 SystemAPI.Query<RefRO<ActorBody>>()
                      .WithAll<Player>()
                      .WithEntityAccess())
         {
-            Shoot(ref state, config, tankEntity, ecb);
+            Shoot(ref state, config, actorEntity, ecb);
         }
     }
 
@@ -64,59 +63,55 @@ public partial struct ShootingSystem : ISystem
         Config config,
         EntityCommandBuffer ecb)
     {
-        foreach (var (tank, tankEntity) in
-                 SystemAPI.Query<RefRO<Tank>>()
+        foreach (var (_, actorEntity) in
+                 SystemAPI.Query<RefRO<ActorBody>>()
                      .WithAll<Enemy>()
                      .WithEntityAccess())
         {
-            Shoot(ref state, config, tankEntity, ecb);
+            Shoot(ref state, config, actorEntity, ecb);
         }
     }
 
     private void Shoot(
         ref SystemState state,
         Config config,
-        Entity tankEntity,
+        Entity actorEntity,
         EntityCommandBuffer ecb)
     {
-        var tank = SystemAPI.GetComponent<Tank>(tankEntity);
-        var canonLtw = SystemAPI.GetComponent<LocalToWorld>(tank.Canon);
+        var actorBody = SystemAPI.GetComponent<ActorBody>(actorEntity);
+        var canonLtw = SystemAPI.GetComponent<LocalToWorld>(actorBody.Canon);
 
-        // 生成
-        Entity bullet = ecb.Instantiate(config.BulletPrefab);
+        var projectileEntity = ecb.Instantiate(config.ProjectilePrefab);
 
-        // 位置
         var transform = LocalTransform.FromPosition(canonLtw.Position);
         transform.Scale = 0.5f;
-        ecb.SetComponent(bullet, transform);
+        ecb.SetComponent(projectileEntity, transform);
 
-        // 色（あれば）
-        if (SystemAPI.HasComponent<URPMaterialPropertyBaseColor>(tankEntity))
+        if (SystemAPI.HasComponent<URPMaterialPropertyBaseColor>(actorEntity))
         {
-            var color = SystemAPI.GetComponent<URPMaterialPropertyBaseColor>(tankEntity);
-            ecb.SetComponent(bullet, color);
+            var color = SystemAPI.GetComponent<URPMaterialPropertyBaseColor>(actorEntity);
+            ecb.SetComponent(projectileEntity, color);
         }
 
-        // 弾データ
         var team = TeamId.Neutral;
-        if (SystemAPI.HasComponent<Team>(tankEntity))
+        if (SystemAPI.HasComponent<Team>(actorEntity))
         {
-            team = SystemAPI.GetComponent<Team>(tankEntity).Value;
+            team = SystemAPI.GetComponent<Team>(actorEntity).Value;
         }
 
-        ecb.SetComponent(bullet, new ProjectileMotion
+        ecb.SetComponent(projectileEntity, new ProjectileMotion
         {
-            Shooter = tankEntity,
+            Shooter = actorEntity,
             Velocity = math.normalize(canonLtw.Up) * 10f
         });
-        ecb.SetComponent(bullet, new Projectile
+        ecb.SetComponent(projectileEntity, new Projectile
         {
-            Owner = tankEntity,
+            Owner = actorEntity,
             Team = team,
             Damage = 34,
             HitRadius = 0.5f
         });
-        ecb.SetComponent(bullet, new Lifetime
+        ecb.SetComponent(projectileEntity, new Lifetime
         {
             Remaining = 5f
         });

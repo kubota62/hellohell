@@ -1,8 +1,8 @@
 using Unity.Entities;
 
 /// <summary>
-/// Remaining lifetime in seconds for temporary entities such as projectiles and VFX requests.
-/// Pool-aware systems can later disable entities instead of destroying them when this reaches zero.
+/// Projectile や VFX リクエストなど、一時エンティティの残り寿命秒数。
+/// 将来のプール対応システムでは、0 到達時に破棄ではなく無効化へ差し替えられる。
 /// </summary>
 public struct Lifetime : IComponentData
 {

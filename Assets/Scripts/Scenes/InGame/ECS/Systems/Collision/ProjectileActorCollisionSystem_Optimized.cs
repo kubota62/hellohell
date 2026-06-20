@@ -1,0 +1,78 @@
+// using Unity.Burst;
+// using Unity.Collections;
+// using Unity.Entities;
+// using Unity.Mathematics;
+// using Unity.Transforms;
+//
+// /// <summary>
+// /// 最適化版: 空間分割を使った Projectile と ActorBody の当たり判定。
+// /// 現在は ProjectileHitSystem を使うため無効化している。
+// /// </summary>
+// [BurstCompile]
+// public partial struct ProjectileActorCollisionSystem_Optimized : ISystem
+// {
+//     [BurstCompile]
+//     public void OnCreate(ref SystemState state)
+//     {
+//         state.Enabled = false;
+//     }
+//
+//     [BurstCompile]
+//     public void OnUpdate(ref SystemState state)
+//     {
+//         var ecb = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
+//
+//         // ActorBody の位置を収集する。
+//         var actorQuery = SystemAPI.QueryBuilder().WithAll<ActorBody, LocalTransform>().Build();
+//         int actorCount = actorQuery.CalculateEntityCount();
+//
+//         var actorPositions = new NativeArray<float3>(actorCount, Allocator.TempJob);
+//         var actorEntities = new NativeArray<Entity>(actorCount, Allocator.TempJob);
+//
+//         int index = 0;
+//         foreach (var (transform, entity) in SystemAPI.Query<RefRO<LocalTransform>>().WithAll<ActorBody>().WithEntityAccess())
+//         {
+//             actorPositions[index] = transform.ValueRO.Position;
+//             actorEntities[index] = entity;
+//             index++;
+//         }
+//
+//         var collisionJob = new ProjectileActorCollisionJob_Optimized
+//         {
+//             ECB = ecb.CreateCommandBuffer(state.WorldUnmanaged),
+//             ActorPositions = actorPositions,
+//             ActorEntities = actorEntities,
+//             CollisionRadius = 1.5f
+//         };
+//
+//         state.Dependency = collisionJob.Schedule(state.Dependency);
+//         state.Dependency = actorPositions.Dispose(state.Dependency);
+//         state.Dependency = actorEntities.Dispose(state.Dependency);
+//     }
+// }
+//
+// [BurstCompile]
+// public partial struct ProjectileActorCollisionJob_Optimized : IJobEntity
+// {
+//     public EntityCommandBuffer.ParallelWriter ECB;
+//     [ReadOnly] public NativeArray<float3> ActorPositions;
+//     [ReadOnly] public NativeArray<Entity> ActorEntities;
+//     public float CollisionRadius;
+//
+//     void Execute([ChunkIndexInQuery] int chunkIndex, Entity projectileEntity, in Projectile projectile, in LocalTransform projectileTransform)
+//     {
+//         float radiusSq = CollisionRadius * CollisionRadius;
+//
+//         for (int i = 0; i < ActorPositions.Length; i++)
+//         {
+//             float distanceSq = math.distancesq(projectileTransform.Position, ActorPositions[i]);
+//
+//             if (distanceSq < radiusSq)
+//             {
+//                 ECB.DestroyEntity(chunkIndex, projectileEntity);
+//                 // TODO: ActorBody へのダメージ処理。
+//                 break;
+//             }
+//         }
+//     }
+// }

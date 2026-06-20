@@ -8,8 +8,8 @@ using Unity.Transforms;
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 public partial struct DamageDigitAnimationSystem : ISystem
 {
-    // カメラが上方45度から見下ろす構成に合わせた固定ビルボード回転
-    // X軸まわりに-45度傾けることで常にカメラ正面を向く
+    // カメラが上方45度から見下ろす構成に合わせた固定ビルボード回転。
+    // X軸まわりに-45度傾けることで常にカメラ正面を向く。
     static readonly quaternion BillboardRotation =
         quaternion.Euler(math.radians(-45f), 0f, 0f);
 

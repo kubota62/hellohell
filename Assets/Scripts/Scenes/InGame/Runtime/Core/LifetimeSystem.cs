@@ -2,8 +2,8 @@ using Unity.Burst;
 using Unity.Entities;
 
 /// <summary>
-/// Expires temporary entities that use Lifetime.
-/// Pooled entities can later replace the destroy path with GameplayActive disable/reuse.
+/// Lifetime を持つ一時エンティティを寿命切れにする。
+/// プール対象は将来、破棄処理を GameplayActive の無効化と再利用に置き換えられる。
 /// </summary>
 [BurstCompile]
 public partial struct LifetimeSystem : ISystem

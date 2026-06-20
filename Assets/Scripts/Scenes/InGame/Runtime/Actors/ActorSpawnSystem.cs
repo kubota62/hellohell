@@ -6,7 +6,11 @@ using Unity.Transforms;
 using UnityEngine;
 using Random = Unity.Mathematics.Random;
 
-public partial struct TankSpawnSystem : ISystem
+/// <summary>
+/// 初期 Player と継続的な Enemy を ActorBody プレハブから生成するシステム。
+/// 将来は EnemyDefinition から EnemyTypeId、移動タグ、武器構成を選ぶ入口になる。
+/// </summary>
+public partial struct ActorSpawnSystem : ISystem
 {
     private Random Rand;
     private int spawnedCount;
@@ -25,27 +29,27 @@ public partial struct TankSpawnSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        // 最初のフレームでプレイヤーを生成する
+        // 最初のフレームでプレイヤーを生成する。
         if (spawnedCount == 0)
         {
-            SpawnTank(true, float3.zero, ref state);
+            SpawnActor(true, float3.zero, ref state);
             spawnedCount++;
             return;
         }
 
-        // 以降は一定時間ごとにプレイヤーから離れた位置に敵を生成する
+        // 以降は一定時間ごとに、プレイヤーから離れた位置へ敵を生成する。
         var config = SystemAPI.GetSingleton<Config>();
         spawnTimer += SystemAPI.Time.DeltaTime;
         if (spawnTimer > config.SpawnTime)
         {
-            SpawnTank(false, GetEnemySpawnPosition(config, ref state), ref state);
+            SpawnActor(false, GetEnemySpawnPosition(config, ref state), ref state);
 
             spawnTimer = 0;
             spawnedCount++;
         }
     }
 
-    // プレイヤーから一定距離離れたランダムな座標を返す
+    // プレイヤーから一定距離離れたランダムな座標を返す。
     [BurstCompile]
     private float3 GetEnemySpawnPosition(in Config config, ref SystemState state)
     {
@@ -56,7 +60,7 @@ public partial struct TankSpawnSystem : ISystem
             playerPosition = SystemAPI.GetComponent<LocalTransform>(playerEntity).Position;
         }
 
-        // ランダムな方向 × ランダムな距離 のオフセットを作る (XZ平面)
+        // ランダムな方向と距離から XZ 平面上のオフセットを作る。
         var angle = Rand.NextFloat(0f, 2f * math.PI);
         var distance = Rand.NextFloat(config.MinSpawnDistance, config.MaxSpawnDistance);
         var offset = new float3(math.cos(angle), 0f, math.sin(angle)) * distance;
@@ -65,56 +69,55 @@ public partial struct TankSpawnSystem : ISystem
     }
 
     [BurstCompile]
-    private void SpawnTank(bool isPlayer, float3 position, ref SystemState state)
+    private void SpawnActor(bool isPlayer, float3 position, ref SystemState state)
     {
         var config = SystemAPI.GetSingleton<Config>();
         var ecb = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
             .CreateCommandBuffer(state.WorldUnmanaged);
 
-        var tankEntity = ecb.Instantiate(config.TankPrefab);
+        var actorEntity = ecb.Instantiate(config.ActorPrefab);
         Quaternion rot = Quaternion.Euler(0f, Rand.NextInt() % 360f, 0f);
-        ecb.SetComponent(tankEntity, LocalTransform.FromPositionRotation(position, rot));
+        ecb.SetComponent(actorEntity, LocalTransform.FromPositionRotation(position, rot));
 
         if (isPlayer)
         {
-            // プレイヤー設定
-            ecb.AddComponent<Player>(tankEntity);
-            ecb.AddComponent<CameraTarget>(tankEntity);
-            ecb.SetComponent(tankEntity, new Team { Value = TeamId.Player });
+            // プレイヤー用のタグと所属を付与する。
+            ecb.AddComponent<Player>(actorEntity);
+            ecb.AddComponent<CameraTarget>(actorEntity);
+            ecb.SetComponent(actorEntity, new Team { Value = TeamId.Player });
 
             var playerColor = new URPMaterialPropertyBaseColor { Value = new(255, 255, 255, 255) };
-            ecb.AddComponent(tankEntity, playerColor);
+            ecb.AddComponent(actorEntity, playerColor);
         }
         else
         {
-            // NPCタンク
-            ecb.AddComponent<Enemy>(tankEntity);
-            ecb.AddComponent(tankEntity, new EnemyTypeId { Value = 1 });
-            ecb.SetComponent(tankEntity, new Team { Value = TeamId.Enemy });
+            // 敵用のタグ、種類ID、所属を付与する。
+            ecb.AddComponent<Enemy>(actorEntity);
+            ecb.AddComponent(actorEntity, new EnemyTypeId { Value = 1 });
+            ecb.SetComponent(actorEntity, new Team { Value = TeamId.Enemy });
             if (spawnedCount % 2 == 0)
             {
-                ecb.AddComponent<TankMovementRandom>(tankEntity);
+                ecb.AddComponent<EnemyMovementRandom>(actorEntity);
                 var color1 = new URPMaterialPropertyBaseColor { Value = new(1f, 1f, 0, 0) };
-                ecb.AddComponent(tankEntity, color1);
+                ecb.AddComponent(actorEntity, color1);
             }
             else
             {
-                ecb.AddComponent<TankMovementForward>(tankEntity);
+                ecb.AddComponent<EnemyMovementForward>(actorEntity);
                 var color2 = new URPMaterialPropertyBaseColor { Value = new(1f, 0, 1f, 0) };
-                ecb.AddComponent(tankEntity, color2);
+                ecb.AddComponent(actorEntity, color2);
             }
 
             // var color = new URPMaterialPropertyBaseColor { Value = RandomColor(ref Rand) };
-            // ecb.AddComponent(tankEntity, color);
+            // ecb.AddComponent(actorEntity, color);
         }
     }
 
-    // 視覚的に区別できるランダムな色を返します。
-    // (単純なランダム性により、クラスター化された色の分布が生成されます
-    // 狭い範囲の色相の周り。 https://martin.ankerl.com/2009/12/09/how-to-create-random-colors-programmatically/ を参照してください)
+    // 視覚的に区別しやすいランダム色を返す。
+    // 黄金比を使って色相が偏りすぎないようにする。
     static float4 RandomColor(ref Random Rand)
     {
-        // 0.618034005f は黄金比の逆数です
+        // 0.618034005f は黄金比の逆数。
         var hue = (Rand.NextFloat() + 0.618034005f) % 1;
         return (Vector4)Color.HSVToRGB(hue, 1, 1);
     }

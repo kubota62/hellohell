@@ -10,7 +10,7 @@ public struct SpatialHashEntry
 }
 
 /// <summary>
-/// Burst-friendly helpers for mapping XZ world positions into deterministic grid cells.
+/// XZ 平面上のワールド座標を決定的なグリッドセルへ変換する Burst 向けヘルパー。
 /// </summary>
 public static class SpatialHashUtility
 {

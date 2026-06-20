@@ -1,8 +1,8 @@
 using Unity.Entities;
 
 /// <summary>
-/// Shared projectile metadata for hit filtering and damage resolution.
-/// Movement remains separate so different projectile motion models can coexist.
+/// 命中フィルタとダメージ解決に使う Projectile 共通メタデータ。
+/// 移動情報を分けることで、異なる Projectile 移動モデルを共存させる。
 /// </summary>
 public struct Projectile : IComponentData
 {

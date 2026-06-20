@@ -1,8 +1,8 @@
 using Unity.Entities;
 
 /// <summary>
-/// Stable team ids used by combat, target selection, and hit filtering.
-/// Keep this component common across hot-path actors to avoid archetype churn.
+/// 戦闘、ターゲット選択、命中フィルタで使う安定した所属ID。
+/// アーキタイプの断片化を避けるため、ホットパスの Actor では共通コンポーネントとして持たせる。
 /// </summary>
 public enum TeamId : byte
 {

@@ -1,10 +1,13 @@
-﻿using Unity.Burst;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
-using UnityEngine;
 
+/// <summary>
+/// Projectile と ActorBody の命中を判定し、命中先の DamageEvent バッファへダメージを積む。
+/// Team で敵対関係を判定するため、Player/Enemy の種類を直接見ずに再利用できる。
+/// </summary>
 [BurstCompile]
 public partial struct ProjectileHitSystem : ISystem
 {
@@ -12,41 +15,35 @@ public partial struct ProjectileHitSystem : ISystem
     public void OnCreate(ref SystemState state)
     {
         state.Enabled = true;
-        
+
         state.RequireForUpdate<ProjectileMotion>();
         state.RequireForUpdate<Projectile>();
-        state.RequireForUpdate<Tank>();
+        state.RequireForUpdate<ActorBody>();
         state.RequireForUpdate<EndSimulationEntityCommandBufferSystem.Singleton>();
     }
 
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        // 1. タンクのデータをJobに渡すために取得
-        // QueryBuilderを使って、タンク全員の位置とEntityのリストを作成
-        var tankQuery = SystemAPI.QueryBuilder().WithAll<Tank, LocalTransform, Team, Hitbox>().Build();
-        
-        // NativeArrayとして抽出（Allocator.TempJobでこのフレームのみ有効なメモリを確保）
-        var tankEntities = tankQuery.ToEntityArray(state.WorldUpdateAllocator);
-        var tankTransforms = tankQuery.ToComponentDataArray<LocalTransform>(state.WorldUpdateAllocator);
-        var tankTeams = tankQuery.ToComponentDataArray<Team>(state.WorldUpdateAllocator);
-        var tankHitboxes = tankQuery.ToComponentDataArray<Hitbox>(state.WorldUpdateAllocator);
+        var targetQuery = SystemAPI.QueryBuilder().WithAll<ActorBody, LocalTransform, Team, Hitbox>().Build();
 
-        // 2. 並列書き込み用のECBを作成
+        var targetEntities = targetQuery.ToEntityArray(state.WorldUpdateAllocator);
+        var targetTransforms = targetQuery.ToComponentDataArray<LocalTransform>(state.WorldUpdateAllocator);
+        var targetTeams = targetQuery.ToComponentDataArray<Team>(state.WorldUpdateAllocator);
+        var targetHitboxes = targetQuery.ToComponentDataArray<Hitbox>(state.WorldUpdateAllocator);
+
         var ecbSingleton = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
         var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged).AsParallelWriter();
 
-        // 3. Jobのスケジュール
         var collisionJob = new ProjectileHitJob
         {
             ECB = ecb,
-            TankEntities = tankEntities,
-            TankTransforms = tankTransforms,
-            TankTeams = tankTeams,
-            TankHitboxes = tankHitboxes
+            TargetEntities = targetEntities,
+            TargetTransforms = targetTransforms,
+            TargetTeams = targetTeams,
+            TargetHitboxes = targetHitboxes
         };
 
-        // ScheduleParallelで全コアを使って実行
         state.Dependency = collisionJob.ScheduleParallel(state.Dependency);
     }
 }
@@ -55,49 +52,38 @@ public partial struct ProjectileHitSystem : ISystem
 public partial struct ProjectileHitJob : IJobEntity
 {
     public EntityCommandBuffer.ParallelWriter ECB;
-    
-    [ReadOnly] public NativeArray<Entity> TankEntities;
-    [ReadOnly] public NativeArray<LocalTransform> TankTransforms;
-    [ReadOnly] public NativeArray<Team> TankTeams;
-    [ReadOnly] public NativeArray<Hitbox> TankHitboxes;
 
-    // このExecuteが「弾」の数だけ並列に呼ばれる
-    // [EntityIndexInQuery] はParallelWriterの第一引数（sortKey）として必須
+    [ReadOnly] public NativeArray<Entity> TargetEntities;
+    [ReadOnly] public NativeArray<LocalTransform> TargetTransforms;
+    [ReadOnly] public NativeArray<Team> TargetTeams;
+    [ReadOnly] public NativeArray<Hitbox> TargetHitboxes;
+
     [BurstCompile]
     private void Execute(
         [EntityIndexInQuery] int sortKey,
         Entity projectileEntity,
         in ProjectileMotion motion,
         in Projectile projectile,
-        in LocalTransform bulletTransform)
+        in LocalTransform projectileTransform)
     {
-        // var hoge = "aaa";
-        // var fuga = hoge.Substring(0, 1);
-        // Debug.Log(hoge);
-        // Debug.Log(fuga);
-        float3 projectilePos = bulletTransform.Position;
+        var projectilePos = projectileTransform.Position;
 
-        // 全てのタンクに対して距離をチェック
-        for (int i = 0; i < TankEntities.Length; i++)
+        for (int i = 0; i < TargetEntities.Length; i++)
         {
-            // 自分を撃ったタンクは無視
-            if (TankEntities[i] == motion.Shooter) continue;
-            if (!TeamUtility.AreHostile(projectile.Team, TankTeams[i].Value)) continue;
+            if (TargetEntities[i] == motion.Shooter) continue;
+            if (!TeamUtility.AreHostile(projectile.Team, TargetTeams[i].Value)) continue;
 
-            float3 tankPos = TankTransforms[i].Position;
-            var hitDistance = projectile.HitRadius + TankHitboxes[i].Radius;
-            
-            if (math.distancesq(projectilePos, tankPos) < hitDistance * hitDistance)
+            var targetPos = TargetTransforms[i].Position;
+            var hitDistance = projectile.HitRadius + TargetHitboxes[i].Radius;
+
+            if (math.distancesq(projectilePos, targetPos) < hitDistance * hitDistance)
             {
-                // 当たり判定成功時の処理をバッファに記録
-                // sortKeyを渡すことで、並列処理でも実行順序が保証される
-                ECB.AppendToBuffer(sortKey, TankEntities[i], new DamageEvent
+                ECB.AppendToBuffer(sortKey, TargetEntities[i], new DamageEvent
                 {
                     Damage = projectile.Damage,
                     Attacker = projectile.Owner,
                 });
-                
-                // 弾を消す処理などもここに追加可能
+
                 ECB.DestroyEntity(sortKey, projectileEntity);
             }
         }

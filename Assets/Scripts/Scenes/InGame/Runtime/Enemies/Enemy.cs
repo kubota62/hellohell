@@ -1,8 +1,8 @@
 using Unity.Entities;
 
 /// <summary>
-/// Marks an entity as an enemy actor.
-/// Team answers "who is hostile"; Enemy answers "which actors are driven by enemy systems".
+/// エンティティを Enemy として扱うためのタグ。
+/// Team は敵対関係、Enemy は敵用システムで動く Actor かどうかを表す。
 /// </summary>
 public struct Enemy : IComponentData
 {

@@ -1,8 +1,8 @@
 using Unity.Entities;
 
 /// <summary>
-/// Marks entities that should be inserted into a spatial hash for broadphase queries.
-/// The hash builder can stay generic by reading Team, Hitbox, and LocalTransform alongside this marker.
+/// Broadphase クエリ用の空間ハッシュへ挿入するエンティティを示す。
+/// このマーカーと Team、Hitbox、LocalTransform を読むことで、ハッシュ構築を汎用化できる。
 /// </summary>
 public struct SpatialHashTarget : IComponentData
 {

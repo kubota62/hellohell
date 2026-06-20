@@ -1,8 +1,8 @@
 using Unity.Entities;
 
 /// <summary>
-/// Lightweight reference to an enemy definition.
-/// A later EnemyDefinition baker can map this id to stats, prefab choices, weapons, and rewards.
+/// EnemyDefinition を参照するための軽量ID。
+/// 将来の EnemyDefinition Baker が、このIDを能力値、見た目、武器、報酬へ対応付ける。
 /// </summary>
 public struct EnemyTypeId : IComponentData
 {

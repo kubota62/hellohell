@@ -2,8 +2,8 @@ using Unity.Entities;
 using Unity.Mathematics;
 
 /// <summary>
-/// Motion state for projectile-style attacks.
-/// Projectile contains combat metadata; this component contains movement data.
+/// Projectile 型攻撃の移動状態。
+/// Projectile は戦闘メタデータを持ち、このコンポーネントは移動データだけを持つ。
 /// </summary>
 public struct ProjectileMotion : IComponentData
 {

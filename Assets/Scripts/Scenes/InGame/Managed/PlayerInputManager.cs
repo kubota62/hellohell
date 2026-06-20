@@ -5,8 +5,8 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 /// <summary>
-/// Bridges Unity Input System keyboard state into the ECS PlayerInput component.
-/// ECS movement and shooting systems read this single input entity each frame.
+/// Unity Input System のキーボード状態を ECS の PlayerInput コンポーネントへ橋渡しする。
+/// ECS 側の移動・射撃システムは、この入力エンティティを毎フレーム参照する。
 /// </summary>
 public class PlayerInputManager : MonoBehaviour
 {
@@ -18,7 +18,7 @@ public class PlayerInputManager : MonoBehaviour
         DOTween.Init();
         DOTween.SetTweensCapacity(10000, 5000);
 
-        // Create an ECS entity that stores only the current input state.
+        // 現在の入力状態だけを保持する ECS エンティティを作る。
         entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
         entity = entityManager.CreateEntity(typeof(PlayerInput));
     }
@@ -36,7 +36,7 @@ public class PlayerInputManager : MonoBehaviour
 
         var isFire = keyboard.spaceKey.isPressed;
 
-        // Keep PlayerInput in sync with the latest keyboard state.
+        // 最新のキーボード状態を PlayerInput に同期する。
         entityManager.SetComponentData(entity, new PlayerInput
         {
             IsFire = isFire,

@@ -1,10 +1,10 @@
-﻿using Unity.Burst;
+using Unity.Burst;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 
 [BurstCompile]
-public partial struct TankDamageEventSystem : ISystem
+public partial struct ActorDamageEventSystem : ISystem
 {
     [BurstCompile]
     public void OnCreate(ref SystemState state)
@@ -21,7 +21,7 @@ public partial struct TankDamageEventSystem : ISystem
 
         foreach (var (transform, damageEventBuffer) in
                  SystemAPI.Query<RefRO<LocalTransform>, DynamicBuffer<DamageEvent>>()
-                     .WithAll<Tank>())
+                     .WithAll<ActorBody>())
         {
             var pos = transform.ValueRO.Position + new float3(0f, 1f, 0f);
 

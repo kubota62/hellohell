@@ -1,8 +1,8 @@
 using Unity.Entities;
 
 /// <summary>
-/// Enableable marker for pooled entities that should currently participate in gameplay.
-/// Prefer toggling this over structural Add/Remove when objects are reused frequently.
+/// 現在ゲーム処理に参加しているプール対象エンティティを示す Enableable マーカー。
+/// 頻繁に再利用するオブジェクトでは、構造変更よりこの有効状態の切り替えを優先する。
 /// </summary>
 public struct GameplayActive : IComponentData, IEnableableComponent
 {

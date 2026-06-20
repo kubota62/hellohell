@@ -1,8 +1,8 @@
 using Unity.Entities;
 
 /// <summary>
-/// Singleton settings for grid-based broadphase.
-/// CellSize should be at least the largest common hit radius to minimize neighbor checks.
+/// グリッドベースの Broadphase に使うシングルトン設定。
+/// CellSize は近傍チェックを減らすため、よく使う最大ヒット半径以上を目安にする。
 /// </summary>
 public struct SpatialHashSettings : IComponentData
 {

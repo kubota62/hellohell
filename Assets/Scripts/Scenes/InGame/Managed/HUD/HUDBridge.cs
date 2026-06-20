@@ -1,4 +1,4 @@
-﻿using Unity.Entities;
+using Unity.Entities;
 using UnityEngine;
 
 public class HUDBridge : MonoBehaviour
@@ -7,23 +7,23 @@ public class HUDBridge : MonoBehaviour
 
     public HUDUnitCount unitCount;
 
-    int tankCount;
-    int bulletCount;
+    int actorCount;
+    int projectileCount;
     
     void Awake()
     {
         Instance = this;
     }
 
-    public void SetTankCount(int count)
+    public void SetActorCount(int count)
     {
-        tankCount = count;
-        unitCount.SetCount(tankCount, bulletCount);
+        actorCount = count;
+        unitCount.SetCount(actorCount, projectileCount);
     }
 
-    public void SetBulletCount(int count)
+    public void SetProjectileCount(int count)
     {
-        bulletCount = count;
-        unitCount.SetCount(tankCount, bulletCount);
+        projectileCount = count;
+        unitCount.SetCount(actorCount, projectileCount);
     }
 }

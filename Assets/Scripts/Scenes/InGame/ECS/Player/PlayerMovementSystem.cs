@@ -4,12 +4,12 @@ using Unity.Mathematics;
 using Unity.Transforms;
 
 /// <summary>
-/// Reads the shared PlayerInput entity and moves the Player tank.
-/// Runs before enemy movement so AI reads the latest Player position.
+/// 共有の PlayerInput エンティティを読み、Player の ActorBody を移動させる。
+/// Enemy 移動より先に実行し、AI が最新の Player 位置を参照できるようにする。
 /// </summary>
 [BurstCompile]
-[UpdateBefore(typeof(TankMovementForwardSystem))]
-[UpdateBefore(typeof(TankMovementRandomSystem))]
+[UpdateBefore(typeof(EnemyMovementForwardSystem))]
+[UpdateBefore(typeof(EnemyMovementRandomSystem))]
 public partial struct PlayerMovementSystem : ISystem
 {
     const float MoveSpeed = 5f;
@@ -43,8 +43,8 @@ public partial struct PlayerMovementSystem : ISystem
 }
 
 /// <summary>
-/// Moves only tanks tagged as Player.
-/// The system converts input into a world-space XZ direction before scheduling this job.
+/// Player タグを持つ ActorBody だけを移動させる。
+/// 入力値はスケジュール前に XZ 平面上のワールド方向へ変換しておく。
 /// </summary>
 [BurstCompile]
 [WithAll(typeof(Player))]

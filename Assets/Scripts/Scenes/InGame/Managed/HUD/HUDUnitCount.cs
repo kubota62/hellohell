@@ -1,4 +1,4 @@
-﻿using TMPro;
+using TMPro;
 using Unity.Entities;
 using UnityEngine;
 
@@ -9,7 +9,7 @@ public class HUDUnitCount : MonoBehaviour
     
     public void SetCount(int unitNum, int bulletNum)
     {
-        unitText.text = $"Tank Count: {unitNum}";
-        bulletText.text = $"Projectile Count: {bulletNum}";
+        unitText.text = $"Actor数: {unitNum}";
+        bulletText.text = $"Projectile数: {bulletNum}";
     }
 }

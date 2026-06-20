@@ -2,8 +2,8 @@ using Unity.Entities;
 using Unity.Mathematics;
 
 /// <summary>
-/// Shared health state for damageable actors.
-/// Systems should mutate Current instead of adding/removing damage-related tags.
+/// ダメージを受ける Actor が共有する体力状態。
+/// ダメージ関連タグの追加削除ではなく、各システムは Current を更新する。
 /// </summary>
 public struct Health : IComponentData
 {

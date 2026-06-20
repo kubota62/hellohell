@@ -2,8 +2,8 @@ using Unity.Entities;
 using Unity.Mathematics;
 
 /// <summary>
-/// Non-structural fire intent used by input and AI.
-/// This avoids adding/removing request tags every frame for large crowds.
+/// 入力と AI が共有する、構造変更を伴わない射撃意図。
+/// 大量エンティティで毎フレーム Request タグを追加削除するコストを避ける。
 /// </summary>
 public struct FireIntent : IComponentData
 {
