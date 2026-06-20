@@ -1,0 +1,85 @@
+using Unity.Burst;
+using Unity.Entities;
+using Unity.Mathematics;
+using Unity.Rendering;
+using Unity.Transforms;
+
+[BurstCompile]
+[UpdateInGroup(typeof(SimulationSystemGroup))]
+public partial struct DamageDigitAnimationSystem : ISystem
+{
+    // カメラが上方45度から見下ろす構成に合わせた固定ビルボード回転
+    // X軸まわりに-45度傾けることで常にカメラ正面を向く
+    static readonly quaternion BillboardRotation =
+        quaternion.Euler(math.radians(-45f), 0f, 0f);
+
+    [BurstCompile]
+    public void OnCreate(ref SystemState state)
+    {
+        state.RequireForUpdate<DamageDigit>();
+    }
+
+    [BurstCompile]
+    public void OnUpdate(ref SystemState state)
+    {
+        var dt = SystemAPI.Time.DeltaTime;
+        var ecb = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>()
+            .CreateCommandBuffer(state.WorldUnmanaged);
+
+        foreach (var (digit, transform, color, entity) in
+                 SystemAPI.Query<RefRW<DamageDigit>, RefRW<LocalTransform>, RefRW<URPMaterialPropertyBaseColor>>()
+                     .WithEntityAccess())
+        {
+            digit.ValueRW.Elapsed += dt;
+            var elapsed = digit.ValueRO.Elapsed;
+
+            if (elapsed >= digit.ValueRO.Lifetime)
+            {
+                ecb.DestroyEntity(entity);
+                continue;
+            }
+
+            var startPos = digit.ValueRO.StartPosition;
+            var offset = digit.ValueRO.HorizontalOffset;
+            var localOffset = math.rotate(BillboardRotation, new float3(offset, 0f, 0f));
+
+            float y = startPos.y;
+            float uniformScale = 1f;
+            float alpha = 1f;
+
+            if (elapsed < 0.25f)
+            {
+                var t = elapsed / 0.25f;
+                y = startPos.y + OutQuad(t) * 2f;
+                uniformScale = math.lerp(0.5f, 1.2f, math.saturate(elapsed / 0.1f));
+            }
+            else if (elapsed < 0.3f)
+            {
+                y = startPos.y + 2f;
+                uniformScale = math.lerp(1.2f, 1f, (elapsed - 0.25f) / 0.05f);
+            }
+            else
+            {
+                y = startPos.y + 2f;
+                var t = (elapsed - 0.3f) / 0.1f;
+                alpha = 1f - InQuad(math.saturate(t));
+            }
+
+            var position = startPos + localOffset;
+            position.y = y;
+
+            transform.ValueRW = LocalTransform.FromPositionRotationScale(
+                position,
+                BillboardRotation,
+                uniformScale);
+
+            var baseColor = color.ValueRO.Value;
+            baseColor.w = alpha;
+            color.ValueRW = new URPMaterialPropertyBaseColor { Value = baseColor };
+        }
+    }
+
+    static float OutQuad(float t) => 1f - (1f - t) * (1f - t);
+
+    static float InQuad(float t) => t * t;
+}
