@@ -5,13 +5,13 @@ using Unity.Entities;
 public partial struct HUDSystem : ISystem
 {
     EntityQuery tankCountQuery;
-    EntityQuery bulletCountQuery;
+    EntityQuery projectileCountQuery;
 
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
         tankCountQuery = SystemAPI.QueryBuilder().WithAll<Tank>().Build();
-        bulletCountQuery = SystemAPI.QueryBuilder().WithAll<Bullet>().Build();
+        projectileCountQuery = SystemAPI.QueryBuilder().WithAll<Projectile>().Build();
     }
 
     public void OnUpdate(ref SystemState state)
@@ -24,6 +24,6 @@ public partial struct HUDSystem : ISystem
         }
 
         hudBridge.SetTankCount(tankCountQuery.CalculateEntityCount());
-        hudBridge.SetBulletCount(bulletCountQuery.CalculateEntityCount());
+        hudBridge.SetBulletCount(projectileCountQuery.CalculateEntityCount());
     }
 }

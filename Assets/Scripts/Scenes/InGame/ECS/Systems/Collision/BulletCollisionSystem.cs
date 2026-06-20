@@ -11,7 +11,7 @@ public partial struct BulletCollisionSystem : ISystem
     {
         state.Enabled = false;
         
-        state.RequireForUpdate<Bullet>();
+        state.RequireForUpdate<ProjectileMotion>();
         state.RequireForUpdate<Tank>();
     }
 
@@ -23,8 +23,8 @@ public partial struct BulletCollisionSystem : ISystem
 
         // 弾とタンクの当たり判定
         foreach (var (bulletTransform, bullet, bulletEntity) in
-                 SystemAPI.Query<RefRW<LocalTransform>, RefRO<Bullet>>()
-                     .WithAll<Bullet>()
+                 SystemAPI.Query<RefRW<LocalTransform>, RefRO<ProjectileMotion>>()
+                     .WithAll<ProjectileMotion>()
                      .WithEntityAccess())
         {
             float3 bulletWorldPos = bulletTransform.ValueRO.Position;

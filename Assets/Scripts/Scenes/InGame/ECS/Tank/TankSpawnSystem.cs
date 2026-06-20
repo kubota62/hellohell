@@ -80,6 +80,7 @@ public partial struct TankSpawnSystem : ISystem
             // プレイヤー設定
             ecb.AddComponent<Player>(tankEntity);
             ecb.AddComponent<CameraTarget>(tankEntity);
+            ecb.SetComponent(tankEntity, new Team { Value = TeamId.Player });
 
             var playerColor = new URPMaterialPropertyBaseColor { Value = new(255, 255, 255, 255) };
             ecb.AddComponent(tankEntity, playerColor);
@@ -87,6 +88,9 @@ public partial struct TankSpawnSystem : ISystem
         else
         {
             // NPCタンク
+            ecb.AddComponent<Enemy>(tankEntity);
+            ecb.AddComponent(tankEntity, new EnemyTypeId { Value = 1 });
+            ecb.SetComponent(tankEntity, new Team { Value = TeamId.Enemy });
             if (spawnedCount % 2 == 0)
             {
                 ecb.AddComponent<TankMovementRandom>(tankEntity);
