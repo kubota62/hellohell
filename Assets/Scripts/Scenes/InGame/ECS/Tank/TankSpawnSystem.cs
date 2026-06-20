@@ -9,14 +9,14 @@ using Random = Unity.Mathematics.Random;
 public partial struct TankSpawnSystem : ISystem
 {
     private Random Rand;
-    private int spawndCount;
+    private int spawnedCount;
     private float spawnTimer;
 
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
         Rand = new Random(123);
-        spawndCount = 0;
+        spawnedCount = 0;
         spawnTimer = 0;
 
         state.RequireForUpdate<Config>();
@@ -26,10 +26,10 @@ public partial struct TankSpawnSystem : ISystem
     public void OnUpdate(ref SystemState state)
     {
         // 最初のフレームでプレイヤーを生成する
-        if (spawndCount == 0)
+        if (spawnedCount == 0)
         {
             SpawnTank(true, float3.zero, ref state);
-            spawndCount++;
+            spawnedCount++;
             return;
         }
 
@@ -41,7 +41,7 @@ public partial struct TankSpawnSystem : ISystem
             SpawnTank(false, GetEnemySpawnPosition(config, ref state), ref state);
 
             spawnTimer = 0;
-            spawndCount++;
+            spawnedCount++;
         }
     }
 
@@ -87,7 +87,7 @@ public partial struct TankSpawnSystem : ISystem
         else
         {
             // NPCタンク
-            if (spawndCount % 2 == 0)
+            if (spawnedCount % 2 == 0)
             {
                 ecb.AddComponent<TankMovementRandom>(tankEntity);
                 var color1 = new URPMaterialPropertyBaseColor { Value = new(1f, 1f, 0, 0) };
@@ -100,7 +100,7 @@ public partial struct TankSpawnSystem : ISystem
                 ecb.AddComponent(tankEntity, color2);
             }
 
-            // var color = new URPMaterialPropertyBaseColor { Value = RamdomColor(ref Rand) };
+            // var color = new URPMaterialPropertyBaseColor { Value = RandomColor(ref Rand) };
             // ecb.AddComponent(tankEntity, color);
         }
     }
@@ -108,7 +108,7 @@ public partial struct TankSpawnSystem : ISystem
     // 視覚的に区別できるランダムな色を返します。
     // (単純なランダム性により、クラスター化された色の分布が生成されます
     // 狭い範囲の色相の周り。 https://martin.ankerl.com/2009/12/09/how-to-create-random-colors-programmatically/ を参照してください)
-    static float4 RamdomColor(ref Random Rand)
+    static float4 RandomColor(ref Random Rand)
     {
         // 0.618034005f は黄金比の逆数です
         var hue = (Rand.NextFloat() + 0.618034005f) % 1;

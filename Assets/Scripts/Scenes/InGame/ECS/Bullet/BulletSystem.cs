@@ -18,10 +18,10 @@ public partial struct BulletSystem : ISystem
         var bulletJob = new BulletJob
         {
             ECB = ecb.CreateCommandBuffer(state.WorldUnmanaged),
-            DateTime = SystemAPI.Time.DeltaTime
+            DeltaTime = SystemAPI.Time.DeltaTime
         };
-        
-        bulletJob.Schedule();
+
+        state.Dependency = bulletJob.Schedule(state.Dependency);
     }
 }
 
@@ -29,20 +29,18 @@ public partial struct BulletSystem : ISystem
 public partial struct BulletJob: IJobEntity
 {
     public EntityCommandBuffer ECB;
-    public float DateTime;
+    public float DeltaTime;
 
     void Execute(Entity entity, ref Bullet bullet, ref LocalTransform transform)
     {
         var gravity = new float3(0, -9.81f, 0);
-        transform.Position += bullet.Velocity * DateTime;
+        transform.Position += bullet.Velocity * DeltaTime;
         
         if (transform.Position.y < 0)
         {
             ECB.DestroyEntity(entity);
         }
         
-        bullet.Velocity += gravity * DateTime;
+        bullet.Velocity += gravity * DeltaTime;
     }
-
-
 }
