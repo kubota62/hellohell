@@ -44,6 +44,7 @@ public partial struct TankMovementRandomSystem : ISystem
 /// </summary>
 [BurstCompile]
 [WithAll(typeof(Tank))]
+[WithAll(typeof(Enemy))]
 [WithAll(typeof(TankMovementRandom))]
 [WithNone(typeof(Player))]
 public partial struct TankMovementRandomJob

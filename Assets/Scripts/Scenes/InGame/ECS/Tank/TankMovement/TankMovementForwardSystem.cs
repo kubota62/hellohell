@@ -43,6 +43,7 @@ public partial struct TankMovementForwardSystem : ISystem
 /// </summary>
 [BurstCompile]
 [WithAll(typeof(Tank))]
+[WithAll(typeof(Enemy))]
 [WithAll(typeof(TankMovementForward))]
 [WithNone(typeof(Player))]
 public partial struct TankMovementForwardJob : IJobEntity

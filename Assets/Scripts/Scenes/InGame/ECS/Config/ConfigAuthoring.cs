@@ -12,6 +12,9 @@ public class ConfigAuthoring : MonoBehaviour
     public float MinSpawnDistance = 15f;
     public float MaxSpawnDistance = 25f;
 
+    [Header("Spatial Hash")]
+    public float SpatialHashCellSize = 4f;
+
     class Baker : Baker<ConfigAuthoring>
     {
         public override void Bake(ConfigAuthoring authoring)
@@ -27,6 +30,11 @@ public class ConfigAuthoring : MonoBehaviour
                 SpawnTime = authoring.SpawnTime,
                 MinSpawnDistance = authoring.MinSpawnDistance,
                 MaxSpawnDistance = authoring.MaxSpawnDistance,
+            });
+
+            AddComponent(entity, new SpatialHashSettings
+            {
+                CellSize = authoring.SpatialHashCellSize,
             });
         }
     }

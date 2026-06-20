@@ -66,7 +66,7 @@ public partial struct ShootingSystem : ISystem
     {
         foreach (var (tank, tankEntity) in
                  SystemAPI.Query<RefRO<Tank>>()
-                     .WithNone<Player>()
+                     .WithAll<Enemy>()
                      .WithEntityAccess())
         {
             Shoot(ref state, config, tankEntity, ecb);
@@ -98,10 +98,27 @@ public partial struct ShootingSystem : ISystem
         }
 
         // 弾データ
-        ecb.SetComponent(bullet, new Bullet
+        var team = TeamId.Neutral;
+        if (SystemAPI.HasComponent<Team>(tankEntity))
+        {
+            team = SystemAPI.GetComponent<Team>(tankEntity).Value;
+        }
+
+        ecb.SetComponent(bullet, new ProjectileMotion
         {
             Shooter = tankEntity,
             Velocity = math.normalize(canonLtw.Up) * 10f
+        });
+        ecb.SetComponent(bullet, new Projectile
+        {
+            Owner = tankEntity,
+            Team = team,
+            Damage = 34,
+            HitRadius = 0.5f
+        });
+        ecb.SetComponent(bullet, new Lifetime
+        {
+            Remaining = 5f
         });
     }
 }
