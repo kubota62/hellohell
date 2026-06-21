@@ -19,14 +19,17 @@ public partial struct ActorDamageEventSystem : ISystem
         var ecb = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
             .CreateCommandBuffer(state.WorldUnmanaged);
 
-        foreach (var (transform, damageEventBuffer) in
-                 SystemAPI.Query<RefRO<LocalTransform>, DynamicBuffer<DamageEvent>>()
+        foreach (var (transform, health, damageEventBuffer) in
+                 SystemAPI.Query<RefRO<LocalTransform>, RefRW<Health>, DynamicBuffer<DamageEvent>>()
                      .WithAll<ActorBody>())
         {
             var pos = transform.ValueRO.Position + new float3(0f, 1f, 0f);
+            var totalDamage = 0;
 
             foreach (var damage in damageEventBuffer)
             {
+                totalDamage += damage.Damage;
+
                 DamageDigitSpawnUtility.SpawnDamageDigits(
                     ecb,
                     config.DamageDigitPrefab,
@@ -34,6 +37,7 @@ public partial struct ActorDamageEventSystem : ISystem
                     pos);
             }
 
+            health.ValueRW.Current = math.max(0, health.ValueRO.Current - totalDamage);
             damageEventBuffer.Clear();
         }
     }
