@@ -1,17 +1,14 @@
 using Unity.Burst;
 using Unity.Entities;
 using Unity.Mathematics;
-using Unity.Rendering;
 using Unity.Transforms;
 
 /// <summary>
-/// Player と Enemy の ActorBody から Projectile 攻撃を発射するシステム。
-/// 将来は WeaponDefinition や AbilityDefinition から発射条件と攻撃内容を受け取る想定。
+/// Player と Enemy の発射条件を見て、Projectile 攻撃リクエストを作るシステム。
+/// 攻撃値は AttackDefinitionCatalog から取得し、Projectile の生成は ProjectileSpawnSystem に任せる。
 /// </summary>
-// この属性は、更新順序でこのシステムを TransformSystemGroup の前に置く。
-// 発射位置に LocalToWorld を使うため、Projectile の生成は変換更新より前に済ませる。
-[UpdateBefore(typeof(TransformSystemGroup))]
-public partial struct ShootingSystem : ISystem
+[UpdateBefore(typeof(ProjectileSpawnSystem))]
+public partial struct ProjectileAttackRequestSystem : ISystem
 {
     private static readonly float ShootInterval = 1.0f;
 
@@ -31,19 +28,17 @@ public partial struct ShootingSystem : ISystem
         if (timer > 0) return;
         timer = ShootInterval;
 
-        var config = SystemAPI.GetSingleton<Config>();
         var ecb = new EntityCommandBuffer(Unity.Collections.Allocator.Temp);
 
-        PlayerShoot(ref state, config, ecb);
-        EnemyShoot(ref state, config, ecb);
+        RequestPlayerAttack(ref state, ecb);
+        RequestEnemyAttack(ref state, ecb);
 
         ecb.Playback(state.EntityManager);
         ecb.Dispose();
     }
 
-    private void PlayerShoot(
+    private void RequestPlayerAttack(
         ref SystemState state,
-        Config config,
         EntityCommandBuffer ecb)
     {
         var input = SystemAPI.GetSingleton<PlayerInput>();
@@ -54,13 +49,12 @@ public partial struct ShootingSystem : ISystem
                      .WithAll<Player>()
                      .WithEntityAccess())
         {
-            Shoot(ref state, config, actorEntity, ecb);
+            CreateProjectileRequest(ref state, actorEntity, AttackDefinitionId.BasicProjectile, ecb);
         }
     }
 
-    private void EnemyShoot(
+    private void RequestEnemyAttack(
         ref SystemState state,
-        Config config,
         EntityCommandBuffer ecb)
     {
         foreach (var (_, actorEntity) in
@@ -68,30 +62,19 @@ public partial struct ShootingSystem : ISystem
                      .WithAll<Enemy>()
                      .WithEntityAccess())
         {
-            Shoot(ref state, config, actorEntity, ecb);
+            CreateProjectileRequest(ref state, actorEntity, AttackDefinitionId.BasicProjectile, ecb);
         }
     }
 
-    private void Shoot(
+    private void CreateProjectileRequest(
         ref SystemState state,
-        Config config,
         Entity actorEntity,
+        AttackDefinitionId attackDefinitionId,
         EntityCommandBuffer ecb)
     {
         var actorBody = SystemAPI.GetComponent<ActorBody>(actorEntity);
         var canonLtw = SystemAPI.GetComponent<LocalToWorld>(actorBody.Canon);
-
-        var projectileEntity = ecb.Instantiate(config.ProjectilePrefab);
-
-        var transform = LocalTransform.FromPosition(canonLtw.Position);
-        transform.Scale = 0.5f;
-        ecb.SetComponent(projectileEntity, transform);
-
-        if (SystemAPI.HasComponent<URPMaterialPropertyBaseColor>(actorEntity))
-        {
-            var color = SystemAPI.GetComponent<URPMaterialPropertyBaseColor>(actorEntity);
-            ecb.SetComponent(projectileEntity, color);
-        }
+        var definition = AttackDefinitionCatalog.GetProjectile(attackDefinitionId);
 
         var team = TeamId.Neutral;
         if (SystemAPI.HasComponent<Team>(actorEntity))
@@ -99,21 +82,19 @@ public partial struct ShootingSystem : ISystem
             team = SystemAPI.GetComponent<Team>(actorEntity).Value;
         }
 
-        ecb.SetComponent(projectileEntity, new ProjectileMotion
+        var requestEntity = ecb.CreateEntity();
+        ecb.AddComponent(requestEntity, new ProjectileAttackRequest
         {
-            Shooter = actorEntity,
-            Velocity = math.normalize(canonLtw.Up) * 10f
-        });
-        ecb.SetComponent(projectileEntity, new Projectile
-        {
+            AttackDefinitionId = definition.Id,
             Owner = actorEntity,
             Team = team,
-            Damage = 34,
-            HitRadius = 0.5f
-        });
-        ecb.SetComponent(projectileEntity, new Lifetime
-        {
-            Remaining = 5f
+            Position = canonLtw.Position,
+            Direction = math.normalizesafe(canonLtw.Up, new float3(0f, 0f, 1f)),
+            Speed = definition.Speed,
+            Damage = definition.Damage,
+            HitRadius = definition.HitRadius,
+            Lifetime = definition.Lifetime,
+            Scale = definition.Scale,
         });
     }
 }
