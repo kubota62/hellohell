@@ -3,6 +3,10 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 
+/// <summary>
+/// ActorBody に積まれた DamageEvent を集計し、Health とダメージ表示へ反映するシステム。
+/// 命中判定側はバッファへイベントを積むだけにして、HP 更新をここへ集約する。
+/// </summary>
 [BurstCompile]
 public partial struct ActorDamageEventSystem : ISystem
 {

@@ -5,6 +5,10 @@ using Unity.Mathematics;
 using Unity.Rendering;
 using Unity.Transforms;
 
+/// <summary>
+/// ダメージ数値表示を生成する補助クラス。
+/// Combat の結果表示だけを担当し、Health の更新ロジックは持たない。
+/// </summary>
 public static class DamageDigitSpawnUtility
 {
     public const float DigitSpacing = 0.7f;
@@ -58,4 +62,3 @@ public static class DamageDigitSpawnUtility
         }
     }
 }
-

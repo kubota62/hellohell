@@ -6,7 +6,7 @@ using UnityEngine;
 
 /// <summary>
 /// 旧式の Projectile と ActorBody の当たり判定システム。
-/// 現在は ProjectileHitSystem を使うため、検証用として無効化している。
+/// 現在は Runtime/Attack/Projectiles/ProjectileHitSystem を使うため、参照用としてビルド対象外に退避している。
 /// </summary>
 public partial struct ProjectileActorCollisionSystem : ISystem
 {

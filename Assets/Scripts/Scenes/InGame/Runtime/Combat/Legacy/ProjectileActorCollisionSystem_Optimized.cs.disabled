@@ -5,8 +5,8 @@
 // using Unity.Transforms;
 //
 // /// <summary>
-// /// 最適化版: 空間分割を使った Projectile と ActorBody の当たり判定。
-// /// 現在は ProjectileHitSystem を使うため無効化している。
+// /// 空間分割を試していた旧 Projectile / ActorBody 当たり判定システム。
+// /// 現在は ProjectileHitSystem を使うため、参照用としてビルド対象外に退避している。
 // /// </summary>
 // [BurstCompile]
 // public partial struct ProjectileActorCollisionSystem_Optimized : ISystem
