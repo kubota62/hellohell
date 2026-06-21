@@ -8,7 +8,7 @@ using Random = Unity.Mathematics.Random;
 
 /// <summary>
 /// 初期 Player と継続的な Enemy を ActorBody プレハブから生成するシステム。
-/// 将来は EnemyDefinition から EnemyTypeId、移動タグ、武器構成を選ぶ入口になる。
+/// Enemy は EnemyDefinitionCatalog から種類、移動タグ、武器構成、見た目を選ぶ。
 /// </summary>
 public partial struct ActorSpawnSystem : ISystem
 {
@@ -76,45 +76,69 @@ public partial struct ActorSpawnSystem : ISystem
             .CreateCommandBuffer(state.WorldUnmanaged);
 
         var actorEntity = ecb.Instantiate(config.ActorPrefab);
-        Quaternion rot = Quaternion.Euler(0f, Rand.NextInt() % 360f, 0f);
+        Quaternion rot = Quaternion.Euler(0f, Rand.NextFloat(0f, 360f), 0f);
         ecb.SetComponent(actorEntity, LocalTransform.FromPositionRotation(position, rot));
 
         if (isPlayer)
         {
-            // プレイヤー用のタグと所属を付与する。
-            ecb.AddComponent<Player>(actorEntity);
-            ecb.AddComponent<CameraTarget>(actorEntity);
-            ecb.SetComponent(actorEntity, new Team { Value = TeamId.Player });
-
-            var playerColor = new URPMaterialPropertyBaseColor { Value = new(255, 255, 255, 255) };
-            ecb.AddComponent(actorEntity, playerColor);
+            AddPlayerComponents(ecb, actorEntity);
         }
         else
         {
-            // 敵用のタグ、種類ID、所属を付与する。
-            ecb.AddComponent<Enemy>(actorEntity);
-            ecb.AddComponent(actorEntity, new EnemyTypeId { Value = 1 });
-            ecb.SetComponent(actorEntity, new Team { Value = TeamId.Enemy });
-            if (spawnedCount % 2 == 0)
-            {
-                ecb.AddComponent<EnemyMovementRandom>(actorEntity);
-                var color1 = new URPMaterialPropertyBaseColor { Value = new(1f, 1f, 0, 0) };
-                ecb.AddComponent(actorEntity, color1);
-            }
-            else
-            {
-                ecb.AddComponent<EnemyMovementForward>(actorEntity);
-                var color2 = new URPMaterialPropertyBaseColor { Value = new(1f, 0, 1f, 0) };
-                ecb.AddComponent(actorEntity, color2);
-            }
-
-            // var color = new URPMaterialPropertyBaseColor { Value = RandomColor(ref Rand) };
-            // ecb.AddComponent(actorEntity, color);
+            var enemyTypeId = EnemyDefinitionCatalog.PickSpawnType(spawnedCount);
+            var definition = EnemyDefinitionCatalog.Get(enemyTypeId);
+            AddEnemyComponents(ecb, actorEntity, definition);
         }
     }
 
-    // 視覚的に区別しやすいランダム色を返す。
-    // 黄金比を使って色相が偏りすぎないようにする。
+    private void AddPlayerComponents(EntityCommandBuffer ecb, Entity actorEntity)
+    {
+        ecb.AddComponent<Player>(actorEntity);
+        ecb.AddComponent<CameraTarget>(actorEntity);
+        ecb.SetComponent(actorEntity, new Team { Value = TeamId.Player });
+        ecb.SetComponent(actorEntity, new AttackLoadout
+        {
+            PrimaryAttack = AttackDefinitionId.BasicProjectile,
+        });
+
+        var playerColor = new URPMaterialPropertyBaseColor { Value = new float4(1f, 1f, 1f, 1f) };
+        ecb.AddComponent(actorEntity, playerColor);
+    }
+
+    private void AddEnemyComponents(
+        EntityCommandBuffer ecb,
+        Entity actorEntity,
+        EnemyDefinitionData definition)
+    {
+        ecb.AddComponent<Enemy>(actorEntity);
+        ecb.AddComponent(actorEntity, new EnemyTypeId { Value = definition.TypeId });
+        ecb.SetComponent(actorEntity, new Team { Value = TeamId.Enemy });
+        ecb.SetComponent(actorEntity, Health.FromMax(definition.MaxHealth));
+        ecb.SetComponent(actorEntity, new Hitbox { Radius = definition.HitRadius });
+        ecb.SetComponent(actorEntity, new AttackLoadout
+        {
+            PrimaryAttack = definition.PrimaryAttack,
+        });
+
+        switch (definition.Movement)
+        {
+            case EnemyMovementKind.Random:
+                ecb.AddComponent<EnemyMovementRandom>(actorEntity);
+                break;
+
+            case EnemyMovementKind.Forward:
+            default:
+                ecb.AddComponent<EnemyMovementForward>(actorEntity);
+                break;
+        }
+
+        ecb.AddComponent(actorEntity, new URPMaterialPropertyBaseColor
+        {
+            Value = definition.Color,
+        });
+    }
+
+    // 視覚的に区別しやすいランダム色を返す。デバッグ用に残している。
     static float4 RandomColor(ref Random Rand)
     {
         // 0.618034005f は黄金比の逆数。

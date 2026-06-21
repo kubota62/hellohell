@@ -8,6 +8,7 @@ using UnityEngine;
 /// </summary>
 public class ProjectileAuthoring : MonoBehaviour
 {
+    public AttackDefinitionAsset DefaultAttackDefinition;
     public AttackDefinitionId DefaultAttack = AttackDefinitionId.BasicProjectile;
 
     class Baker : Baker<ProjectileAuthoring>
@@ -15,7 +16,9 @@ public class ProjectileAuthoring : MonoBehaviour
         public override void Bake(ProjectileAuthoring authoring)
         {
             var entity = GetEntity(authoring, TransformUsageFlags.Dynamic);
-            var definition = AttackDefinitionCatalog.GetProjectile(authoring.DefaultAttack);
+            var definition = authoring.DefaultAttackDefinition != null
+                ? authoring.DefaultAttackDefinition.ToProjectileDefinition()
+                : AttackDefinitionCatalog.GetProjectile(authoring.DefaultAttack);
 
             AddComponent<ProjectileMotion>(entity);
             AddComponent(entity, new Projectile

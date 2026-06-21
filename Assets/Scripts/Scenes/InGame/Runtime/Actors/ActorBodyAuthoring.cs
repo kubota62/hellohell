@@ -3,7 +3,7 @@ using UnityEngine;
 
 /// <summary>
 /// Player と Enemy が共有する ActorBody プレハブを ECS に変換する Authoring。
-/// 敵の種類は EnemyTypeId や将来の EnemyDefinition で差し替える。
+/// 敵の種類ごとの差分は EnemyDefinition 側で上書きする。
 /// </summary>
 public class ActorBodyAuthoring : MonoBehaviour
 {
@@ -29,6 +29,10 @@ public class ActorBodyAuthoring : MonoBehaviour
             AddComponent(actorEntity, new Hitbox { Radius = authoring.HitRadius });
             AddComponent<SpatialHashTarget>(actorEntity);
             AddComponent<GameplayActive>(actorEntity);
+            AddComponent(actorEntity, new AttackLoadout
+            {
+                PrimaryAttack = AttackDefinitionId.BasicProjectile,
+            });
             AddBuffer<DamageEvent>(actorEntity);
             
             // 親ボディの色を砲塔と砲身にも同期する。

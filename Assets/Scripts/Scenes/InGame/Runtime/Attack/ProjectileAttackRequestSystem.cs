@@ -5,7 +5,7 @@ using Unity.Transforms;
 
 /// <summary>
 /// Player と Enemy の発射条件を見て、Projectile 攻撃リクエストを作るシステム。
-/// 攻撃値は AttackDefinitionCatalog から取得し、Projectile の生成は ProjectileSpawnSystem に任せる。
+/// 攻撃値は AttackLoadout の定義IDから取得し、Projectile の生成は ProjectileSpawnSystem に任せる。
 /// </summary>
 [UpdateBefore(typeof(ProjectileSpawnSystem))]
 public partial struct ProjectileAttackRequestSystem : ISystem
@@ -49,7 +49,7 @@ public partial struct ProjectileAttackRequestSystem : ISystem
                      .WithAll<Player>()
                      .WithEntityAccess())
         {
-            CreateProjectileRequest(ref state, actorEntity, AttackDefinitionId.BasicProjectile, ecb);
+            CreateProjectileRequest(ref state, actorEntity, ResolveAttackDefinitionId(ref state, actorEntity), ecb);
         }
     }
 
@@ -62,7 +62,7 @@ public partial struct ProjectileAttackRequestSystem : ISystem
                      .WithAll<Enemy>()
                      .WithEntityAccess())
         {
-            CreateProjectileRequest(ref state, actorEntity, AttackDefinitionId.BasicProjectile, ecb);
+            CreateProjectileRequest(ref state, actorEntity, ResolveAttackDefinitionId(ref state, actorEntity), ecb);
         }
     }
 
@@ -96,5 +96,15 @@ public partial struct ProjectileAttackRequestSystem : ISystem
             Lifetime = definition.Lifetime,
             Scale = definition.Scale,
         });
+    }
+
+    private AttackDefinitionId ResolveAttackDefinitionId(ref SystemState state, Entity actorEntity)
+    {
+        if (!SystemAPI.HasComponent<AttackLoadout>(actorEntity))
+        {
+            return AttackDefinitionId.BasicProjectile;
+        }
+
+        return SystemAPI.GetComponent<AttackLoadout>(actorEntity).PrimaryAttack;
     }
 }
