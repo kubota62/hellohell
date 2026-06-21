@@ -1,8 +1,9 @@
+using Unity.Entities;
 using Unity.Mathematics;
 
 /// <summary>
 /// 敵定義へアクセスする仮の窓口。
-/// ScriptableObject/Baker/BlobAsset 化するまで、スポーン側はこの窓口だけを見る。
+/// Baker が作った定義バッファがある場合はそちらを優先し、未配置でも静的な既定値で動く。
 /// </summary>
 public static class EnemyDefinitionCatalog
 {
@@ -41,5 +42,20 @@ public static class EnemyDefinitionCatalog
                     Color = new float4(1f, 0f, 1f, 1f),
                 };
         }
+    }
+
+    public static EnemyDefinitionData Get(
+        DynamicBuffer<EnemyDefinitionElement> definitions,
+        int typeId)
+    {
+        for (var i = 0; i < definitions.Length; i++)
+        {
+            if (definitions[i].TypeId == typeId)
+            {
+                return definitions[i].ToRuntimeDefinition();
+            }
+        }
+
+        return Get(typeId);
     }
 }

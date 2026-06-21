@@ -8,7 +8,7 @@ using Random = Unity.Mathematics.Random;
 
 /// <summary>
 /// 初期 Player と継続的な Enemy を ActorBody プレハブから生成するシステム。
-/// Enemy は EnemyDefinitionCatalog から種類、移動タグ、武器構成、見た目を選ぶ。
+/// Enemy は定義バッファまたは EnemyDefinitionCatalog から種類、移動タグ、武器構成、見た目を選ぶ。
 /// </summary>
 public partial struct ActorSpawnSystem : ISystem
 {
@@ -29,7 +29,6 @@ public partial struct ActorSpawnSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        // 最初のフレームでプレイヤーを生成する。
         if (spawnedCount == 0)
         {
             SpawnActor(true, float3.zero, ref state);
@@ -37,7 +36,6 @@ public partial struct ActorSpawnSystem : ISystem
             return;
         }
 
-        // 以降は一定時間ごとに、プレイヤーから離れた位置へ敵を生成する。
         var config = SystemAPI.GetSingleton<Config>();
         spawnTimer += SystemAPI.Time.DeltaTime;
         if (spawnTimer > config.SpawnTime)
@@ -49,7 +47,6 @@ public partial struct ActorSpawnSystem : ISystem
         }
     }
 
-    // プレイヤーから一定距離離れたランダムな座標を返す。
     [BurstCompile]
     private float3 GetEnemySpawnPosition(in Config config, ref SystemState state)
     {
@@ -60,7 +57,6 @@ public partial struct ActorSpawnSystem : ISystem
             playerPosition = SystemAPI.GetComponent<LocalTransform>(playerEntity).Position;
         }
 
-        // ランダムな方向と距離から XZ 平面上のオフセットを作る。
         var angle = Rand.NextFloat(0f, 2f * math.PI);
         var distance = Rand.NextFloat(config.MinSpawnDistance, config.MaxSpawnDistance);
         var offset = new float3(math.cos(angle), 0f, math.sin(angle)) * distance;
@@ -85,8 +81,13 @@ public partial struct ActorSpawnSystem : ISystem
         }
         else
         {
+            var hasEnemyDefinitions = SystemAPI.TryGetSingletonBuffer<EnemyDefinitionElement>(
+                out var enemyDefinitions,
+                true);
             var enemyTypeId = EnemyDefinitionCatalog.PickSpawnType(spawnedCount);
-            var definition = EnemyDefinitionCatalog.Get(enemyTypeId);
+            var definition = hasEnemyDefinitions
+                ? EnemyDefinitionCatalog.Get(enemyDefinitions, enemyTypeId)
+                : EnemyDefinitionCatalog.Get(enemyTypeId);
             AddEnemyComponents(ecb, actorEntity, definition);
         }
     }
@@ -138,10 +139,8 @@ public partial struct ActorSpawnSystem : ISystem
         });
     }
 
-    // 視覚的に区別しやすいランダム色を返す。デバッグ用に残している。
     static float4 RandomColor(ref Random Rand)
     {
-        // 0.618034005f は黄金比の逆数。
         var hue = (Rand.NextFloat() + 0.618034005f) % 1;
         return (Vector4)Color.HSVToRGB(hue, 1, 1);
     }

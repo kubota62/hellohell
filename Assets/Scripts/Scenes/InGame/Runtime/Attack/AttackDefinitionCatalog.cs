@@ -1,6 +1,8 @@
+using Unity.Entities;
+
 /// <summary>
 /// 攻撃マスタへアクセスする仮の窓口。
-/// 後で ScriptableObject Authoring や Baker に差し替えても、呼び出し側の形を保てるようにする。
+/// Baker が作った定義バッファがある場合はそちらを優先し、未配置でも静的な既定値で動く。
 /// </summary>
 public static class AttackDefinitionCatalog
 {
@@ -20,5 +22,20 @@ public static class AttackDefinitionCatalog
                     Scale = 0.5f,
                 };
         }
+    }
+
+    public static ProjectileAttackDefinition GetProjectile(
+        DynamicBuffer<AttackDefinitionElement> definitions,
+        AttackDefinitionId id)
+    {
+        for (var i = 0; i < definitions.Length; i++)
+        {
+            if (definitions[i].Id == id)
+            {
+                return definitions[i].ToProjectileDefinition();
+            }
+        }
+
+        return GetProjectile(id);
     }
 }

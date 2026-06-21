@@ -5,7 +5,7 @@ using Unity.Transforms;
 
 /// <summary>
 /// Player と Enemy の発射条件を見て、Projectile 攻撃リクエストを作るシステム。
-/// 攻撃値は AttackLoadout の定義IDから取得し、Projectile の生成は ProjectileSpawnSystem に任せる。
+/// 攻撃値は AttackLoadout の定義IDから取得し、定義バッファがあればそれを優先する。
 /// </summary>
 [UpdateBefore(typeof(ProjectileSpawnSystem))]
 public partial struct ProjectileAttackRequestSystem : ISystem
@@ -28,10 +28,13 @@ public partial struct ProjectileAttackRequestSystem : ISystem
         if (timer > 0) return;
         timer = ShootInterval;
 
+        var hasAttackDefinitions = SystemAPI.TryGetSingletonBuffer<AttackDefinitionElement>(
+            out var attackDefinitions,
+            true);
         var ecb = new EntityCommandBuffer(Unity.Collections.Allocator.Temp);
 
-        RequestPlayerAttack(ref state, ecb);
-        RequestEnemyAttack(ref state, ecb);
+        RequestPlayerAttack(ref state, ecb, hasAttackDefinitions, attackDefinitions);
+        RequestEnemyAttack(ref state, ecb, hasAttackDefinitions, attackDefinitions);
 
         ecb.Playback(state.EntityManager);
         ecb.Dispose();
@@ -39,7 +42,9 @@ public partial struct ProjectileAttackRequestSystem : ISystem
 
     private void RequestPlayerAttack(
         ref SystemState state,
-        EntityCommandBuffer ecb)
+        EntityCommandBuffer ecb,
+        bool hasAttackDefinitions,
+        DynamicBuffer<AttackDefinitionElement> attackDefinitions)
     {
         var input = SystemAPI.GetSingleton<PlayerInput>();
         if (!input.IsFire) return;
@@ -49,20 +54,34 @@ public partial struct ProjectileAttackRequestSystem : ISystem
                      .WithAll<Player>()
                      .WithEntityAccess())
         {
-            CreateProjectileRequest(ref state, actorEntity, ResolveAttackDefinitionId(ref state, actorEntity), ecb);
+            CreateProjectileRequest(
+                ref state,
+                actorEntity,
+                ResolveAttackDefinitionId(ref state, actorEntity),
+                ecb,
+                hasAttackDefinitions,
+                attackDefinitions);
         }
     }
 
     private void RequestEnemyAttack(
         ref SystemState state,
-        EntityCommandBuffer ecb)
+        EntityCommandBuffer ecb,
+        bool hasAttackDefinitions,
+        DynamicBuffer<AttackDefinitionElement> attackDefinitions)
     {
         foreach (var (_, actorEntity) in
                  SystemAPI.Query<RefRO<ActorBody>>()
                      .WithAll<Enemy>()
                      .WithEntityAccess())
         {
-            CreateProjectileRequest(ref state, actorEntity, ResolveAttackDefinitionId(ref state, actorEntity), ecb);
+            CreateProjectileRequest(
+                ref state,
+                actorEntity,
+                ResolveAttackDefinitionId(ref state, actorEntity),
+                ecb,
+                hasAttackDefinitions,
+                attackDefinitions);
         }
     }
 
@@ -70,11 +89,15 @@ public partial struct ProjectileAttackRequestSystem : ISystem
         ref SystemState state,
         Entity actorEntity,
         AttackDefinitionId attackDefinitionId,
-        EntityCommandBuffer ecb)
+        EntityCommandBuffer ecb,
+        bool hasAttackDefinitions,
+        DynamicBuffer<AttackDefinitionElement> attackDefinitions)
     {
         var actorBody = SystemAPI.GetComponent<ActorBody>(actorEntity);
         var canonLtw = SystemAPI.GetComponent<LocalToWorld>(actorBody.Canon);
-        var definition = AttackDefinitionCatalog.GetProjectile(attackDefinitionId);
+        var definition = hasAttackDefinitions
+            ? AttackDefinitionCatalog.GetProjectile(attackDefinitions, attackDefinitionId)
+            : AttackDefinitionCatalog.GetProjectile(attackDefinitionId);
 
         var team = TeamId.Neutral;
         if (SystemAPI.HasComponent<Team>(actorEntity))

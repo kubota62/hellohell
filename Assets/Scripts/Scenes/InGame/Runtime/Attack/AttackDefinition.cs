@@ -9,7 +9,7 @@ public enum AttackDefinitionId
 
 /// <summary>
 /// 攻撃マスタから取得する Projectile 攻撃の調整値。
-/// いまは仮実装として静的カタログから返す。
+/// いまは仮実装として静的カタログまたは Baker が作る定義バッファから返す。
 /// </summary>
 public struct ProjectileAttackDefinition
 {

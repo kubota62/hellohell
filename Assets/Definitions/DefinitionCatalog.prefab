@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &100000
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 11400000}
+  m_Layer: 0
+  m_Name: DefinitionCatalog
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 786b4554207a4073ad09249054bf2b0e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  AttackDefinitions:
+  - {fileID: 11400000, guid: 203f1c06e81547b3a31b10618654607a, type: 2}
+  EnemyDefinitions:
+  - {fileID: 11400000, guid: 44c12fef620c49a9964278be92eb4f94, type: 2}
+  - {fileID: 11400000, guid: 2ec325ef8d1544d49871dd21a5dc41bb, type: 2}
