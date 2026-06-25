@@ -23,14 +23,16 @@ public class DefinitionCatalogAuthoring : MonoBehaviour
                 foreach (var asset in authoring.AttackDefinitions)
                 {
                     if (asset == null) continue;
-                    attackBuffer.Add(AttackDefinitionElement.FromDefinition(asset.ToProjectileDefinition()));
+                    attackBuffer.Add(AttackDefinitionElement.FromDefinition(asset.ToRuntimeDefinition()));
                 }
             }
 
             if (attackBuffer.Length == 0)
             {
                 attackBuffer.Add(AttackDefinitionElement.FromDefinition(
-                    AttackDefinitionCatalog.GetProjectile(AttackDefinitionId.BasicProjectile)));
+                    AttackDefinitionCatalog.Get(AttackDefinitionId.BasicProjectile)));
+                attackBuffer.Add(AttackDefinitionElement.FromDefinition(
+                    AttackDefinitionCatalog.Get(AttackDefinitionId.BasicAura)));
             }
 
             var enemyBuffer = AddBuffer<EnemyDefinitionElement>(entity);

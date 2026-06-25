@@ -30,6 +30,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   AttackDefinitions:
   - {fileID: 11400000, guid: 203f1c06e81547b3a31b10618654607a, type: 2}
+  - {fileID: 11400000, guid: c7e9d6dfce37452d8cbaf5777a7fcf91, type: 2}
   EnemyDefinitions:
   - {fileID: 11400000, guid: 44c12fef620c49a9964278be92eb4f94, type: 2}
   - {fileID: 11400000, guid: 2ec325ef8d1544d49871dd21a5dc41bb, type: 2}

@@ -101,6 +101,7 @@ public partial struct ActorSpawnSystem : ISystem
         {
             PrimaryAttack = AttackDefinitionId.BasicProjectile,
         });
+        ecb.AddComponent(actorEntity, new AttackCooldown());
 
         var playerColor = new URPMaterialPropertyBaseColor { Value = new float4(1f, 1f, 1f, 1f) };
         ecb.AddComponent(actorEntity, playerColor);
@@ -120,6 +121,7 @@ public partial struct ActorSpawnSystem : ISystem
         {
             PrimaryAttack = definition.PrimaryAttack,
         });
+        ecb.AddComponent(actorEntity, new AttackCooldown());
 
         switch (definition.Movement)
         {

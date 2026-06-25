@@ -9,7 +9,7 @@ using Unity.Transforms;
 /// 攻撃の発射判断と、Projectile の具体的な初期化を分離する。
 /// </summary>
 [BurstCompile]
-[UpdateAfter(typeof(ProjectileAttackRequestSystem))]
+[UpdateAfter(typeof(AttackRequestSystem))]
 [UpdateBefore(typeof(TransformSystemGroup))]
 public partial struct ProjectileSpawnSystem : ISystem
 {

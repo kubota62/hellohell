@@ -17,8 +17,8 @@ public class ProjectileAuthoring : MonoBehaviour
         {
             var entity = GetEntity(authoring, TransformUsageFlags.Dynamic);
             var definition = authoring.DefaultAttackDefinition != null
-                ? authoring.DefaultAttackDefinition.ToProjectileDefinition()
-                : AttackDefinitionCatalog.GetProjectile(authoring.DefaultAttack);
+                ? authoring.DefaultAttackDefinition.ToRuntimeDefinition()
+                : AttackDefinitionCatalog.Get(authoring.DefaultAttack);
 
             AddComponent<ProjectileMotion>(entity);
             AddComponent(entity, new Projectile

@@ -7,33 +7,42 @@ using Unity.Entities;
 public struct AttackDefinitionElement : IBufferElementData
 {
     public AttackDefinitionId Id;
-    public float Speed;
+    public AttackKind Kind;
+    public float Cooldown;
     public int Damage;
     public float HitRadius;
+    public float AreaRadius;
+    public float ProjectileSpeed;
     public float Lifetime;
     public float Scale;
 
-    public static AttackDefinitionElement FromDefinition(ProjectileAttackDefinition definition)
+    public static AttackDefinitionElement FromDefinition(AttackDefinitionData definition)
     {
         return new AttackDefinitionElement
         {
             Id = definition.Id,
-            Speed = definition.Speed,
+            Kind = definition.Kind,
+            Cooldown = definition.Cooldown,
             Damage = definition.Damage,
             HitRadius = definition.HitRadius,
+            AreaRadius = definition.AreaRadius,
+            ProjectileSpeed = definition.ProjectileSpeed,
             Lifetime = definition.Lifetime,
             Scale = definition.Scale,
         };
     }
 
-    public ProjectileAttackDefinition ToProjectileDefinition()
+    public AttackDefinitionData ToDefinition()
     {
-        return new ProjectileAttackDefinition
+        return new AttackDefinitionData
         {
             Id = Id,
-            Speed = Speed,
+            Kind = Kind,
+            Cooldown = Cooldown,
             Damage = Damage,
             HitRadius = HitRadius,
+            AreaRadius = AreaRadius,
+            ProjectileSpeed = ProjectileSpeed,
             Lifetime = Lifetime,
             Scale = Scale,
         };
