@@ -4,7 +4,7 @@ using UnityEngine;
 
 /// <summary>
 /// Projectile プレハブを ECS 用に変換する Authoring。
-/// 初期値は攻撃マスタから取り、Prefab 側でダメージ値を二重管理しない。
+/// 初期値は攻撃マスタから取り、実際の発射時に ProjectileSpawnSystem が上書きする。
 /// </summary>
 public class ProjectileAuthoring : MonoBehaviour
 {

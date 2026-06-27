@@ -6,7 +6,7 @@ using Unity.Transforms;
 
 /// <summary>
 /// Projectile と ActorBody の命中を判定し、命中先の DamageEvent バッファへダメージを積む。
-/// Team で敵対関係を判定するため、Player/Enemy の種類を直接見ずに再利用できる。
+/// PooledInstance の Projectile は命中時に破棄せず GameplayActive を無効化して返却する。
 /// </summary>
 [BurstCompile]
 public partial struct ProjectileHitSystem : ISystem
@@ -49,6 +49,7 @@ public partial struct ProjectileHitSystem : ISystem
 }
 
 [BurstCompile]
+[WithAll(typeof(GameplayActive))]
 public partial struct ProjectileHitJob : IJobEntity
 {
     public EntityCommandBuffer.ParallelWriter ECB;
@@ -64,7 +65,7 @@ public partial struct ProjectileHitJob : IJobEntity
         Entity projectileEntity,
         in ProjectileMotion motion,
         in Projectile projectile,
-        in LocalTransform projectileTransform)
+        ref LocalTransform projectileTransform)
     {
         var projectilePos = projectileTransform.Position;
 
@@ -84,7 +85,10 @@ public partial struct ProjectileHitJob : IJobEntity
                     Attacker = projectile.Owner,
                 });
 
-                ECB.DestroyEntity(sortKey, projectileEntity);
+                projectileTransform.Position = new float3(0f, -1000f, 0f);
+                projectileTransform.Scale = 0f;
+                ECB.SetComponentEnabled<GameplayActive>(sortKey, projectileEntity, false);
+                return;
             }
         }
     }

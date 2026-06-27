@@ -3,7 +3,7 @@ using Unity.Mathematics;
 
 /// <summary>
 /// Projectile 型攻撃の移動状態。
-/// Projectile は戦闘メタデータを持ち、このコンポーネントは移動データだけを持つ。
+/// 戦闘メタデータとは分け、移動システムが必要な速度と発射者だけを持つ。
 /// </summary>
 public struct ProjectileMotion : IComponentData
 {
