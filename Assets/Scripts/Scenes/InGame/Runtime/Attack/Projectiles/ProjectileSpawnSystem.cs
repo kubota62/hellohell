@@ -12,12 +12,17 @@ using Unity.Transforms;
 [UpdateBefore(typeof(TransformSystemGroup))]
 public partial struct ProjectileSpawnSystem : ISystem
 {
+    private EntityQuery requestQuery;
     private EntityQuery pooledProjectileQuery;
 
     public void OnCreate(ref SystemState state)
     {
         state.RequireForUpdate<Config>();
         state.RequireForUpdate<ProjectileAttackRequest>();
+
+        requestQuery = new EntityQueryBuilder(Allocator.Temp)
+            .WithAll<ProjectileAttackRequest>()
+            .Build(ref state);
 
         pooledProjectileQuery = new EntityQueryBuilder(Allocator.Temp)
             .WithAll<Projectile, ProjectileMotion, Lifetime, LocalTransform, PooledInstance, GameplayActive>()
@@ -29,20 +34,22 @@ public partial struct ProjectileSpawnSystem : ISystem
     {
         var config = SystemAPI.GetSingleton<Config>();
         var entityManager = state.EntityManager;
+        var requestEntities = requestQuery.ToEntityArray(Allocator.Temp);
+        var requests = requestQuery.ToComponentDataArray<ProjectileAttackRequest>(Allocator.Temp);
         var pooledProjectiles = pooledProjectileQuery.ToEntityArray(Allocator.Temp);
 
-        foreach (var (request, requestEntity) in
-                 SystemAPI.Query<RefRO<ProjectileAttackRequest>>()
-                     .WithEntityAccess())
+        for (var i = 0; i < requestEntities.Length; i++)
         {
-            var value = request.ValueRO;
+            var value = requests[i];
             var projectileEntity = RentProjectile(entityManager, pooledProjectiles, config.ProjectilePrefab);
 
             InitializeProjectile(entityManager, projectileEntity, config.ProjectilePrefab, value);
-            entityManager.DestroyEntity(requestEntity);
+            entityManager.DestroyEntity(requestEntities[i]);
         }
 
         pooledProjectiles.Dispose();
+        requests.Dispose();
+        requestEntities.Dispose();
     }
 
     private static Entity RentProjectile(

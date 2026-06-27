@@ -4,7 +4,7 @@ using Unity.Mathematics;
 using Unity.Transforms;
 
 /// <summary>
-/// Player と Enemy の攻撃入力を見て、攻撃種別ごとのリクエストを作るシステム。
+/// Player と Enemy の攻撃入力を見て、攻撃種類ごとのリクエストを作るシステム。
 /// 攻撃マスタをここで解決し、Projectile や Aura などの実行システムへ薄いリクエストとして渡す。
 /// </summary>
 [UpdateBefore(typeof(ProjectileSpawnSystem))]

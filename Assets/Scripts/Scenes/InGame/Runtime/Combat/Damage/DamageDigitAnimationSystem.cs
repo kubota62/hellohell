@@ -11,9 +11,9 @@ using Unity.Transforms;
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 public partial struct DamageDigitAnimationSystem : ISystem
 {
-    // カメラが上方45度から見下ろす構図に合わせた固定ビルボード回転。
+    // 俯瞰カメラの表示面に合わせ、数字用Quadが画面正面を向く固定回転。
     static readonly quaternion BillboardRotation =
-        quaternion.Euler(math.radians(-45f), 0f, 0f);
+        quaternion.Euler(math.radians(50f), math.radians(-30f), 0f);
 
     [BurstCompile]
     public void OnCreate(ref SystemState state)
