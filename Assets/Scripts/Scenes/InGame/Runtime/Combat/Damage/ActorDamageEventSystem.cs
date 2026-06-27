@@ -4,8 +4,8 @@ using Unity.Mathematics;
 using Unity.Transforms;
 
 /// <summary>
-/// ActorBody に積まれた DamageEvent を集計し、Health とダメージ表示へ反映するシステム。
-/// 命中判定側はバッファへイベントを積むだけにして、HP 更新をここへ集約する。
+/// ActorBody に積まれた DamageEvent を集計し、Health へ反映するシステム。
+/// 表示や効果音などの演出は VfxRequest として別システムへ渡す。
 /// </summary>
 [BurstCompile]
 public partial struct ActorDamageEventSystem : ISystem
@@ -13,13 +13,12 @@ public partial struct ActorDamageEventSystem : ISystem
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
-        state.RequireForUpdate<Config>();
+        state.RequireForUpdate<BeginSimulationEntityCommandBufferSystem.Singleton>();
     }
 
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        var config = SystemAPI.GetSingleton<Config>();
         var ecb = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
             .CreateCommandBuffer(state.WorldUnmanaged);
 
@@ -34,15 +33,77 @@ public partial struct ActorDamageEventSystem : ISystem
             {
                 totalDamage += damage.Damage;
 
-                DamageDigitSpawnUtility.SpawnDamageDigits(
-                    ecb,
-                    config.DamageDigitPrefab,
-                    damage.Damage,
-                    pos);
+                var requestEntity = ecb.CreateEntity();
+                ecb.AddComponent(requestEntity, new VfxRequest
+                {
+                    Kind = VfxRequestKind.DamageDigit,
+                    IntValue = damage.Damage,
+                    Position = pos,
+                });
             }
 
             health.ValueRW.Current = math.max(0, health.ValueRO.Current - totalDamage);
             damageEventBuffer.Clear();
+        }
+    }
+}
+
+/// <summary>
+/// ゲームロジックから演出層へ渡す、使い捨ての演出要求。
+/// ダメージ、死亡、攻撃発生などの見た目をロジック本体から分離するために使う。
+/// </summary>
+public struct VfxRequest : IComponentData
+{
+    public VfxRequestKind Kind;
+    public int IntValue;
+    public float3 Position;
+}
+
+/// <summary>
+/// VfxRequestSystem が処理できる演出の種類。
+/// </summary>
+public enum VfxRequestKind : byte
+{
+    DamageDigit = 1,
+}
+
+/// <summary>
+/// VfxRequest を消費し、実際の演出エンティティ生成へ変換するシステム。
+/// ロジック側は演出Prefabや表示方式を知らず、ここを演出の窓口にする。
+/// </summary>
+[BurstCompile]
+[UpdateAfter(typeof(ActorDamageEventSystem))]
+public partial struct VfxRequestSystem : ISystem
+{
+    [BurstCompile]
+    public void OnCreate(ref SystemState state)
+    {
+        state.RequireForUpdate<Config>();
+        state.RequireForUpdate<VfxRequest>();
+        state.RequireForUpdate<EndSimulationEntityCommandBufferSystem.Singleton>();
+    }
+
+    [BurstCompile]
+    public void OnUpdate(ref SystemState state)
+    {
+        var config = SystemAPI.GetSingleton<Config>();
+        var ecb = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>()
+            .CreateCommandBuffer(state.WorldUnmanaged);
+
+        foreach (var (request, entity) in
+                 SystemAPI.Query<RefRO<VfxRequest>>()
+                     .WithEntityAccess())
+        {
+            if (request.ValueRO.Kind == VfxRequestKind.DamageDigit)
+            {
+                DamageDigitSpawnUtility.SpawnDamageDigits(
+                    ecb,
+                    config.DamageDigitPrefab,
+                    request.ValueRO.IntValue,
+                    request.ValueRO.Position);
+            }
+
+            ecb.DestroyEntity(entity);
         }
     }
 }

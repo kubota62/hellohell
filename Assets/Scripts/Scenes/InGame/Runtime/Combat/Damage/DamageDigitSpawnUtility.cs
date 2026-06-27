@@ -7,7 +7,7 @@ using Unity.Transforms;
 
 /// <summary>
 /// ダメージ数値表示を生成する補助クラス。
-/// Combat の結果表示だけを担当し、Health の更新ロジックは持たない。
+/// VFX層から呼ばれ、Health 更新などの戦闘ロジックは持たない。
 /// </summary>
 public static class DamageDigitSpawnUtility
 {

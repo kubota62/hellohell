@@ -3,7 +3,7 @@ using Unity.Entities;
 
 /// <summary>
 /// Health が 0 以下になった ActorBody をゲーム世界から除去するシステム。
-/// Player のゲームオーバー処理は未設計なので、現時点では Enemy などの非 Player だけを破棄する。
+/// Player のゲームオーバー処理は未設計のため、現時点では非 Player だけを破棄する。
 /// </summary>
 [BurstCompile]
 [UpdateAfter(typeof(ActorDamageEventSystem))]

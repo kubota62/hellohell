@@ -6,7 +6,7 @@ using Unity.Transforms;
 
 /// <summary>
 /// AuraAttackRequest を消費し、範囲内の敵 Actor へ DamageEvent を積むシステム。
-/// Actor の検索は空間ハッシュで近傍セルに絞り、敵数が増えても総当たりにならないようにする。
+/// Actor の検索は空間ハッシュで近隣セルに絞り、数が増えても総当たりにならないようにする。
 /// </summary>
 [BurstCompile]
 [UpdateAfter(typeof(AttackRequestSystem))]
