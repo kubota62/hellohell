@@ -3,7 +3,7 @@ using UnityEngine.Serialization;
 
 /// <summary>
 /// 攻撃の調整値をエディタ上で管理する ScriptableObject。
-/// Projectile は攻撃手段の一種として扱い、将来的な Aura や Beam も同じ入口から追加する。
+/// Projectile は攻撃手段の一種として扱い、Aura や Beam も同じ入口から追加する。
 /// </summary>
 [CreateAssetMenu(menuName = "HelloHell/Definitions/Attack Definition")]
 public class AttackDefinitionAsset : ScriptableObject
@@ -19,6 +19,12 @@ public class AttackDefinitionAsset : ScriptableObject
     public float Lifetime = 5f;
     public float Scale = 0.5f;
 
+    [Header("Projectile Modifiers")]
+    public ProjectileModifierFlags ProjectileModifiers = ProjectileModifierFlags.None;
+    public int PierceCount;
+    public int ChainCount;
+    public float ImpactAreaRadius;
+
     public AttackDefinitionData ToRuntimeDefinition()
     {
         return new AttackDefinitionData
@@ -32,6 +38,10 @@ public class AttackDefinitionAsset : ScriptableObject
             ProjectileSpeed = ProjectileSpeed,
             Lifetime = Lifetime,
             Scale = Scale,
+            ProjectileModifiers = ProjectileModifiers,
+            PierceCount = PierceCount,
+            ChainCount = ChainCount,
+            ImpactAreaRadius = ImpactAreaRadius,
         };
     }
 }

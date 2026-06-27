@@ -17,4 +17,8 @@ public struct ProjectileAttackRequest : IComponentData
     public float HitRadius;
     public float Lifetime;
     public float Scale;
+    public ProjectileModifierFlags Modifiers;
+    public int PierceCount;
+    public int ChainCount;
+    public float ImpactAreaRadius;
 }

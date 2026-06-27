@@ -119,12 +119,84 @@ public partial struct ProjectileSpawnSystem : ISystem
             Remaining = value.Lifetime,
         });
 
+        ApplyProjectileModifiers(entityManager, projectileEntity, value);
+
         if (!entityManager.HasComponent<PooledInstance>(projectileEntity))
         {
             entityManager.AddComponentData(projectileEntity, new PooledInstance
             {
                 SourcePrefab = projectilePrefab,
             });
+        }
+    }
+
+    private static void ApplyProjectileModifiers(
+        EntityManager entityManager,
+        Entity projectileEntity,
+        ProjectileAttackRequest value)
+    {
+        SetTag<PiercingProjectile>(
+            entityManager,
+            projectileEntity,
+            HasModifier(value.Modifiers, ProjectileModifierFlags.Piercing));
+        SetTag<ChainingProjectile>(
+            entityManager,
+            projectileEntity,
+            HasModifier(value.Modifiers, ProjectileModifierFlags.Chaining));
+        SetTag<AreaOfEffectProjectile>(
+            entityManager,
+            projectileEntity,
+            HasModifier(value.Modifiers, ProjectileModifierFlags.AreaOfEffect));
+
+        var hasState = HasModifier(value.Modifiers, ProjectileModifierFlags.Piercing) ||
+            HasModifier(value.Modifiers, ProjectileModifierFlags.Chaining) ||
+            HasModifier(value.Modifiers, ProjectileModifierFlags.AreaOfEffect);
+
+        if (hasState)
+        {
+            var state = new ProjectileModifierState
+            {
+                PierceRemaining = value.PierceCount,
+                ChainRemaining = value.ChainCount,
+                ImpactAreaRadius = value.ImpactAreaRadius,
+            };
+
+            if (entityManager.HasComponent<ProjectileModifierState>(projectileEntity))
+            {
+                entityManager.SetComponentData(projectileEntity, state);
+            }
+            else
+            {
+                entityManager.AddComponentData(projectileEntity, state);
+            }
+        }
+        else if (entityManager.HasComponent<ProjectileModifierState>(projectileEntity))
+        {
+            entityManager.RemoveComponent<ProjectileModifierState>(projectileEntity);
+        }
+    }
+
+    private static bool HasModifier(ProjectileModifierFlags value, ProjectileModifierFlags flag)
+    {
+        return (value & flag) != 0;
+    }
+
+    private static void SetTag<T>(
+        EntityManager entityManager,
+        Entity entity,
+        bool enabled)
+        where T : unmanaged, IComponentData
+    {
+        if (enabled)
+        {
+            if (!entityManager.HasComponent<T>(entity))
+            {
+                entityManager.AddComponent<T>(entity);
+            }
+        }
+        else if (entityManager.HasComponent<T>(entity))
+        {
+            entityManager.RemoveComponent<T>(entity);
         }
     }
 }

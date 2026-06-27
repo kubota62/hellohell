@@ -167,6 +167,10 @@ public partial struct AttackRequestSystem : ISystem
             HitRadius = definition.HitRadius,
             Lifetime = definition.Lifetime,
             Scale = definition.Scale,
+            Modifiers = definition.ProjectileModifiers,
+            PierceCount = definition.PierceCount,
+            ChainCount = definition.ChainCount,
+            ImpactAreaRadius = definition.ImpactAreaRadius,
         });
     }
 

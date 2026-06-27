@@ -15,6 +15,10 @@ public struct AttackDefinitionElement : IBufferElementData
     public float ProjectileSpeed;
     public float Lifetime;
     public float Scale;
+    public ProjectileModifierFlags ProjectileModifiers;
+    public int PierceCount;
+    public int ChainCount;
+    public float ImpactAreaRadius;
 
     public static AttackDefinitionElement FromDefinition(AttackDefinitionData definition)
     {
@@ -29,6 +33,10 @@ public struct AttackDefinitionElement : IBufferElementData
             ProjectileSpeed = definition.ProjectileSpeed,
             Lifetime = definition.Lifetime,
             Scale = definition.Scale,
+            ProjectileModifiers = definition.ProjectileModifiers,
+            PierceCount = definition.PierceCount,
+            ChainCount = definition.ChainCount,
+            ImpactAreaRadius = definition.ImpactAreaRadius,
         };
     }
 
@@ -45,6 +53,10 @@ public struct AttackDefinitionElement : IBufferElementData
             ProjectileSpeed = ProjectileSpeed,
             Lifetime = Lifetime,
             Scale = Scale,
+            ProjectileModifiers = ProjectileModifiers,
+            PierceCount = PierceCount,
+            ChainCount = ChainCount,
+            ImpactAreaRadius = ImpactAreaRadius,
         };
     }
 }

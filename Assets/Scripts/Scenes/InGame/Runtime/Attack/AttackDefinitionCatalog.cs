@@ -22,6 +22,10 @@ public static class AttackDefinitionCatalog
                     ProjectileSpeed = 0f,
                     Lifetime = 0f,
                     Scale = 1f,
+                    ProjectileModifiers = ProjectileModifierFlags.None,
+                    PierceCount = 0,
+                    ChainCount = 0,
+                    ImpactAreaRadius = 0f,
                 };
 
             case AttackDefinitionId.BasicProjectile:
@@ -37,6 +41,10 @@ public static class AttackDefinitionCatalog
                     ProjectileSpeed = 10f,
                     Lifetime = 5f,
                     Scale = 0.5f,
+                    ProjectileModifiers = ProjectileModifierFlags.None,
+                    PierceCount = 0,
+                    ChainCount = 0,
+                    ImpactAreaRadius = 0f,
                 };
         }
     }

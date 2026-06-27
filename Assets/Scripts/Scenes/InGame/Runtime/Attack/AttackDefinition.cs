@@ -9,8 +9,8 @@ public enum AttackDefinitionId
 }
 
 /// <summary>
-/// 攻撃の実行方法。
-/// いまは Projectile のみ実装し、他の種類は同じマスタ窓口から追加できるように予約しておく。
+/// 攻撃の実行方式。
+/// Projectile、Aura、Beam などを同じマスタ窓口から追加できるようにする。
 /// </summary>
 public enum AttackKind : byte
 {
@@ -21,8 +21,20 @@ public enum AttackKind : byte
 }
 
 /// <summary>
+/// Projectile 攻撃に合成できる追加性質。
+/// 複数の性質を組み合わせられるよう、単一enum分岐ではなくビットフラグで運ぶ。
+/// </summary>
+public enum ProjectileModifierFlags : byte
+{
+    None = 0,
+    Piercing = 1 << 0,
+    Chaining = 1 << 1,
+    AreaOfEffect = 1 << 2,
+}
+
+/// <summary>
 /// 攻撃マスタから取得するランタイム用の調整値。
-/// 共通値と Projectile 固有値を同じ構造体に置き、攻撃手段が増えたら必要な項目を段階的に分離する。
+/// 共通値と Projectile 固有値を同じ構造体に置き、必要に応じて段階的に分離する。
 /// </summary>
 public struct AttackDefinitionData
 {
@@ -36,4 +48,8 @@ public struct AttackDefinitionData
     public float ProjectileSpeed;
     public float Lifetime;
     public float Scale;
+    public ProjectileModifierFlags ProjectileModifiers;
+    public int PierceCount;
+    public int ChainCount;
+    public float ImpactAreaRadius;
 }
