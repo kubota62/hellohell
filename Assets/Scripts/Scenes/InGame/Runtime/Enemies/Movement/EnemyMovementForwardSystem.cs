@@ -7,9 +7,10 @@ using Unity.Transforms;
 
 /// <summary>
 /// EnemyMovementForward を持つ Enemy を Player へまっすぐ接近させるシステム。
-/// Player 自身は Job 側の WithNone(Player) で対象から外し、操作入力による移動と分離する。
+/// Player に重なる距離まで入った場合は、最低距離を保つように押し戻す。
 /// </summary>
 [BurstCompile]
+[UpdateBefore(typeof(TransformSystemGroup))]
 public partial struct EnemyMovementForwardSystem : ISystem
 {
     [BurstCompile]
@@ -39,7 +40,7 @@ public partial struct EnemyMovementForwardSystem : ISystem
 
 /// <summary>
 /// 直進型の Enemy を移動させる Job。
-/// 少しだけ横方向のレーン差を入れて、敵同士が完全に重なりにくい接近軌道にする。
+/// 横方向のレーン差を少し入れて、敵同士が完全に重なりにくい接近軌道にする。
 /// </summary>
 [BurstCompile]
 [WithAll(typeof(ActorBody))]
@@ -48,6 +49,9 @@ public partial struct EnemyMovementForwardSystem : ISystem
 [WithNone(typeof(Player))]
 public partial struct EnemyMovementForwardJob : IJobEntity
 {
+    const float PersonalSpace = 3.5f;
+    const float PushBackSpeed = 4f;
+
     public float3 PlayerPosition;
     public float DeltaTime;
 
@@ -65,27 +69,41 @@ public partial struct EnemyMovementForwardJob : IJobEntity
         var distance = math.length(toPlayer);
         if (distance < 0.001f)
         {
+            transform.Position += new float3(1f, 0f, 0f) * PushBackSpeed * DeltaTime;
             return;
         }
 
         var forward = toPlayer / distance;
+        if (distance < PersonalSpace)
+        {
+            transform.Position -= forward * PushBackSpeed * DeltaTime;
+            transform.Rotation = quaternion.LookRotationSafe(forward, math.up());
+            RotateTurret(actorBody, DeltaTime);
+            return;
+        }
+
         var tangent = new float3(-forward.z, 0f, forward.x);
         var laneOffset = ((entity.Index % 7) - 3) * 0.04f;
         var desiredDirection = math.normalizesafe(forward + tangent * laneOffset, forward);
 
         var speed = math.lerp(1.6f, 2.8f, math.saturate(distance / 18f));
-        if (distance < 2.0f)
+        if (distance < 6f)
         {
-            speed *= 0.35f;
+            speed *= math.saturate((distance - PersonalSpace) / (6f - PersonalSpace));
         }
 
         transform.Position += desiredDirection * speed * DeltaTime;
         transform.Rotation = quaternion.LookRotationSafe(desiredDirection, math.up());
 
-        // 接近中も敵のシルエットが読めるように砲塔を回転させる。
+        RotateTurret(actorBody, DeltaTime);
+    }
+
+    private void RotateTurret(in ActorBody actorBody, float deltaTime)
+    {
+        // 接近中も敵のシルエットが読めるように砲塔をゆっくり回転させる。
         if (TransformLookup.HasComponent(actorBody.Turret))
         {
-            var spin = quaternion.RotateY(DeltaTime * math.PI);
+            var spin = quaternion.RotateY(deltaTime * math.PI);
             var turretTrans = TransformLookup[actorBody.Turret];
             turretTrans.Rotation = math.mul(spin, turretTrans.Rotation);
             TransformLookup[actorBody.Turret] = turretTrans;

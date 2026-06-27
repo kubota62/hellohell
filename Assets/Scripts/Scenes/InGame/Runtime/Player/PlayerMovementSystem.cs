@@ -5,11 +5,12 @@ using Unity.Transforms;
 
 /// <summary>
 /// 共有の PlayerInput エンティティを読み、Player の ActorBody を移動させる。
-/// Enemy 移動より先に実行し、AI が最新の Player 位置を参照できるようにする。
+/// LocalTransform の変更を同フレームで LocalToWorld に反映するため、TransformSystemGroup より前に実行する。
 /// </summary>
 [BurstCompile]
 [UpdateBefore(typeof(EnemyMovementForwardSystem))]
 [UpdateBefore(typeof(EnemyMovementRandomSystem))]
+[UpdateBefore(typeof(TransformSystemGroup))]
 public partial struct PlayerMovementSystem : ISystem
 {
     const float MoveSpeed = 5f;

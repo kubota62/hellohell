@@ -7,10 +7,13 @@ using Random = Unity.Mathematics.Random;
 
 /// <summary>
 /// 初期 Player と継続的な Enemy を ActorBody プレハブから生成するシステム。
-/// Enemy は定義バッファまたは EnemyDefinitionCatalog から種類、移動タグ、武器構成、見た目を選ぶ。
+/// 生成直後の位置を同フレームの描画に反映するため、TransformSystemGroup より前に実行する。
 /// </summary>
+[UpdateBefore(typeof(TransformSystemGroup))]
 public partial struct ActorSpawnSystem : ISystem
 {
+    const float InitialEnemySpawnDelay = 1f;
+
     private Random Rand;
     private int spawnedCount;
     private float spawnTimer;
@@ -30,6 +33,7 @@ public partial struct ActorSpawnSystem : ISystem
         {
             SpawnActor(true, float3.zero, ref state);
             spawnedCount++;
+            spawnTimer = -InitialEnemySpawnDelay;
             return;
         }
 

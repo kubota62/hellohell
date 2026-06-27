@@ -10,6 +10,9 @@ using Unity.Transforms;
 [UpdateBefore(typeof(ProjectileSpawnSystem))]
 public partial struct AttackRequestSystem : ISystem
 {
+    const float EnemyMinFireDistance = 5f;
+    const float EnemyMaxFireDistance = 24f;
+
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
@@ -67,17 +70,28 @@ public partial struct AttackRequestSystem : ISystem
         DynamicBuffer<AttackDefinitionElement> attackDefinitions,
         float deltaTime)
     {
-        foreach (var (_, cooldown, actorEntity) in
-                 SystemAPI.Query<RefRO<ActorBody>, RefRW<AttackCooldown>>()
+        var hasPlayer = SystemAPI.TryGetSingletonEntity<Player>(out var playerEntity) &&
+            SystemAPI.HasComponent<LocalTransform>(playerEntity);
+        var playerPosition = hasPlayer
+            ? SystemAPI.GetComponent<LocalTransform>(playerEntity).Position
+            : float3.zero;
+
+        foreach (var (_, cooldown, transform, actorEntity) in
+                 SystemAPI.Query<RefRO<ActorBody>, RefRW<AttackCooldown>, RefRO<LocalTransform>>()
                      .WithAll<Enemy>()
                      .WithEntityAccess())
         {
+            var distanceToPlayer = math.distance(transform.ValueRO.Position, playerPosition);
+            var canFire = hasPlayer &&
+                distanceToPlayer >= EnemyMinFireDistance &&
+                distanceToPlayer <= EnemyMaxFireDistance;
+
             TryCreateAttackRequest(
                 ref state,
                 actorEntity,
                 cooldown,
                 ResolveAttackDefinitionId(ref state, actorEntity),
-                true,
+                canFire,
                 ecb,
                 hasAttackDefinitions,
                 attackDefinitions,

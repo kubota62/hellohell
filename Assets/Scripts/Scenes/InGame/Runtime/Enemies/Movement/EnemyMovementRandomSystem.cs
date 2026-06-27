@@ -7,9 +7,10 @@ using Unity.Transforms;
 
 /// <summary>
 /// EnemyMovementRandom を持つ Enemy を Player へ接近させつつ、ノイズで横方向に揺らすシステム。
-/// Player 自身は Job 側の WithNone(Player) で対象から外し、操作入力による移動と分離する。
+/// Player に重なる距離まで入った場合は、最低距離を保つように押し戻す。
 /// </summary>
 [BurstCompile]
+[UpdateBefore(typeof(TransformSystemGroup))]
 public partial struct EnemyMovementRandomSystem : ISystem
 {
     [BurstCompile]
@@ -40,7 +41,7 @@ public partial struct EnemyMovementRandomSystem : ISystem
 
 /// <summary>
 /// 揺れながら接近する Enemy を移動させる Job。
-/// 時間変化するノイズで回り込み方向を作り、単純な直進敵と違う動きに見せる。
+/// ノイズで回り込み方向を作り、単純な直進敵と違う動きに見せる。
 /// </summary>
 [BurstCompile]
 [WithAll(typeof(ActorBody))]
@@ -49,6 +50,9 @@ public partial struct EnemyMovementRandomSystem : ISystem
 [WithNone(typeof(Player))]
 public partial struct EnemyMovementRandomJob : IJobEntity
 {
+    const float PersonalSpace = 4f;
+    const float PushBackSpeed = 4f;
+
     public float3 PlayerPosition;
     public float DeltaTime;
     public float ElapsedTime;
@@ -67,33 +71,46 @@ public partial struct EnemyMovementRandomJob : IJobEntity
         var distance = math.length(toPlayer);
         if (distance < 0.001f)
         {
+            transform.Position += new float3(1f, 0f, 0f) * PushBackSpeed * DeltaTime;
             return;
         }
 
         var forward = toPlayer / distance;
+        if (distance < PersonalSpace)
+        {
+            transform.Position -= forward * PushBackSpeed * DeltaTime;
+            transform.Rotation = quaternion.LookRotationSafe(forward, math.up());
+            RotateTurret(actorBody, DeltaTime);
+            return;
+        }
+
         var tangent = new float3(-forward.z, 0f, forward.x);
         var weave = noise.cnoise(new float3(
             transform.Position.x * 0.12f + entity.Index * 0.17f,
             transform.Position.z * 0.12f,
             ElapsedTime * 0.35f));
 
-        // プレイヤーへ接近しながら横方向へ流し、ゆるい包囲を作る。
         var encircle = tangent * weave * 0.65f;
         var desiredDirection = math.normalizesafe(forward + encircle, forward);
 
         var speed = math.lerp(1.3f, 2.4f, math.saturate(distance / 16f));
-        if (distance < 2.5f)
+        if (distance < 6f)
         {
-            speed *= 0.25f;
+            speed *= math.saturate((distance - PersonalSpace) / (6f - PersonalSpace));
         }
 
         transform.Position += desiredDirection * speed * DeltaTime;
         transform.Rotation = quaternion.LookRotationSafe(desiredDirection, math.up());
 
+        RotateTurret(actorBody, DeltaTime);
+    }
+
+    private void RotateTurret(in ActorBody actorBody, float deltaTime)
+    {
         // 直進型と見分けやすいシルエットになるように砲塔を回転させる。
         if (TransformLookup.HasComponent(actorBody.Turret))
         {
-            var spin = quaternion.RotateY(DeltaTime * math.PI);
+            var spin = quaternion.RotateY(deltaTime * math.PI);
             var turretTrans = TransformLookup[actorBody.Turret];
             turretTrans.Rotation = math.mul(spin, turretTrans.Rotation);
             TransformLookup[actorBody.Turret] = turretTrans;

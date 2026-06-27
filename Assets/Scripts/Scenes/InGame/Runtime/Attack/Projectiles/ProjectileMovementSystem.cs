@@ -3,14 +3,20 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 
+/// <summary>
+/// ProjectileMotion に従って Projectile を移動し、地面より下へ落ちた弾の寿命を切る。
+/// TransformSystemGroup より前に実行して、移動結果を同フレームの描画へ反映する。
+/// </summary>
+[BurstCompile]
+[UpdateBefore(typeof(TransformSystemGroup))]
 public partial struct ProjectileMovementSystem : ISystem
 {
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
-        state.RequireForUpdate<Config>();  // Configがあるまで実行しない
+        state.RequireForUpdate<Config>();
     }
-    
+
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
@@ -32,12 +38,12 @@ public partial struct ProjectileMovementJob: IJobEntity
     {
         var gravity = new float3(0, -9.81f, 0);
         transform.Position += motion.Velocity * DeltaTime;
-        
+
         if (transform.Position.y < 0)
         {
             lifetime.Remaining = 0f;
         }
-        
+
         motion.Velocity += gravity * DeltaTime;
     }
 }
