@@ -2,7 +2,7 @@ using Unity.Entities;
 
 /// <summary>
 /// Broadphase クエリ用の空間ハッシュへ挿入するエンティティを示す。
-/// このマーカーと Team、Hitbox、LocalTransform を読むことで、ハッシュ構築を汎用化できる。
+/// Team、Hitbox、LocalTransform と組み合わせて、命中判定用のグリッドを作る。
 /// </summary>
 public struct SpatialHashTarget : IComponentData
 {
