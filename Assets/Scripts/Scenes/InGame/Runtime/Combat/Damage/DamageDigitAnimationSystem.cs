@@ -12,8 +12,9 @@ using Unity.Transforms;
 public partial struct DamageDigitAnimationSystem : ISystem
 {
     // 俯瞰カメラの表示面に合わせ、数字用Quadが画面正面を向く固定回転。
+    // Unity Transform の Euler と mathematics の Euler は回転順でズレるため、シーン上のカメラ姿勢を Quaternion で固定する。
     static readonly quaternion BillboardRotation =
-        quaternion.Euler(math.radians(50f), math.radians(-30f), 0f);
+        new quaternion(0.40821788f, -0.23456968f, 0.10938163f, 0.8754261f);
 
     [BurstCompile]
     public void OnCreate(ref SystemState state)

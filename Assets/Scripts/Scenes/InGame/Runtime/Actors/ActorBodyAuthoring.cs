@@ -29,6 +29,7 @@ public class ActorBodyAuthoring : MonoBehaviour
             AddComponent(actorEntity, new Hitbox { Radius = authoring.HitRadius });
             AddComponent<SpatialHashTarget>(actorEntity);
             AddComponent<GameplayActive>(actorEntity);
+            AddComponent<MoveIntent>(actorEntity);
             AddComponent(actorEntity, new AttackLoadout
             {
                 PrimaryAttack = AttackDefinitionId.BasicProjectile,

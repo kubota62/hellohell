@@ -72,6 +72,7 @@ public partial struct ActorSpawnSystem : ISystem
         var actorEntity = entityManager.Instantiate(config.ActorPrefab);
         var rotation = Quaternion.Euler(0f, Rand.NextFloat(0f, 360f), 0f);
         entityManager.SetComponentData(actorEntity, LocalTransform.FromPositionRotation(position, rotation));
+        ResetMoveIntent(entityManager, actorEntity);
 
         if (isPlayer)
         {
@@ -180,6 +181,24 @@ public partial struct ActorSpawnSystem : ISystem
         else
         {
             entityManager.AddComponentData(entity, color);
+        }
+    }
+
+    private static void ResetMoveIntent(EntityManager entityManager, Entity actorEntity)
+    {
+        var intent = new MoveIntent
+        {
+            Direction = float3.zero,
+            Magnitude = 0f,
+        };
+
+        if (entityManager.HasComponent<MoveIntent>(actorEntity))
+        {
+            entityManager.SetComponentData(actorEntity, intent);
+        }
+        else
+        {
+            entityManager.AddComponentData(actorEntity, intent);
         }
     }
 }

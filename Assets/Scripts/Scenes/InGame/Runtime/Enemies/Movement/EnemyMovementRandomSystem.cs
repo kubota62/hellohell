@@ -6,11 +6,11 @@ using Unity.Mathematics;
 using Unity.Transforms;
 
 /// <summary>
-/// EnemyMovementRandom を持つ Enemy を Player へ接近させつつ、ノイズで横方向に揺らすシステム。
-/// Player に重なる距離まで入った場合は、最低距離を保つように押し戻す。
+/// EnemyMovementRandom を持つ Enemy の移動意図を作るシステム。
+/// ノイズで横方向に揺らしつつ、座標更新は共通の適用システムへ任せる。
 /// </summary>
 [BurstCompile]
-[UpdateBefore(typeof(TransformSystemGroup))]
+[UpdateBefore(typeof(EnemyMoveIntentApplySystem))]
 public partial struct EnemyMovementRandomSystem : ISystem
 {
     [BurstCompile]
@@ -25,12 +25,11 @@ public partial struct EnemyMovementRandomSystem : ISystem
     {
         var playerEntity = SystemAPI.GetSingletonEntity<Player>();
         var playerPosition = SystemAPI.GetComponent<LocalTransform>(playerEntity).Position;
-        var dt = SystemAPI.Time.DeltaTime;
 
         var job = new EnemyMovementRandomJob
         {
             PlayerPosition = playerPosition,
-            DeltaTime = dt,
+            DeltaTime = SystemAPI.Time.DeltaTime,
             ElapsedTime = (float)SystemAPI.Time.ElapsedTime,
             TransformLookup = SystemAPI.GetComponentLookup<LocalTransform>(false)
         };
@@ -40,7 +39,7 @@ public partial struct EnemyMovementRandomSystem : ISystem
 }
 
 /// <summary>
-/// 揺れながら接近する Enemy を移動させる Job。
+/// 揺れながら接近する Enemy の移動方向と速度を MoveIntent に書き込む Job。
 /// ノイズで回り込み方向を作り、単純な直進敵と違う動きに見せる。
 /// </summary>
 [BurstCompile]
@@ -57,13 +56,16 @@ public partial struct EnemyMovementRandomJob : IJobEntity
     public float DeltaTime;
     public float ElapsedTime;
 
-    // 各 ActorBody は自分の子階層の砲塔だけを書き換える前提なので、並列書き込みを許可する。
     [NativeDisableParallelForRestriction]
     [NativeDisableContainerSafetyRestriction]
     public ComponentLookup<LocalTransform> TransformLookup;
 
     [BurstCompile]
-    public void Execute(Entity entity, ref LocalTransform transform, in ActorBody actorBody)
+    public void Execute(
+        Entity entity,
+        in LocalTransform transform,
+        in ActorBody actorBody,
+        ref MoveIntent moveIntent)
     {
         var toPlayer = PlayerPosition - transform.Position;
         toPlayer.y = 0f;
@@ -71,15 +73,16 @@ public partial struct EnemyMovementRandomJob : IJobEntity
         var distance = math.length(toPlayer);
         if (distance < 0.001f)
         {
-            transform.Position += new float3(1f, 0f, 0f) * PushBackSpeed * DeltaTime;
+            moveIntent.Direction = new float3(1f, 0f, 0f);
+            moveIntent.Magnitude = PushBackSpeed;
             return;
         }
 
         var forward = toPlayer / distance;
         if (distance < PersonalSpace)
         {
-            transform.Position -= forward * PushBackSpeed * DeltaTime;
-            transform.Rotation = quaternion.LookRotationSafe(forward, math.up());
+            moveIntent.Direction = -forward;
+            moveIntent.Magnitude = PushBackSpeed;
             RotateTurret(actorBody, DeltaTime);
             return;
         }
@@ -99,9 +102,8 @@ public partial struct EnemyMovementRandomJob : IJobEntity
             speed *= math.saturate((distance - PersonalSpace) / (6f - PersonalSpace));
         }
 
-        transform.Position += desiredDirection * speed * DeltaTime;
-        transform.Rotation = quaternion.LookRotationSafe(desiredDirection, math.up());
-
+        moveIntent.Direction = desiredDirection;
+        moveIntent.Magnitude = speed;
         RotateTurret(actorBody, DeltaTime);
     }
 
