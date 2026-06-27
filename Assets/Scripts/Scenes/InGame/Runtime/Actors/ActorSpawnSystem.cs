@@ -1,4 +1,3 @@
-using Unity.Burst;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Rendering;
@@ -16,7 +15,6 @@ public partial struct ActorSpawnSystem : ISystem
     private int spawnedCount;
     private float spawnTimer;
 
-    [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
         Rand = new Random(123);
@@ -26,7 +24,6 @@ public partial struct ActorSpawnSystem : ISystem
         state.RequireForUpdate<Config>();
     }
 
-    [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
         if (spawnedCount == 0)
@@ -47,7 +44,6 @@ public partial struct ActorSpawnSystem : ISystem
         }
     }
 
-    [BurstCompile]
     private float3 GetEnemySpawnPosition(in Config config, ref SystemState state)
     {
         var playerPosition = float3.zero;
@@ -64,20 +60,18 @@ public partial struct ActorSpawnSystem : ISystem
         return playerPosition + offset;
     }
 
-    [BurstCompile]
     private void SpawnActor(bool isPlayer, float3 position, ref SystemState state)
     {
         var config = SystemAPI.GetSingleton<Config>();
-        var ecb = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
-            .CreateCommandBuffer(state.WorldUnmanaged);
+        var entityManager = state.EntityManager;
 
-        var actorEntity = ecb.Instantiate(config.ActorPrefab);
-        Quaternion rot = Quaternion.Euler(0f, Rand.NextFloat(0f, 360f), 0f);
-        ecb.SetComponent(actorEntity, LocalTransform.FromPositionRotation(position, rot));
+        var actorEntity = entityManager.Instantiate(config.ActorPrefab);
+        var rotation = Quaternion.Euler(0f, Rand.NextFloat(0f, 360f), 0f);
+        entityManager.SetComponentData(actorEntity, LocalTransform.FromPositionRotation(position, rotation));
 
         if (isPlayer)
         {
-            AddPlayerComponents(ecb, actorEntity);
+            AddPlayerComponents(entityManager, actorEntity);
         }
         else
         {
@@ -88,62 +82,100 @@ public partial struct ActorSpawnSystem : ISystem
             var definition = hasEnemyDefinitions
                 ? EnemyDefinitionCatalog.Get(enemyDefinitions, enemyTypeId)
                 : EnemyDefinitionCatalog.Get(enemyTypeId);
-            AddEnemyComponents(ecb, actorEntity, definition);
+            AddEnemyComponents(entityManager, actorEntity, definition);
         }
+
+        ApplySpawnedActorColor(ref state, actorEntity);
     }
 
-    private void AddPlayerComponents(EntityCommandBuffer ecb, Entity actorEntity)
+    private static void AddPlayerComponents(EntityManager entityManager, Entity actorEntity)
     {
-        ecb.AddComponent<Player>(actorEntity);
-        ecb.AddComponent<CameraTarget>(actorEntity);
-        ecb.SetComponent(actorEntity, new Team { Value = TeamId.Player });
-        ecb.SetComponent(actorEntity, new AttackLoadout
+        entityManager.AddComponent<Player>(actorEntity);
+        entityManager.AddComponent<CameraTarget>(actorEntity);
+        entityManager.SetComponentData(actorEntity, new Team { Value = TeamId.Player });
+        entityManager.SetComponentData(actorEntity, new AttackLoadout
         {
             PrimaryAttack = AttackDefinitionId.BasicProjectile,
         });
-        ecb.AddComponent(actorEntity, new AttackCooldown());
+        entityManager.SetComponentData(actorEntity, new AttackCooldown());
 
         var playerColor = new URPMaterialPropertyBaseColor { Value = new float4(1f, 1f, 1f, 1f) };
-        ecb.AddComponent(actorEntity, playerColor);
+        SetOrAddColor(entityManager, actorEntity, playerColor);
     }
 
-    private void AddEnemyComponents(
-        EntityCommandBuffer ecb,
+    private static void AddEnemyComponents(
+        EntityManager entityManager,
         Entity actorEntity,
         EnemyDefinitionData definition)
     {
-        ecb.AddComponent<Enemy>(actorEntity);
-        ecb.AddComponent(actorEntity, new EnemyTypeId { Value = definition.TypeId });
-        ecb.SetComponent(actorEntity, new Team { Value = TeamId.Enemy });
-        ecb.SetComponent(actorEntity, Health.FromMax(definition.MaxHealth));
-        ecb.SetComponent(actorEntity, new Hitbox { Radius = definition.HitRadius });
-        ecb.SetComponent(actorEntity, new AttackLoadout
+        entityManager.AddComponent<Enemy>(actorEntity);
+        entityManager.AddComponentData(actorEntity, new EnemyTypeId { Value = definition.TypeId });
+        entityManager.SetComponentData(actorEntity, new Team { Value = TeamId.Enemy });
+        entityManager.SetComponentData(actorEntity, Health.FromMax(definition.MaxHealth));
+        entityManager.SetComponentData(actorEntity, new Hitbox { Radius = definition.HitRadius });
+        entityManager.SetComponentData(actorEntity, new AttackLoadout
         {
             PrimaryAttack = definition.PrimaryAttack,
         });
-        ecb.AddComponent(actorEntity, new AttackCooldown());
+        entityManager.SetComponentData(actorEntity, new AttackCooldown());
 
         switch (definition.Movement)
         {
             case EnemyMovementKind.Random:
-                ecb.AddComponent<EnemyMovementRandom>(actorEntity);
+                entityManager.AddComponent<EnemyMovementRandom>(actorEntity);
                 break;
 
             case EnemyMovementKind.Forward:
             default:
-                ecb.AddComponent<EnemyMovementForward>(actorEntity);
+                entityManager.AddComponent<EnemyMovementForward>(actorEntity);
                 break;
         }
 
-        ecb.AddComponent(actorEntity, new URPMaterialPropertyBaseColor
+        SetOrAddColor(entityManager, actorEntity, new URPMaterialPropertyBaseColor
         {
             Value = definition.Color,
         });
     }
 
-    static float4 RandomColor(ref Random Rand)
+    private static void ApplySpawnedActorColor(ref SystemState state, Entity actorEntity)
     {
-        var hue = (Rand.NextFloat() + 0.618034005f) % 1;
-        return (Vector4)Color.HSVToRGB(hue, 1, 1);
+        if (!state.EntityManager.HasComponent<ActorBody>(actorEntity) ||
+            !state.EntityManager.HasComponent<URPMaterialPropertyBaseColor>(actorEntity))
+        {
+            return;
+        }
+
+        var actorBody = state.EntityManager.GetComponentData<ActorBody>(actorEntity);
+        var color = state.EntityManager.GetComponentData<URPMaterialPropertyBaseColor>(actorEntity);
+
+        if (state.EntityManager.HasComponent<URPMaterialPropertyBaseColor>(actorBody.Turret))
+        {
+            state.EntityManager.SetComponentData(actorBody.Turret, color);
+        }
+
+        if (state.EntityManager.HasComponent<URPMaterialPropertyBaseColor>(actorBody.Canon))
+        {
+            state.EntityManager.SetComponentData(actorBody.Canon, color);
+        }
+
+        if (state.EntityManager.HasBuffer<SyncColor>(actorEntity))
+        {
+            state.EntityManager.RemoveComponent<SyncColor>(actorEntity);
+        }
+    }
+
+    private static void SetOrAddColor(
+        EntityManager entityManager,
+        Entity entity,
+        URPMaterialPropertyBaseColor color)
+    {
+        if (entityManager.HasComponent<URPMaterialPropertyBaseColor>(entity))
+        {
+            entityManager.SetComponentData(entity, color);
+        }
+        else
+        {
+            entityManager.AddComponentData(entity, color);
+        }
     }
 }

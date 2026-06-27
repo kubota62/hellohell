@@ -4,7 +4,7 @@ using UnityEngine;
 
 /// <summary>
 /// ゲーム全体で共有するプレハブとスポーン設定を ECS の Config に焼き込む。
-/// 旧フィールド名からの移行で既存シーンの参照が消えないよう FormerlySerializedAs を付ける。
+/// 旧フィールド名からの移行で既存シーンの参照が消えないように FormerlySerializedAs を付ける。
 /// </summary>
 public class ConfigAuthoring : MonoBehaviour
 {
@@ -46,4 +46,3 @@ public class ConfigAuthoring : MonoBehaviour
         }
     }
 }
-

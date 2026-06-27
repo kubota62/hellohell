@@ -6,7 +6,7 @@ using UnityEngine.InputSystem;
 
 /// <summary>
 /// Unity Input System のキーボード状態を ECS の PlayerInput コンポーネントへ橋渡しする。
-/// ECS 側の移動・射撃システムは、この入力エンティティを毎フレーム参照する。
+/// ECS 側の移動や射撃システムは、この入力エンティティを毎フレーム参照する。
 /// </summary>
 public class PlayerInputManager : MonoBehaviour
 {
