@@ -42,13 +42,9 @@ public class DefinitionCatalogAuthoring : MonoBehaviour
                 }
             }
 
-            if (enemyBuffer.Length == 0)
-            {
-                enemyBuffer.Add(EnemyDefinitionElement.FromDefinition(
-                    EnemyDefinitionCatalog.Get(EnemyDefinitionCatalog.ForwardEnemy)));
-                enemyBuffer.Add(EnemyDefinitionElement.FromDefinition(
-                    EnemyDefinitionCatalog.Get(EnemyDefinitionCatalog.RandomEnemy)));
-            }
+            EnsureEnemyDefinition(enemyBuffer, EnemyDefinitionCatalog.ForwardEnemy);
+            EnsureEnemyDefinition(enemyBuffer, EnemyDefinitionCatalog.RandomEnemy);
+            EnsureEnemyDefinition(enemyBuffer, EnemyDefinitionCatalog.ChainEnemy);
         }
 
         private static void EnsureAttackDefinition(
@@ -64,6 +60,21 @@ public class DefinitionCatalogAuthoring : MonoBehaviour
             }
 
             attackBuffer.Add(AttackDefinitionElement.FromDefinition(AttackDefinitionCatalog.Get(id)));
+        }
+
+        private static void EnsureEnemyDefinition(
+            DynamicBuffer<EnemyDefinitionElement> enemyBuffer,
+            int typeId)
+        {
+            for (var i = 0; i < enemyBuffer.Length; i++)
+            {
+                if (enemyBuffer[i].TypeId == typeId)
+                {
+                    return;
+                }
+            }
+
+            enemyBuffer.Add(EnemyDefinitionElement.FromDefinition(EnemyDefinitionCatalog.Get(typeId)));
         }
     }
 }

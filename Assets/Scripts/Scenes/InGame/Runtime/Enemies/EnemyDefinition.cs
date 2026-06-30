@@ -2,7 +2,7 @@ using Unity.Mathematics;
 
 /// <summary>
 /// 敵定義が選ぶ移動パターン。
-/// まずは既存の Forward / Random を定義データから切り替える。
+/// 敵の種類が増えても、移動ロジックと数値定義を分けて扱えるようにする。
 /// </summary>
 public enum EnemyMovementKind : byte
 {
@@ -11,8 +11,8 @@ public enum EnemyMovementKind : byte
 }
 
 /// <summary>
-/// ランタイムで使う敵定義の軽量データ。
-/// ScriptableObject や BlobAsset から作る最終形を想定して、Actor 生成時の値をまとめる。
+/// ランタイムで参照する敵定義の軽量データ。
+/// ScriptableObjectから焼き込まれた値を、Actor生成時にまとめて適用する。
 /// </summary>
 public struct EnemyDefinitionData
 {

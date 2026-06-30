@@ -83,10 +83,10 @@ public partial struct ActorSpawnSystem : ISystem
             var hasEnemyDefinitions = SystemAPI.TryGetSingletonBuffer<EnemyDefinitionElement>(
                 out var enemyDefinitions,
                 true);
-            var enemyTypeId = EnemyDefinitionCatalog.PickSpawnType(spawnedCount);
+            var enemySpawnIndex = spawnedCount - 1;
             var definition = hasEnemyDefinitions
-                ? EnemyDefinitionCatalog.Get(enemyDefinitions, enemyTypeId)
-                : EnemyDefinitionCatalog.Get(enemyTypeId);
+                ? EnemyDefinitionCatalog.PickSpawnDefinition(enemyDefinitions, enemySpawnIndex)
+                : EnemyDefinitionCatalog.Get(EnemyDefinitionCatalog.PickSpawnType(enemySpawnIndex));
             AddEnemyComponents(entityManager, actorEntity, definition);
         }
 
