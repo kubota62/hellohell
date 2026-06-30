@@ -127,6 +127,10 @@ public partial struct ActorSpawnSystem : ISystem
 
         switch (definition.Movement)
         {
+            case EnemyMovementKind.Kite:
+                entityManager.AddComponent<EnemyMovementKite>(actorEntity);
+                break;
+
             case EnemyMovementKind.Random:
                 entityManager.AddComponent<EnemyMovementRandom>(actorEntity);
                 break;

@@ -45,6 +45,7 @@ public class DefinitionCatalogAuthoring : MonoBehaviour
             EnsureEnemyDefinition(enemyBuffer, EnemyDefinitionCatalog.ForwardEnemy);
             EnsureEnemyDefinition(enemyBuffer, EnemyDefinitionCatalog.RandomEnemy);
             EnsureEnemyDefinition(enemyBuffer, EnemyDefinitionCatalog.ChainEnemy);
+            EnsureEnemyDefinition(enemyBuffer, EnemyDefinitionCatalog.KiteEnemy);
         }
 
         private static void EnsureAttackDefinition(

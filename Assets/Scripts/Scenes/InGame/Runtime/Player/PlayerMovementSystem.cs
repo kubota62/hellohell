@@ -10,6 +10,7 @@ using Unity.Transforms;
 [BurstCompile]
 [UpdateBefore(typeof(EnemyMovementForwardSystem))]
 [UpdateBefore(typeof(EnemyMovementRandomSystem))]
+[UpdateBefore(typeof(EnemyMovementKiteSystem))]
 [UpdateBefore(typeof(TransformSystemGroup))]
 public partial struct PlayerMovementSystem : ISystem
 {

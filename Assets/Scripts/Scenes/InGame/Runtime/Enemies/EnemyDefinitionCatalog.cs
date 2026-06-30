@@ -10,16 +10,20 @@ public static class EnemyDefinitionCatalog
     public const int ForwardEnemy = 1;
     public const int RandomEnemy = 2;
     public const int ChainEnemy = 3;
+    public const int KiteEnemy = 4;
 
     public static int PickSpawnType(int spawnIndex)
     {
-        switch (spawnIndex % 3)
+        switch (spawnIndex % 4)
         {
             case 1:
                 return RandomEnemy;
 
             case 2:
                 return ChainEnemy;
+
+            case 3:
+                return KiteEnemy;
 
             case 0:
             default:
@@ -44,6 +48,19 @@ public static class EnemyDefinitionCatalog
     {
         switch (typeId)
         {
+            case KiteEnemy:
+                return new EnemyDefinitionData
+                {
+                    TypeId = KiteEnemy,
+                    Movement = EnemyMovementKind.Kite,
+                    MaxHealth = 80,
+                    MoveSpeed = 3.2f,
+                    BodyScale = 0.9f,
+                    HitRadius = 1.8f,
+                    PrimaryAttack = AttackDefinitionId.BasicChainProjectile,
+                    Color = new float4(0.1f, 0.35f, 1f, 1f),
+                };
+
             case ChainEnemy:
                 return new EnemyDefinitionData
                 {

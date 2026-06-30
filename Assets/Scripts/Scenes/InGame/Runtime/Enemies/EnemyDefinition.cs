@@ -8,6 +8,7 @@ public enum EnemyMovementKind : byte
 {
     Forward = 1,
     Random = 2,
+    Kite = 3,
 }
 
 /// <summary>

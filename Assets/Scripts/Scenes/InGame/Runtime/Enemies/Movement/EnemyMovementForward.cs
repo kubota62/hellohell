@@ -1,7 +1,7 @@
 using Unity.Entities;
 
 /// <summary>
-/// Player へ直線的に接近する Enemy を識別するタグコンポーネント。
+/// Playerへ直線的に接近するEnemyを識別するタグコンポーネント。
 /// </summary>
 public struct EnemyMovementForward : IComponentData
 {
