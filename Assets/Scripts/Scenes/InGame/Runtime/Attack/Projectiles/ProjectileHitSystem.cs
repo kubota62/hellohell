@@ -7,6 +7,7 @@ using Unity.Transforms;
 /// <summary>
 /// Projectile と ActorBody の命中を空間ハッシュで判定し、命中先の DamageEvent バッファへダメージを積む。
 /// 貫通弾は命中済み対象を記録し、残り貫通回数がある間は GameplayActive を維持する。
+/// 範囲弾は直撃地点の周囲にいる敵へ追加の DamageEvent を積む。
 /// </summary>
 [BurstCompile]
 public partial struct ProjectileHitSystem : ISystem
@@ -138,9 +139,10 @@ public partial struct ProjectileHitJob : IJobEntity
         int targetIndex)
     {
         var targetEntity = TargetEntities[targetIndex];
-        if (targetEntity == motion.Shooter) return false;
-        if (WasAlreadyHit(hitRecords, targetEntity)) return false;
-        if (!TeamUtility.AreHostile(projectile.Team, TargetTeams[targetIndex].Value)) return false;
+        if (!CanDamageTarget(motion, projectile, hitRecords, targetIndex))
+        {
+            return false;
+        }
 
         var targetPos = TargetTransforms[targetIndex].Position;
         var hitDistance = projectile.HitRadius + TargetHitboxes[targetIndex].Radius;
@@ -150,12 +152,8 @@ public partial struct ProjectileHitJob : IJobEntity
             return false;
         }
 
-        hitRecords.Add(new ProjectileHitRecord { Target = targetEntity });
-        ECB.AppendToBuffer(sortKey, targetEntity, new DamageEvent
-        {
-            Damage = projectile.Damage,
-            Attacker = projectile.Owner,
-        });
+        AddDamage(sortKey, projectile, hitRecords, targetEntity);
+        TryAddAreaDamage(sortKey, motion, projectile, modifierState, hitRecords, targetPos);
 
         if (modifierState.PierceRemaining > 0)
         {
@@ -167,6 +165,85 @@ public partial struct ProjectileHitJob : IJobEntity
         projectileTransform.Scale = 0f;
         ECB.SetComponentEnabled<GameplayActive>(sortKey, projectileEntity, false);
         return true;
+    }
+
+    private void TryAddAreaDamage(
+        int sortKey,
+        in ProjectileMotion motion,
+        in Projectile projectile,
+        ProjectileModifierState modifierState,
+        DynamicBuffer<ProjectileHitRecord> hitRecords,
+        float3 impactPosition)
+    {
+        if (!HasModifier(modifierState.Modifiers, ProjectileModifierFlags.AreaOfEffect))
+        {
+            return;
+        }
+
+        var radius = modifierState.ImpactAreaRadius;
+        if (radius <= 0f)
+        {
+            return;
+        }
+
+        var impactCell = SpatialHashUtility.GetCell(impactPosition, CellSize);
+        var searchRadius = math.max(1, (int)math.ceil(radius / CellSize) + 1);
+
+        for (var x = -searchRadius; x <= searchRadius; x++)
+        {
+            for (var z = -searchRadius; z <= searchRadius; z++)
+            {
+                var hash = SpatialHashUtility.GetHash(impactCell + new int2(x, z));
+                if (!TargetHash.TryGetFirstValue(hash, out var targetIndex, out var iterator))
+                {
+                    continue;
+                }
+
+                do
+                {
+                    if (!CanDamageTarget(motion, projectile, hitRecords, targetIndex))
+                    {
+                        continue;
+                    }
+
+                    var targetPos = TargetTransforms[targetIndex].Position;
+                    var hitDistance = radius + TargetHitboxes[targetIndex].Radius;
+                    if (math.distancesq(impactPosition, targetPos) >= hitDistance * hitDistance)
+                    {
+                        continue;
+                    }
+
+                    AddDamage(sortKey, projectile, hitRecords, TargetEntities[targetIndex]);
+                }
+                while (TargetHash.TryGetNextValue(out targetIndex, ref iterator));
+            }
+        }
+    }
+
+    private bool CanDamageTarget(
+        in ProjectileMotion motion,
+        in Projectile projectile,
+        DynamicBuffer<ProjectileHitRecord> hitRecords,
+        int targetIndex)
+    {
+        var targetEntity = TargetEntities[targetIndex];
+        if (targetEntity == motion.Shooter) return false;
+        if (WasAlreadyHit(hitRecords, targetEntity)) return false;
+        return TeamUtility.AreHostile(projectile.Team, TargetTeams[targetIndex].Value);
+    }
+
+    private void AddDamage(
+        int sortKey,
+        in Projectile projectile,
+        DynamicBuffer<ProjectileHitRecord> hitRecords,
+        Entity targetEntity)
+    {
+        hitRecords.Add(new ProjectileHitRecord { Target = targetEntity });
+        ECB.AppendToBuffer(sortKey, targetEntity, new DamageEvent
+        {
+            Damage = projectile.Damage,
+            Attacker = projectile.Owner,
+        });
     }
 
     private static bool WasAlreadyHit(
@@ -182,5 +259,10 @@ public partial struct ProjectileHitJob : IJobEntity
         }
 
         return false;
+    }
+
+    private static bool HasModifier(ProjectileModifierFlags value, ProjectileModifierFlags flag)
+    {
+        return (value & flag) != 0;
     }
 }

@@ -2,7 +2,7 @@ using Unity.Entities;
 
 /// <summary>
 /// 命中フィルタとダメージ解決に使う Projectile 共通メタデータ。
-/// 移動状態を ProjectileMotion に分けることで、複数の Projectile 移動モデルを共存させる。
+/// 移動状態は ProjectileMotion に分け、複数の Projectile 移動モデルを共存させる。
 /// </summary>
 public struct Projectile : IComponentData
 {
@@ -14,17 +14,18 @@ public struct Projectile : IComponentData
 
 /// <summary>
 /// Projectile の追加性質を保持する共通状態。
-/// タグコンポーネントと併用し、将来の命中システムが必要な性質だけを読めるようにする。
+/// タグコンポーネントと併用し、命中システムが必要な性質だけを読めるようにする。
 /// </summary>
 public struct ProjectileModifierState : IComponentData
 {
+    public ProjectileModifierFlags Modifiers;
     public int PierceRemaining;
     public int ChainRemaining;
     public float ImpactAreaRadius;
 }
 
 /// <summary>
-/// 貫通弾が同じ対象へ連続ヒットしないよう、命中済み対象を記録するバッファ。
+/// 貫通弾や範囲弾が同じ対象へ連続ヒットしないよう、命中済み対象を記録するバッファ。
 /// </summary>
 public struct ProjectileHitRecord : IBufferElementData
 {

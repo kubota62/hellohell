@@ -155,6 +155,7 @@ public partial struct ProjectileSpawnSystem : ISystem
 
         var state = new ProjectileModifierState
         {
+            Modifiers = value.Modifiers,
             PierceRemaining = hasState ? value.PierceCount : 0,
             ChainRemaining = hasState ? value.ChainCount : 0,
             ImpactAreaRadius = hasState ? value.ImpactAreaRadius : 0f,

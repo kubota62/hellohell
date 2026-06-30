@@ -22,7 +22,7 @@ public enum AttackKind : byte
 
 /// <summary>
 /// Projectile 攻撃に合成できる追加性質。
-/// 複数の性質を組み合わせられるよう、単一enum分岐ではなくビットフラグで運ぶ。
+/// 複数の性質を組み合わせられるよう、単一 enum 分岐ではなくビットフラグで扱う。
 /// </summary>
 public enum ProjectileModifierFlags : byte
 {
@@ -34,7 +34,7 @@ public enum ProjectileModifierFlags : byte
 
 /// <summary>
 /// 攻撃マスタから取得するランタイム用の調整値。
-/// 共通値と Projectile 固有値を同じ構造体に置き、必要に応じて段階的に分離する。
+/// 共通値と Projectile 固有値を同じ構造体に置き、必要に応じて段階的に分割する。
 /// </summary>
 public struct AttackDefinitionData
 {
