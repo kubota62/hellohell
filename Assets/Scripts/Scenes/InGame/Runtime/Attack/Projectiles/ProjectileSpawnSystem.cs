@@ -118,6 +118,7 @@ public partial struct ProjectileSpawnSystem : ISystem
         {
             Remaining = value.Lifetime,
         });
+        EnsureProjectileRuntimeBuffers(entityManager, projectileEntity);
 
         ApplyProjectileModifiers(entityManager, projectileEntity, value);
 
@@ -152,28 +153,38 @@ public partial struct ProjectileSpawnSystem : ISystem
             HasModifier(value.Modifiers, ProjectileModifierFlags.Chaining) ||
             HasModifier(value.Modifiers, ProjectileModifierFlags.AreaOfEffect);
 
-        if (hasState)
+        var state = new ProjectileModifierState
         {
-            var state = new ProjectileModifierState
-            {
-                PierceRemaining = value.PierceCount,
-                ChainRemaining = value.ChainCount,
-                ImpactAreaRadius = value.ImpactAreaRadius,
-            };
+            PierceRemaining = hasState ? value.PierceCount : 0,
+            ChainRemaining = hasState ? value.ChainCount : 0,
+            ImpactAreaRadius = hasState ? value.ImpactAreaRadius : 0f,
+        };
 
-            if (entityManager.HasComponent<ProjectileModifierState>(projectileEntity))
-            {
-                entityManager.SetComponentData(projectileEntity, state);
-            }
-            else
-            {
-                entityManager.AddComponentData(projectileEntity, state);
-            }
-        }
-        else if (entityManager.HasComponent<ProjectileModifierState>(projectileEntity))
+        if (entityManager.HasComponent<ProjectileModifierState>(projectileEntity))
         {
-            entityManager.RemoveComponent<ProjectileModifierState>(projectileEntity);
+            entityManager.SetComponentData(projectileEntity, state);
         }
+        else
+        {
+            entityManager.AddComponentData(projectileEntity, state);
+        }
+    }
+
+    private static void EnsureProjectileRuntimeBuffers(
+        EntityManager entityManager,
+        Entity projectileEntity)
+    {
+        if (!entityManager.HasComponent<ProjectileModifierState>(projectileEntity))
+        {
+            entityManager.AddComponentData(projectileEntity, new ProjectileModifierState());
+        }
+
+        if (!entityManager.HasBuffer<ProjectileHitRecord>(projectileEntity))
+        {
+            entityManager.AddBuffer<ProjectileHitRecord>(projectileEntity);
+        }
+
+        entityManager.GetBuffer<ProjectileHitRecord>(projectileEntity).Clear();
     }
 
     private static bool HasModifier(ProjectileModifierFlags value, ProjectileModifierFlags flag)

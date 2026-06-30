@@ -24,6 +24,14 @@ public struct ProjectileModifierState : IComponentData
 }
 
 /// <summary>
+/// 貫通弾が同じ対象へ連続ヒットしないよう、命中済み対象を記録するバッファ。
+/// </summary>
+public struct ProjectileHitRecord : IBufferElementData
+{
+    public Entity Target;
+}
+
+/// <summary>
 /// 命中しても一定回数消えずに貫通する Projectile。
 /// </summary>
 public struct PiercingProjectile : IComponentData

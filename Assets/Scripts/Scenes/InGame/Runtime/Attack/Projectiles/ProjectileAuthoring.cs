@@ -33,6 +33,8 @@ public class ProjectileAuthoring : MonoBehaviour
             AddComponent<SpatialHashTarget>(entity);
             AddComponent<GameplayActive>(entity);
             AddComponent<URPMaterialPropertyBaseColor>(entity);
+            AddComponent<ProjectileModifierState>(entity);
+            AddBuffer<ProjectileHitRecord>(entity);
         }
     }
 }

@@ -6,7 +6,7 @@ using Unity.Transforms;
 
 /// <summary>
 /// Projectile と ActorBody の命中を空間ハッシュで判定し、命中先の DamageEvent バッファへダメージを積む。
-/// PooledInstance の Projectile は命中時に破棄せず GameplayActive を無効化して返却する。
+/// 貫通弾は命中済み対象を記録し、残り貫通回数がある間は GameplayActive を維持する。
 /// </summary>
 [BurstCompile]
 public partial struct ProjectileHitSystem : ISystem
@@ -87,7 +87,9 @@ public partial struct ProjectileHitJob : IJobEntity
         Entity projectileEntity,
         in ProjectileMotion motion,
         in Projectile projectile,
-        ref LocalTransform projectileTransform)
+        ref ProjectileModifierState modifierState,
+        ref LocalTransform projectileTransform,
+        DynamicBuffer<ProjectileHitRecord> hitRecords)
     {
         var projectilePos = projectileTransform.Position;
         var projectileCell = SpatialHashUtility.GetCell(projectilePos, CellSize);
@@ -110,7 +112,9 @@ public partial struct ProjectileHitJob : IJobEntity
                             projectileEntity,
                             motion,
                             projectile,
+                            ref modifierState,
                             ref projectileTransform,
+                            hitRecords,
                             projectilePos,
                             targetIndex))
                     {
@@ -127,11 +131,15 @@ public partial struct ProjectileHitJob : IJobEntity
         Entity projectileEntity,
         in ProjectileMotion motion,
         in Projectile projectile,
+        ref ProjectileModifierState modifierState,
         ref LocalTransform projectileTransform,
+        DynamicBuffer<ProjectileHitRecord> hitRecords,
         float3 projectilePos,
         int targetIndex)
     {
-        if (TargetEntities[targetIndex] == motion.Shooter) return false;
+        var targetEntity = TargetEntities[targetIndex];
+        if (targetEntity == motion.Shooter) return false;
+        if (WasAlreadyHit(hitRecords, targetEntity)) return false;
         if (!TeamUtility.AreHostile(projectile.Team, TargetTeams[targetIndex].Value)) return false;
 
         var targetPos = TargetTransforms[targetIndex].Position;
@@ -142,15 +150,37 @@ public partial struct ProjectileHitJob : IJobEntity
             return false;
         }
 
-        ECB.AppendToBuffer(sortKey, TargetEntities[targetIndex], new DamageEvent
+        hitRecords.Add(new ProjectileHitRecord { Target = targetEntity });
+        ECB.AppendToBuffer(sortKey, targetEntity, new DamageEvent
         {
             Damage = projectile.Damage,
             Attacker = projectile.Owner,
         });
 
+        if (modifierState.PierceRemaining > 0)
+        {
+            modifierState.PierceRemaining--;
+            return true;
+        }
+
         projectileTransform.Position = new float3(0f, -1000f, 0f);
         projectileTransform.Scale = 0f;
         ECB.SetComponentEnabled<GameplayActive>(sortKey, projectileEntity, false);
         return true;
+    }
+
+    private static bool WasAlreadyHit(
+        DynamicBuffer<ProjectileHitRecord> hitRecords,
+        Entity target)
+    {
+        for (var i = 0; i < hitRecords.Length; i++)
+        {
+            if (hitRecords[i].Target == target)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
