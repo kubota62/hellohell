@@ -19,6 +19,8 @@ public struct AttackDefinitionElement : IBufferElementData
     public int PierceCount;
     public int ChainCount;
     public float ImpactAreaRadius;
+    public float ArcAngleDegrees;
+    public float VisualDuration;
 
     public static AttackDefinitionElement FromDefinition(AttackDefinitionData definition)
     {
@@ -37,6 +39,8 @@ public struct AttackDefinitionElement : IBufferElementData
             PierceCount = definition.PierceCount,
             ChainCount = definition.ChainCount,
             ImpactAreaRadius = definition.ImpactAreaRadius,
+            ArcAngleDegrees = definition.ArcAngleDegrees,
+            VisualDuration = definition.VisualDuration,
         };
     }
 
@@ -57,6 +61,8 @@ public struct AttackDefinitionElement : IBufferElementData
             PierceCount = PierceCount,
             ChainCount = ChainCount,
             ImpactAreaRadius = ImpactAreaRadius,
+            ArcAngleDegrees = ArcAngleDegrees,
+            VisualDuration = VisualDuration,
         };
     }
 }

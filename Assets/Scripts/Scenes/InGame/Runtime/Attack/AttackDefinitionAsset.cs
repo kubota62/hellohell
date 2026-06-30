@@ -3,7 +3,7 @@ using UnityEngine.Serialization;
 
 /// <summary>
 /// 攻撃の調整値をエディタ上で管理する ScriptableObject。
-/// Projectile は攻撃手段の一種として扱い、Aura や Beam も同じ入口から追加する。
+/// Projectile は攻撃手段の一種として扱い、Aura や MeleeArc も同じ入口から追加する。
 /// </summary>
 [CreateAssetMenu(menuName = "HelloHell/Definitions/Attack Definition")]
 public class AttackDefinitionAsset : ScriptableObject
@@ -25,6 +25,10 @@ public class AttackDefinitionAsset : ScriptableObject
     public int ChainCount;
     public float ImpactAreaRadius;
 
+    [Header("Melee Arc")]
+    public float ArcAngleDegrees = 95f;
+    public float VisualDuration = 0.16f;
+
     public AttackDefinitionData ToRuntimeDefinition()
     {
         return new AttackDefinitionData
@@ -42,6 +46,8 @@ public class AttackDefinitionAsset : ScriptableObject
             PierceCount = PierceCount,
             ChainCount = ChainCount,
             ImpactAreaRadius = ImpactAreaRadius,
+            ArcAngleDegrees = ArcAngleDegrees,
+            VisualDuration = VisualDuration,
         };
     }
 }

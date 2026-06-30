@@ -5,7 +5,7 @@ using Unity.Transforms;
 
 /// <summary>
 /// Player と Enemy の攻撃入力を見て、攻撃種類ごとのリクエストを作るシステム。
-/// 攻撃マスタをここで解決し、Projectile や Aura などの実行システムへ薄いリクエストとして渡す。
+/// 攻撃マスタをここで解決し、Projectile、Aura、MeleeArc などの実行システムへ薄いリクエストとして渡す。
 /// </summary>
 [UpdateBefore(typeof(ProjectileSpawnSystem))]
 public partial struct AttackRequestSystem : ISystem
@@ -121,6 +121,7 @@ public partial struct AttackRequestSystem : ISystem
         }
 
         var actorBody = SystemAPI.GetComponent<ActorBody>(actorEntity);
+        var actorTransform = SystemAPI.GetComponent<LocalTransform>(actorEntity);
         var canonLtw = SystemAPI.GetComponent<LocalToWorld>(actorBody.Canon);
         var team = TeamId.Neutral;
         if (SystemAPI.HasComponent<Team>(actorEntity))
@@ -139,6 +140,9 @@ public partial struct AttackRequestSystem : ISystem
                 break;
 
             case AttackKind.MeleeArc:
+                CreateMeleeArcRequest(actorEntity, team, actorTransform.Position, canonLtw, definition, ecb);
+                break;
+
             case AttackKind.Beam:
             default:
                 return;
@@ -161,7 +165,7 @@ public partial struct AttackRequestSystem : ISystem
             Owner = actorEntity,
             Team = team,
             Position = canonLtw.Position,
-            Direction = math.normalizesafe(canonLtw.Up, new float3(0f, 0f, 1f)),
+            Direction = GetAttackDirection(canonLtw),
             Speed = definition.ProjectileSpeed,
             Damage = definition.Damage,
             HitRadius = definition.HitRadius,
@@ -193,6 +197,29 @@ public partial struct AttackRequestSystem : ISystem
         });
     }
 
+    private void CreateMeleeArcRequest(
+        Entity actorEntity,
+        TeamId team,
+        float3 actorPosition,
+        LocalToWorld canonLtw,
+        AttackDefinitionData definition,
+        EntityCommandBuffer ecb)
+    {
+        var requestEntity = ecb.CreateEntity();
+        ecb.AddComponent(requestEntity, new MeleeArcAttackRequest
+        {
+            AttackDefinitionId = definition.Id,
+            Owner = actorEntity,
+            Team = team,
+            Position = actorPosition,
+            Direction = GetAttackDirection(canonLtw),
+            Radius = definition.AreaRadius,
+            AngleDegrees = definition.ArcAngleDegrees,
+            Damage = definition.Damage,
+            VisualDuration = definition.VisualDuration,
+        });
+    }
+
     private AttackDefinitionId ResolveAttackDefinitionId(ref SystemState state, Entity actorEntity)
     {
         if (!SystemAPI.HasComponent<AttackLoadout>(actorEntity))
@@ -201,5 +228,12 @@ public partial struct AttackRequestSystem : ISystem
         }
 
         return SystemAPI.GetComponent<AttackLoadout>(actorEntity).PrimaryAttack;
+    }
+
+    private static float3 GetAttackDirection(LocalToWorld canonLtw)
+    {
+        var direction = canonLtw.Up;
+        direction.y = 0f;
+        return math.normalizesafe(direction, new float3(0f, 0f, 1f));
     }
 }

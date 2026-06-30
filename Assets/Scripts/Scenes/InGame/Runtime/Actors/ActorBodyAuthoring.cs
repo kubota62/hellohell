@@ -12,7 +12,7 @@ public class ActorBodyAuthoring : MonoBehaviour
     public int MaxHealth = 100;
     public float HitRadius = 2f;
 
-    class Baker: Baker<ActorBodyAuthoring>
+    class Baker : Baker<ActorBodyAuthoring>
     {
         public override void Bake(ActorBodyAuthoring authoring)
         {
@@ -32,15 +32,15 @@ public class ActorBodyAuthoring : MonoBehaviour
             AddComponent<MoveIntent>(actorEntity);
             AddComponent(actorEntity, new AttackLoadout
             {
-                PrimaryAttack = AttackDefinitionId.BasicProjectile,
+                PrimaryAttack = AttackDefinitionId.BasicMeleeArc,
             });
             AddComponent<AttackCooldown>(actorEntity);
             AddBuffer<DamageEvent>(actorEntity);
 
             // 親ボディの色を砲塔と砲身にも同期する。
             var buffer = AddBuffer<SyncColor>(actorEntity);
-            buffer.Add(new SyncColor{SyncTarget = turretEntity});
-            buffer.Add(new SyncColor{SyncTarget = canonEntity});
+            buffer.Add(new SyncColor { SyncTarget = turretEntity });
+            buffer.Add(new SyncColor { SyncTarget = canonEntity });
         }
     }
 }

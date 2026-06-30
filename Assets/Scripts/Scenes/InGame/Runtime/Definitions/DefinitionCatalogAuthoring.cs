@@ -27,13 +27,9 @@ public class DefinitionCatalogAuthoring : MonoBehaviour
                 }
             }
 
-            if (attackBuffer.Length == 0)
-            {
-                attackBuffer.Add(AttackDefinitionElement.FromDefinition(
-                    AttackDefinitionCatalog.Get(AttackDefinitionId.BasicProjectile)));
-                attackBuffer.Add(AttackDefinitionElement.FromDefinition(
-                    AttackDefinitionCatalog.Get(AttackDefinitionId.BasicAura)));
-            }
+            EnsureAttackDefinition(attackBuffer, AttackDefinitionId.BasicProjectile);
+            EnsureAttackDefinition(attackBuffer, AttackDefinitionId.BasicAura);
+            EnsureAttackDefinition(attackBuffer, AttackDefinitionId.BasicMeleeArc);
 
             var enemyBuffer = AddBuffer<EnemyDefinitionElement>(entity);
             if (authoring.EnemyDefinitions is { Length: > 0 })
@@ -52,6 +48,21 @@ public class DefinitionCatalogAuthoring : MonoBehaviour
                 enemyBuffer.Add(EnemyDefinitionElement.FromDefinition(
                     EnemyDefinitionCatalog.Get(EnemyDefinitionCatalog.RandomEnemy)));
             }
+        }
+
+        private static void EnsureAttackDefinition(
+            DynamicBuffer<AttackDefinitionElement> attackBuffer,
+            AttackDefinitionId id)
+        {
+            for (var i = 0; i < attackBuffer.Length; i++)
+            {
+                if (attackBuffer[i].Id == id)
+                {
+                    return;
+                }
+            }
+
+            attackBuffer.Add(AttackDefinitionElement.FromDefinition(AttackDefinitionCatalog.Get(id)));
         }
     }
 }

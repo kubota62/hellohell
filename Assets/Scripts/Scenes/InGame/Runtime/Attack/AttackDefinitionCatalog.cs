@@ -26,6 +26,28 @@ public static class AttackDefinitionCatalog
                     PierceCount = 0,
                     ChainCount = 0,
                     ImpactAreaRadius = 0f,
+                    ArcAngleDegrees = 360f,
+                    VisualDuration = 0.12f,
+                };
+
+            case AttackDefinitionId.BasicMeleeArc:
+                return new AttackDefinitionData
+                {
+                    Id = AttackDefinitionId.BasicMeleeArc,
+                    Kind = AttackKind.MeleeArc,
+                    Cooldown = 0.45f,
+                    Damage = 28,
+                    HitRadius = 0f,
+                    AreaRadius = 5.5f,
+                    ProjectileSpeed = 0f,
+                    Lifetime = 0f,
+                    Scale = 1f,
+                    ProjectileModifiers = ProjectileModifierFlags.None,
+                    PierceCount = 0,
+                    ChainCount = 0,
+                    ImpactAreaRadius = 0f,
+                    ArcAngleDegrees = 100f,
+                    VisualDuration = 0.14f,
                 };
 
             case AttackDefinitionId.BasicProjectile:
@@ -45,6 +67,8 @@ public static class AttackDefinitionCatalog
                     PierceCount = 0,
                     ChainCount = 0,
                     ImpactAreaRadius = 0f,
+                    ArcAngleDegrees = 0f,
+                    VisualDuration = 0f,
                 };
         }
     }

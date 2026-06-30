@@ -6,11 +6,12 @@ public enum AttackDefinitionId
 {
     BasicProjectile = 1,
     BasicAura = 2,
+    BasicMeleeArc = 3,
 }
 
 /// <summary>
 /// 攻撃の実行方式。
-/// Projectile、Aura、Beam などを同じマスタ窓口から追加できるようにする。
+/// Projectile、Aura、MeleeArc、Beam などを同じマスタ窓口から追加できるようにする。
 /// </summary>
 public enum AttackKind : byte
 {
@@ -34,7 +35,7 @@ public enum ProjectileModifierFlags : byte
 
 /// <summary>
 /// 攻撃マスタから取得するランタイム用の調整値。
-/// 共通値と Projectile 固有値を同じ構造体に置き、必要に応じて段階的に分割する。
+/// 共通値と攻撃方式ごとの固有値を同じ構造体に置き、必要に応じて段階的に分割する。
 /// </summary>
 public struct AttackDefinitionData
 {
@@ -52,4 +53,7 @@ public struct AttackDefinitionData
     public int PierceCount;
     public int ChainCount;
     public float ImpactAreaRadius;
+
+    public float ArcAngleDegrees;
+    public float VisualDuration;
 }

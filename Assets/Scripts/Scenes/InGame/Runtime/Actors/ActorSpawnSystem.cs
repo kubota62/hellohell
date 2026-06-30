@@ -7,7 +7,7 @@ using Random = Unity.Mathematics.Random;
 
 /// <summary>
 /// 初期 Player と継続的な Enemy を ActorBody プレハブから生成するシステム。
-/// 生成直後の位置を同フレームの描画に反映するため、TransformSystemGroup より前に実行する。
+/// 生成直後の位置を同フレームの描画へ反映するため、TransformSystemGroup より前に実行する。
 /// </summary>
 [UpdateBefore(typeof(TransformSystemGroup))]
 public partial struct ActorSpawnSystem : ISystem
@@ -100,7 +100,7 @@ public partial struct ActorSpawnSystem : ISystem
         entityManager.SetComponentData(actorEntity, new Team { Value = TeamId.Player });
         entityManager.SetComponentData(actorEntity, new AttackLoadout
         {
-            PrimaryAttack = AttackDefinitionId.BasicProjectile,
+            PrimaryAttack = AttackDefinitionId.BasicMeleeArc,
         });
         entityManager.SetComponentData(actorEntity, new AttackCooldown());
 
