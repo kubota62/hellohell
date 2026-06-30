@@ -19,6 +19,8 @@ public struct EnemyDefinitionData
     public int TypeId;
     public EnemyMovementKind Movement;
     public int MaxHealth;
+    public float MoveSpeed;
+    public float BodyScale;
     public float HitRadius;
     public AttackDefinitionId PrimaryAttack;
     public float4 Color;

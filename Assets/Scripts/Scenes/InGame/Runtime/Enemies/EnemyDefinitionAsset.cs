@@ -11,17 +11,24 @@ public class EnemyDefinitionAsset : ScriptableObject
     public int TypeId = 1;
     public EnemyMovementKind Movement = EnemyMovementKind.Forward;
     public int MaxHealth = 100;
+    public float MoveSpeed = 2.8f;
+    public float BodyScale = 1f;
     public float HitRadius = 2f;
     public AttackDefinitionId PrimaryAttack = AttackDefinitionId.BasicProjectile;
     public Color Color = UnityEngine.Color.magenta;
 
     public EnemyDefinitionData ToRuntimeDefinition()
     {
+        var moveSpeed = MoveSpeed > 0f ? MoveSpeed : EnemyDefinitionCatalog.Get(TypeId).MoveSpeed;
+        var bodyScale = BodyScale > 0f ? BodyScale : EnemyDefinitionCatalog.Get(TypeId).BodyScale;
+
         return new EnemyDefinitionData
         {
             TypeId = TypeId,
             Movement = Movement,
             MaxHealth = MaxHealth,
+            MoveSpeed = moveSpeed,
+            BodyScale = bodyScale,
             HitRadius = HitRadius,
             PrimaryAttack = PrimaryAttack,
             Color = new float4(Color.r, Color.g, Color.b, Color.a),

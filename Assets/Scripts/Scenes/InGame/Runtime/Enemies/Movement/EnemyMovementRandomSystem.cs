@@ -65,6 +65,7 @@ public partial struct EnemyMovementRandomJob : IJobEntity
         Entity entity,
         in LocalTransform transform,
         in ActorBody actorBody,
+        in EnemyMoveSpeed moveSpeed,
         ref MoveIntent moveIntent)
     {
         var toPlayer = PlayerPosition - transform.Position;
@@ -96,7 +97,7 @@ public partial struct EnemyMovementRandomJob : IJobEntity
         var encircle = tangent * weave * 0.65f;
         var desiredDirection = math.normalizesafe(forward + encircle, forward);
 
-        var speed = math.lerp(1.3f, 2.4f, math.saturate(distance / 16f));
+        var speed = math.lerp(moveSpeed.Value * 0.54f, moveSpeed.Value, math.saturate(distance / 16f));
         if (distance < 6f)
         {
             speed *= math.saturate((distance - PersonalSpace) / (6f - PersonalSpace));

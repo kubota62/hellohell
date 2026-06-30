@@ -10,6 +10,8 @@ public struct EnemyDefinitionElement : IBufferElementData
     public int TypeId;
     public EnemyMovementKind Movement;
     public int MaxHealth;
+    public float MoveSpeed;
+    public float BodyScale;
     public float HitRadius;
     public AttackDefinitionId PrimaryAttack;
     public float4 Color;
@@ -21,6 +23,8 @@ public struct EnemyDefinitionElement : IBufferElementData
             TypeId = definition.TypeId,
             Movement = definition.Movement,
             MaxHealth = definition.MaxHealth,
+            MoveSpeed = definition.MoveSpeed,
+            BodyScale = definition.BodyScale,
             HitRadius = definition.HitRadius,
             PrimaryAttack = definition.PrimaryAttack,
             Color = definition.Color,
@@ -34,6 +38,8 @@ public struct EnemyDefinitionElement : IBufferElementData
             TypeId = TypeId,
             Movement = Movement,
             MaxHealth = MaxHealth,
+            MoveSpeed = MoveSpeed,
+            BodyScale = BodyScale,
             HitRadius = HitRadius,
             PrimaryAttack = PrimaryAttack,
             Color = Color,

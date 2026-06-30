@@ -63,6 +63,7 @@ public partial struct EnemyMovementForwardJob : IJobEntity
         Entity entity,
         in LocalTransform transform,
         in ActorBody actorBody,
+        in EnemyMoveSpeed moveSpeed,
         ref MoveIntent moveIntent)
     {
         var toPlayer = PlayerPosition - transform.Position;
@@ -89,7 +90,7 @@ public partial struct EnemyMovementForwardJob : IJobEntity
         var laneOffset = ((entity.Index % 7) - 3) * 0.04f;
         var desiredDirection = math.normalizesafe(forward + tangent * laneOffset, forward);
 
-        var speed = math.lerp(1.6f, 2.8f, math.saturate(distance / 18f));
+        var speed = math.lerp(moveSpeed.Value * 0.57f, moveSpeed.Value, math.saturate(distance / 18f));
         if (distance < 6f)
         {
             speed *= math.saturate((distance - PersonalSpace) / (6f - PersonalSpace));

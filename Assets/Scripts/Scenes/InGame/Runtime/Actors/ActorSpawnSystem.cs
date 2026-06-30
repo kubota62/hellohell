@@ -118,6 +118,7 @@ public partial struct ActorSpawnSystem : ISystem
         entityManager.SetComponentData(actorEntity, new Team { Value = TeamId.Enemy });
         entityManager.SetComponentData(actorEntity, Health.FromMax(definition.MaxHealth));
         entityManager.SetComponentData(actorEntity, new Hitbox { Radius = definition.HitRadius });
+        SetOrAddMoveSpeed(entityManager, actorEntity, definition.MoveSpeed);
         entityManager.SetComponentData(actorEntity, new AttackLoadout
         {
             PrimaryAttack = definition.PrimaryAttack,
@@ -140,6 +141,26 @@ public partial struct ActorSpawnSystem : ISystem
         {
             Value = definition.Color,
         });
+
+        var transform = entityManager.GetComponentData<LocalTransform>(actorEntity);
+        transform.Scale = math.max(0.01f, definition.BodyScale);
+        entityManager.SetComponentData(actorEntity, transform);
+    }
+
+    private static void SetOrAddMoveSpeed(
+        EntityManager entityManager,
+        Entity actorEntity,
+        float moveSpeed)
+    {
+        var speed = new EnemyMoveSpeed { Value = math.max(0.01f, moveSpeed) };
+        if (entityManager.HasComponent<EnemyMoveSpeed>(actorEntity))
+        {
+            entityManager.SetComponentData(actorEntity, speed);
+        }
+        else
+        {
+            entityManager.AddComponentData(actorEntity, speed);
+        }
     }
 
     private static void ApplySpawnedActorColor(ref SystemState state, Entity actorEntity)
