@@ -5,7 +5,7 @@ using Unity.Transforms;
 
 /// <summary>
 /// ProjectileMotion に従って Projectile を移動し、地面より下へ落ちた弾の寿命を切る。
-/// GameplayActive が有効な弾だけを処理し、inactive なプール待機弾は動かさない。
+/// GameplayActive が有効な弾だけを処理し、非アクティブなプール待機弾は動かさない。
 /// </summary>
 [BurstCompile]
 [UpdateBefore(typeof(TransformSystemGroup))]
@@ -31,7 +31,7 @@ public partial struct ProjectileMovementSystem : ISystem
 
 [BurstCompile]
 [WithAll(typeof(GameplayActive))]
-public partial struct ProjectileMovementJob: IJobEntity
+public partial struct ProjectileMovementJob : IJobEntity
 {
     public float DeltaTime;
 

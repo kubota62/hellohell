@@ -30,6 +30,7 @@ public class DefinitionCatalogAuthoring : MonoBehaviour
             EnsureAttackDefinition(attackBuffer, AttackDefinitionId.BasicProjectile);
             EnsureAttackDefinition(attackBuffer, AttackDefinitionId.BasicAura);
             EnsureAttackDefinition(attackBuffer, AttackDefinitionId.BasicMeleeArc);
+            EnsureAttackDefinition(attackBuffer, AttackDefinitionId.BasicChainProjectile);
 
             var enemyBuffer = AddBuffer<EnemyDefinitionElement>(entity);
             if (authoring.EnemyDefinitions is { Length: > 0 })

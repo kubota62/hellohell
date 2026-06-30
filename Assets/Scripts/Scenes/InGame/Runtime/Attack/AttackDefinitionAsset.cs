@@ -23,6 +23,7 @@ public class AttackDefinitionAsset : ScriptableObject
     public ProjectileModifierFlags ProjectileModifiers = ProjectileModifierFlags.None;
     public int PierceCount;
     public int ChainCount;
+    public float ChainRange = 6f;
     public float ImpactAreaRadius;
 
     [Header("Melee Arc")]
@@ -45,6 +46,7 @@ public class AttackDefinitionAsset : ScriptableObject
             ProjectileModifiers = ProjectileModifiers,
             PierceCount = PierceCount,
             ChainCount = ChainCount,
+            ChainRange = ChainRange,
             ImpactAreaRadius = ImpactAreaRadius,
             ArcAngleDegrees = ArcAngleDegrees,
             VisualDuration = VisualDuration,

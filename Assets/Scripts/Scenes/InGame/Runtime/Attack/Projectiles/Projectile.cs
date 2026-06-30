@@ -21,6 +21,7 @@ public struct ProjectileModifierState : IComponentData
     public ProjectileModifierFlags Modifiers;
     public int PierceRemaining;
     public int ChainRemaining;
+    public float ChainRange;
     public float ImpactAreaRadius;
 }
 

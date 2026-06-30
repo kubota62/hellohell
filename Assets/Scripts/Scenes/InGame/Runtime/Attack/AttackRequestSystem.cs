@@ -174,6 +174,7 @@ public partial struct AttackRequestSystem : ISystem
             Modifiers = definition.ProjectileModifiers,
             PierceCount = definition.PierceCount,
             ChainCount = definition.ChainCount,
+            ChainRange = definition.ChainRange,
             ImpactAreaRadius = definition.ImpactAreaRadius,
         });
     }

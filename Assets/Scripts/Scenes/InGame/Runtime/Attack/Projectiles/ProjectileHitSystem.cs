@@ -8,6 +8,7 @@ using Unity.Transforms;
 /// Projectile と ActorBody の命中を空間ハッシュで判定し、命中先の DamageEvent バッファへダメージを積む。
 /// 貫通弾は命中済み対象を記録し、残り貫通回数がある間は GameplayActive を維持する。
 /// 範囲弾は直撃地点の周囲にいる敵へ追加の DamageEvent を積む。
+/// チェーン弾は命中後に近くの未命中ターゲットへ向き直る。
 /// </summary>
 [BurstCompile]
 public partial struct ProjectileHitSystem : ISystem
@@ -86,7 +87,7 @@ public partial struct ProjectileHitJob : IJobEntity
     private void Execute(
         [EntityIndexInQuery] int sortKey,
         Entity projectileEntity,
-        in ProjectileMotion motion,
+        ref ProjectileMotion motion,
         in Projectile projectile,
         ref ProjectileModifierState modifierState,
         ref LocalTransform projectileTransform,
@@ -111,7 +112,7 @@ public partial struct ProjectileHitJob : IJobEntity
                     if (TryHitTarget(
                             sortKey,
                             projectileEntity,
-                            motion,
+                            ref motion,
                             projectile,
                             ref modifierState,
                             ref projectileTransform,
@@ -130,7 +131,7 @@ public partial struct ProjectileHitJob : IJobEntity
     private bool TryHitTarget(
         int sortKey,
         Entity projectileEntity,
-        in ProjectileMotion motion,
+        ref ProjectileMotion motion,
         in Projectile projectile,
         ref ProjectileModifierState modifierState,
         ref LocalTransform projectileTransform,
@@ -155,6 +156,11 @@ public partial struct ProjectileHitJob : IJobEntity
         AddDamage(sortKey, projectile, hitRecords, targetEntity);
         TryAddAreaDamage(sortKey, motion, projectile, modifierState, hitRecords, targetPos);
 
+        if (TryChainProjectile(ref motion, projectile, ref modifierState, ref projectileTransform, hitRecords, targetPos))
+        {
+            return true;
+        }
+
         if (modifierState.PierceRemaining > 0)
         {
             modifierState.PierceRemaining--;
@@ -165,6 +171,94 @@ public partial struct ProjectileHitJob : IJobEntity
         projectileTransform.Scale = 0f;
         ECB.SetComponentEnabled<GameplayActive>(sortKey, projectileEntity, false);
         return true;
+    }
+
+    private bool TryChainProjectile(
+        ref ProjectileMotion motion,
+        in Projectile projectile,
+        ref ProjectileModifierState modifierState,
+        ref LocalTransform projectileTransform,
+        DynamicBuffer<ProjectileHitRecord> hitRecords,
+        float3 impactPosition)
+    {
+        if (!HasModifier(modifierState.Modifiers, ProjectileModifierFlags.Chaining) ||
+            modifierState.ChainRemaining <= 0 ||
+            modifierState.ChainRange <= 0f)
+        {
+            return false;
+        }
+
+        if (!TryFindChainTarget(
+                motion,
+                projectile,
+                hitRecords,
+                impactPosition,
+                modifierState.ChainRange,
+                out var nextTargetPosition))
+        {
+            return false;
+        }
+
+        var speed = math.max(0.001f, math.length(motion.Velocity));
+        var direction = nextTargetPosition - impactPosition;
+        direction.y = 0f;
+        direction = math.normalizesafe(direction, new float3(0f, 0f, 1f));
+
+        modifierState.ChainRemaining--;
+        projectileTransform.Position = impactPosition + direction * (projectile.HitRadius + 0.05f);
+        projectileTransform.Position.y = math.max(0.05f, projectileTransform.Position.y);
+        motion.Velocity = direction * speed;
+        return true;
+    }
+
+    private bool TryFindChainTarget(
+        in ProjectileMotion motion,
+        in Projectile projectile,
+        DynamicBuffer<ProjectileHitRecord> hitRecords,
+        float3 impactPosition,
+        float chainRange,
+        out float3 targetPosition)
+    {
+        targetPosition = float3.zero;
+        var chainCell = SpatialHashUtility.GetCell(impactPosition, CellSize);
+        var searchRadius = math.max(1, (int)math.ceil(chainRange / CellSize) + 1);
+
+        var bestDistanceSq = float.MaxValue;
+        var found = false;
+
+        for (var x = -searchRadius; x <= searchRadius; x++)
+        {
+            for (var z = -searchRadius; z <= searchRadius; z++)
+            {
+                var hash = SpatialHashUtility.GetHash(chainCell + new int2(x, z));
+                if (!TargetHash.TryGetFirstValue(hash, out var targetIndex, out var iterator))
+                {
+                    continue;
+                }
+
+                do
+                {
+                    if (!CanDamageTarget(motion, projectile, hitRecords, targetIndex))
+                    {
+                        continue;
+                    }
+
+                    var hitDistance = chainRange + TargetHitboxes[targetIndex].Radius;
+                    var distanceSq = math.distancesq(impactPosition, TargetTransforms[targetIndex].Position);
+                    if (distanceSq > hitDistance * hitDistance || distanceSq >= bestDistanceSq)
+                    {
+                        continue;
+                    }
+
+                    bestDistanceSq = distanceSq;
+                    targetPosition = TargetTransforms[targetIndex].Position;
+                    found = true;
+                }
+                while (TargetHash.TryGetNextValue(out targetIndex, ref iterator));
+            }
+        }
+
+        return found;
     }
 
     private void TryAddAreaDamage(
@@ -265,4 +359,5 @@ public partial struct ProjectileHitJob : IJobEntity
     {
         return (value & flag) != 0;
     }
+
 }

@@ -25,6 +25,7 @@ public static class AttackDefinitionCatalog
                     ProjectileModifiers = ProjectileModifierFlags.None,
                     PierceCount = 0,
                     ChainCount = 0,
+                    ChainRange = 0f,
                     ImpactAreaRadius = 0f,
                     ArcAngleDegrees = 360f,
                     VisualDuration = 0.12f,
@@ -45,9 +46,31 @@ public static class AttackDefinitionCatalog
                     ProjectileModifiers = ProjectileModifierFlags.None,
                     PierceCount = 0,
                     ChainCount = 0,
+                    ChainRange = 0f,
                     ImpactAreaRadius = 0f,
                     ArcAngleDegrees = 100f,
                     VisualDuration = 0.14f,
+                };
+
+            case AttackDefinitionId.BasicChainProjectile:
+                return new AttackDefinitionData
+                {
+                    Id = AttackDefinitionId.BasicChainProjectile,
+                    Kind = AttackKind.Projectile,
+                    Cooldown = 0.9f,
+                    Damage = 22,
+                    HitRadius = 0.5f,
+                    AreaRadius = 0f,
+                    ProjectileSpeed = 12f,
+                    Lifetime = 4f,
+                    Scale = 0.45f,
+                    ProjectileModifiers = ProjectileModifierFlags.Chaining,
+                    PierceCount = 0,
+                    ChainCount = 3,
+                    ChainRange = 7f,
+                    ImpactAreaRadius = 0f,
+                    ArcAngleDegrees = 0f,
+                    VisualDuration = 0f,
                 };
 
             case AttackDefinitionId.BasicProjectile:
@@ -66,6 +89,7 @@ public static class AttackDefinitionCatalog
                     ProjectileModifiers = ProjectileModifierFlags.None,
                     PierceCount = 0,
                     ChainCount = 0,
+                    ChainRange = 0f,
                     ImpactAreaRadius = 0f,
                     ArcAngleDegrees = 0f,
                     VisualDuration = 0f,

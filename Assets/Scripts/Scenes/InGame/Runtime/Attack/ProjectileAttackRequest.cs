@@ -20,5 +20,6 @@ public struct ProjectileAttackRequest : IComponentData
     public ProjectileModifierFlags Modifiers;
     public int PierceCount;
     public int ChainCount;
+    public float ChainRange;
     public float ImpactAreaRadius;
 }

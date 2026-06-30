@@ -7,6 +7,7 @@ public enum AttackDefinitionId
     BasicProjectile = 1,
     BasicAura = 2,
     BasicMeleeArc = 3,
+    BasicChainProjectile = 4,
 }
 
 /// <summary>
@@ -52,6 +53,7 @@ public struct AttackDefinitionData
     public ProjectileModifierFlags ProjectileModifiers;
     public int PierceCount;
     public int ChainCount;
+    public float ChainRange;
     public float ImpactAreaRadius;
 
     public float ArcAngleDegrees;

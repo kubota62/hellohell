@@ -158,6 +158,7 @@ public partial struct ProjectileSpawnSystem : ISystem
             Modifiers = value.Modifiers,
             PierceRemaining = hasState ? value.PierceCount : 0,
             ChainRemaining = hasState ? value.ChainCount : 0,
+            ChainRange = hasState ? value.ChainRange : 0f,
             ImpactAreaRadius = hasState ? value.ImpactAreaRadius : 0f,
         };
 

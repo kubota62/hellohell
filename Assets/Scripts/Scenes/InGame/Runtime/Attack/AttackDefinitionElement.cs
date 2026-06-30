@@ -18,6 +18,7 @@ public struct AttackDefinitionElement : IBufferElementData
     public ProjectileModifierFlags ProjectileModifiers;
     public int PierceCount;
     public int ChainCount;
+    public float ChainRange;
     public float ImpactAreaRadius;
     public float ArcAngleDegrees;
     public float VisualDuration;
@@ -38,6 +39,7 @@ public struct AttackDefinitionElement : IBufferElementData
             ProjectileModifiers = definition.ProjectileModifiers,
             PierceCount = definition.PierceCount,
             ChainCount = definition.ChainCount,
+            ChainRange = definition.ChainRange,
             ImpactAreaRadius = definition.ImpactAreaRadius,
             ArcAngleDegrees = definition.ArcAngleDegrees,
             VisualDuration = definition.VisualDuration,
@@ -60,6 +62,7 @@ public struct AttackDefinitionElement : IBufferElementData
             ProjectileModifiers = ProjectileModifiers,
             PierceCount = PierceCount,
             ChainCount = ChainCount,
+            ChainRange = ChainRange,
             ImpactAreaRadius = ImpactAreaRadius,
             ArcAngleDegrees = ArcAngleDegrees,
             VisualDuration = VisualDuration,
