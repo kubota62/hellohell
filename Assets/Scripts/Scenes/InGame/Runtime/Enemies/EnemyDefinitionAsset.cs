@@ -14,13 +14,18 @@ public class EnemyDefinitionAsset : ScriptableObject
     public float MoveSpeed = 2.8f;
     public float BodyScale = 1f;
     public float HitRadius = 2f;
+    public float MinAttackRange = 5f;
+    public float MaxAttackRange = 24f;
     public AttackDefinitionId PrimaryAttack = AttackDefinitionId.BasicProjectile;
     public Color Color = UnityEngine.Color.magenta;
 
     public EnemyDefinitionData ToRuntimeDefinition()
     {
-        var moveSpeed = MoveSpeed > 0f ? MoveSpeed : EnemyDefinitionCatalog.Get(TypeId).MoveSpeed;
-        var bodyScale = BodyScale > 0f ? BodyScale : EnemyDefinitionCatalog.Get(TypeId).BodyScale;
+        var fallback = EnemyDefinitionCatalog.Get(TypeId);
+        var moveSpeed = MoveSpeed > 0f ? MoveSpeed : fallback.MoveSpeed;
+        var bodyScale = BodyScale > 0f ? BodyScale : fallback.BodyScale;
+        var minAttackRange = MinAttackRange > 0f ? MinAttackRange : fallback.MinAttackRange;
+        var maxAttackRange = MaxAttackRange > 0f ? MaxAttackRange : fallback.MaxAttackRange;
 
         return new EnemyDefinitionData
         {
@@ -30,6 +35,8 @@ public class EnemyDefinitionAsset : ScriptableObject
             MoveSpeed = moveSpeed,
             BodyScale = bodyScale,
             HitRadius = HitRadius,
+            MinAttackRange = minAttackRange,
+            MaxAttackRange = math.max(minAttackRange, maxAttackRange),
             PrimaryAttack = PrimaryAttack,
             Color = new float4(Color.r, Color.g, Color.b, Color.a),
         };

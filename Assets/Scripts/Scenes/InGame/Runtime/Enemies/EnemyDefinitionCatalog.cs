@@ -57,6 +57,8 @@ public static class EnemyDefinitionCatalog
                     MoveSpeed = 3.2f,
                     BodyScale = 0.9f,
                     HitRadius = 1.8f,
+                    MinAttackRange = 8f,
+                    MaxAttackRange = 24f,
                     PrimaryAttack = AttackDefinitionId.BasicChainProjectile,
                     Color = new float4(0.1f, 0.35f, 1f, 1f),
                 };
@@ -70,6 +72,8 @@ public static class EnemyDefinitionCatalog
                     MoveSpeed = 2.1f,
                     BodyScale = 1.15f,
                     HitRadius = 2f,
+                    MinAttackRange = 5f,
+                    MaxAttackRange = 22f,
                     PrimaryAttack = AttackDefinitionId.BasicChainProjectile,
                     Color = new float4(0.1f, 0.85f, 1f, 1f),
                 };
@@ -83,6 +87,8 @@ public static class EnemyDefinitionCatalog
                     MoveSpeed = 2.4f,
                     BodyScale = 1f,
                     HitRadius = 2f,
+                    MinAttackRange = 5f,
+                    MaxAttackRange = 24f,
                     PrimaryAttack = AttackDefinitionId.BasicProjectile,
                     Color = new float4(1f, 1f, 0f, 1f),
                 };
@@ -97,6 +103,8 @@ public static class EnemyDefinitionCatalog
                     MoveSpeed = 2.8f,
                     BodyScale = 1f,
                     HitRadius = 2f,
+                    MinAttackRange = 5f,
+                    MaxAttackRange = 24f,
                     PrimaryAttack = AttackDefinitionId.BasicProjectile,
                     Color = new float4(1f, 0f, 1f, 1f),
                 };

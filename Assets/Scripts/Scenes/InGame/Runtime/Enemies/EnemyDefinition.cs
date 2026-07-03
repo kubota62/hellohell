@@ -1,3 +1,4 @@
+using Unity.Entities;
 using Unity.Mathematics;
 
 /// <summary>
@@ -23,6 +24,18 @@ public struct EnemyDefinitionData
     public float MoveSpeed;
     public float BodyScale;
     public float HitRadius;
+    public float MinAttackRange;
+    public float MaxAttackRange;
     public AttackDefinitionId PrimaryAttack;
     public float4 Color;
+}
+
+/// <summary>
+/// EnemyDefinition から注入される敵ごとの攻撃可能距離。
+/// AIの移動距離とは別に持たせ、同じ移動パターンでも近接型や射撃型へ調整できるようにする。
+/// </summary>
+public struct EnemyAttackRange : IComponentData
+{
+    public float Min;
+    public float Max;
 }

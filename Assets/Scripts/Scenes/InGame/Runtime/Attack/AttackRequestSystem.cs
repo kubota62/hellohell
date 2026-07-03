@@ -10,9 +10,6 @@ using Unity.Transforms;
 [UpdateBefore(typeof(ProjectileSpawnSystem))]
 public partial struct AttackRequestSystem : ISystem
 {
-    const float EnemyMinFireDistance = 5f;
-    const float EnemyMaxFireDistance = 24f;
-
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
@@ -77,16 +74,16 @@ public partial struct AttackRequestSystem : ISystem
             ? SystemAPI.GetComponent<LocalTransform>(playerEntity).Position
             : float3.zero;
 
-        foreach (var (_, cooldown, transform, actorEntity) in
-                 SystemAPI.Query<RefRO<ActorBody>, RefRW<AttackCooldown>, RefRO<LocalTransform>>()
+        foreach (var (_, cooldown, transform, attackRange, actorEntity) in
+                 SystemAPI.Query<RefRO<ActorBody>, RefRW<AttackCooldown>, RefRO<LocalTransform>, RefRO<EnemyAttackRange>>()
                      .WithAll<Enemy>()
                      .WithEntityAccess())
         {
-            // 敵は距離条件を満たすと発射意思ありとして扱う。AIごとの詳細条件は今後ここから分離できる。
+            // 敵は定義された距離帯にPlayerがいると発射意思ありとして扱う。
             var distanceToPlayer = math.distance(transform.ValueRO.Position, playerPosition);
             var canFire = hasPlayer &&
-                distanceToPlayer >= EnemyMinFireDistance &&
-                distanceToPlayer <= EnemyMaxFireDistance;
+                distanceToPlayer >= attackRange.ValueRO.Min &&
+                distanceToPlayer <= attackRange.ValueRO.Max;
 
             TryCreateAttackRequest(
                 ref state,

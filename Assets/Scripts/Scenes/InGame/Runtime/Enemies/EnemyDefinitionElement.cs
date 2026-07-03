@@ -13,6 +13,8 @@ public struct EnemyDefinitionElement : IBufferElementData
     public float MoveSpeed;
     public float BodyScale;
     public float HitRadius;
+    public float MinAttackRange;
+    public float MaxAttackRange;
     public AttackDefinitionId PrimaryAttack;
     public float4 Color;
 
@@ -26,6 +28,8 @@ public struct EnemyDefinitionElement : IBufferElementData
             MoveSpeed = definition.MoveSpeed,
             BodyScale = definition.BodyScale,
             HitRadius = definition.HitRadius,
+            MinAttackRange = definition.MinAttackRange,
+            MaxAttackRange = definition.MaxAttackRange,
             PrimaryAttack = definition.PrimaryAttack,
             Color = definition.Color,
         };
@@ -41,6 +45,8 @@ public struct EnemyDefinitionElement : IBufferElementData
             MoveSpeed = MoveSpeed,
             BodyScale = BodyScale,
             HitRadius = HitRadius,
+            MinAttackRange = MinAttackRange,
+            MaxAttackRange = MaxAttackRange,
             PrimaryAttack = PrimaryAttack,
             Color = Color,
         };

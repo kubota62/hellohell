@@ -119,6 +119,7 @@ public partial struct ActorSpawnSystem : ISystem
         entityManager.SetComponentData(actorEntity, Health.FromMax(definition.MaxHealth));
         entityManager.SetComponentData(actorEntity, new Hitbox { Radius = definition.HitRadius });
         SetOrAddMoveSpeed(entityManager, actorEntity, definition.MoveSpeed);
+        SetOrAddAttackRange(entityManager, actorEntity, definition.MinAttackRange, definition.MaxAttackRange);
         entityManager.SetComponentData(actorEntity, new AttackLoadout
         {
             PrimaryAttack = definition.PrimaryAttack,
@@ -164,6 +165,29 @@ public partial struct ActorSpawnSystem : ISystem
         else
         {
             entityManager.AddComponentData(actorEntity, speed);
+        }
+    }
+
+    private static void SetOrAddAttackRange(
+        EntityManager entityManager,
+        Entity actorEntity,
+        float min,
+        float max)
+    {
+        var minRange = math.max(0f, min);
+        var range = new EnemyAttackRange
+        {
+            Min = minRange,
+            Max = math.max(minRange, max),
+        };
+
+        if (entityManager.HasComponent<EnemyAttackRange>(actorEntity))
+        {
+            entityManager.SetComponentData(actorEntity, range);
+        }
+        else
+        {
+            entityManager.AddComponentData(actorEntity, range);
         }
     }
 
