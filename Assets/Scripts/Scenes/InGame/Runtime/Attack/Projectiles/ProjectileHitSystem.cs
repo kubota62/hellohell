@@ -6,9 +6,7 @@ using Unity.Transforms;
 
 /// <summary>
 /// Projectile と ActorBody の命中を空間ハッシュで判定し、命中先の DamageEvent バッファへダメージを積む。
-/// 貫通弾は命中済み対象を記録し、残り貫通回数がある間は GameplayActive を維持する。
-/// 範囲弾は直撃地点の周囲にいる敵へ追加の DamageEvent を積む。
-/// チェーン弾は命中後に近くの未命中ターゲットへ向き直る。
+/// 貫通、範囲、チェーンなどのProjectile Modifierもここで解決する。
 /// </summary>
 [BurstCompile]
 public partial struct ProjectileHitSystem : ISystem
@@ -37,6 +35,7 @@ public partial struct ProjectileHitSystem : ISystem
         var settings = SystemAPI.GetSingleton<SpatialHashSettings>();
         var cellSize = math.max(0.001f, settings.CellSize);
 
+        // 命中対象を配列へ固定し、このフレーム用の空間ハッシュを組み立てる。
         var targetEntities = targetQuery.ToEntityArray(state.WorldUpdateAllocator);
         var targetTransforms = targetQuery.ToComponentDataArray<LocalTransform>(state.WorldUpdateAllocator);
         var targetTeams = targetQuery.ToComponentDataArray<Team>(state.WorldUpdateAllocator);
@@ -52,6 +51,7 @@ public partial struct ProjectileHitSystem : ISystem
             spatialHash.Add(hash, i);
         }
 
+        // Projectile側は並列Jobで処理し、命中時のDamageEvent追加だけECBへ積む。
         var ecbSingleton = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
         var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged).AsParallelWriter();
 
@@ -70,6 +70,9 @@ public partial struct ProjectileHitSystem : ISystem
     }
 }
 
+/// <summary>
+/// アクティブなProjectileごとに近傍セルを調べ、最初に命中した対象への処理を進めるJob。
+/// </summary>
 [BurstCompile]
 [WithAll(typeof(GameplayActive))]
 public partial struct ProjectileHitJob : IJobEntity
@@ -93,6 +96,7 @@ public partial struct ProjectileHitJob : IJobEntity
         ref LocalTransform projectileTransform,
         DynamicBuffer<ProjectileHitRecord> hitRecords)
     {
+        // Projectileの現在セル周辺だけを調べ、全Actor総当たりを避ける。
         var projectilePos = projectileTransform.Position;
         var projectileCell = SpatialHashUtility.GetCell(projectilePos, CellSize);
         var searchRadius = math.max(1, (int)math.ceil(projectile.HitRadius / CellSize) + 1);
@@ -153,6 +157,7 @@ public partial struct ProjectileHitJob : IJobEntity
             return false;
         }
 
+        // 直接ヒットを記録してから、範囲、チェーン、貫通、消滅の順に後続処理を決める。
         AddDamage(sortKey, projectile, hitRecords, targetEntity);
         TryAddAreaDamage(sortKey, motion, projectile, modifierState, hitRecords, targetPos);
 
@@ -181,6 +186,7 @@ public partial struct ProjectileHitJob : IJobEntity
         DynamicBuffer<ProjectileHitRecord> hitRecords,
         float3 impactPosition)
     {
+        // チェーン弾は命中地点から次の未命中ターゲットへ向きを付け替え、同じProjectileを使い続ける。
         if (!HasModifier(modifierState.Modifiers, ProjectileModifierFlags.Chaining) ||
             modifierState.ChainRemaining <= 0 ||
             modifierState.ChainRange <= 0f)
@@ -219,6 +225,7 @@ public partial struct ProjectileHitJob : IJobEntity
         float chainRange,
         out float3 targetPosition)
     {
+        // チェーン先は範囲内で最も近い、まだ命中していない敵を選ぶ。
         targetPosition = float3.zero;
         var chainCell = SpatialHashUtility.GetCell(impactPosition, CellSize);
         var searchRadius = math.max(1, (int)math.ceil(chainRange / CellSize) + 1);
@@ -269,6 +276,7 @@ public partial struct ProjectileHitJob : IJobEntity
         DynamicBuffer<ProjectileHitRecord> hitRecords,
         float3 impactPosition)
     {
+        // 範囲弾は命中地点周辺へ追加のDamageEventを積む。直接ヒット済みの対象は再度当てない。
         if (!HasModifier(modifierState.Modifiers, ProjectileModifierFlags.AreaOfEffect))
         {
             return;
@@ -359,5 +367,4 @@ public partial struct ProjectileHitJob : IJobEntity
     {
         return (value & flag) != 0;
     }
-
 }

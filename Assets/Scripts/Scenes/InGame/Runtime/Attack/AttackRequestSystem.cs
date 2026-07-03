@@ -4,8 +4,8 @@ using Unity.Mathematics;
 using Unity.Transforms;
 
 /// <summary>
-/// Player と Enemy の攻撃入力を見て、攻撃種類ごとのリクエストを作るシステム。
-/// 攻撃マスタをここで解決し、Projectile、Aura、MeleeArc などの実行システムへ薄いリクエストとして渡す。
+/// Player と Enemy の攻撃意思を読み、攻撃種別ごとの実行リクエストへ変換するシステム。
+/// 攻撃そのものはここで実行せず、Projectile / Aura / MeleeArc などの専用Systemへ薄いデータとして渡す。
 /// </summary>
 [UpdateBefore(typeof(ProjectileSpawnSystem))]
 public partial struct AttackRequestSystem : ISystem
@@ -29,6 +29,7 @@ public partial struct AttackRequestSystem : ISystem
             true);
         var ecb = new EntityCommandBuffer(Unity.Collections.Allocator.Temp);
 
+        // 入力やAI判断を攻撃リクエストへ変換する。ここでは弾やエフェクトを直接生成しない。
         RequestPlayerAttack(ref state, ecb, hasAttackDefinitions, attackDefinitions, deltaTime);
         RequestEnemyAttack(ref state, ecb, hasAttackDefinitions, attackDefinitions, deltaTime);
 
@@ -81,6 +82,7 @@ public partial struct AttackRequestSystem : ISystem
                      .WithAll<Enemy>()
                      .WithEntityAccess())
         {
+            // 敵は距離条件を満たすと発射意思ありとして扱う。AIごとの詳細条件は今後ここから分離できる。
             var distanceToPlayer = math.distance(transform.ValueRO.Position, playerPosition);
             var canFire = hasPlayer &&
                 distanceToPlayer >= EnemyMinFireDistance &&
@@ -110,6 +112,7 @@ public partial struct AttackRequestSystem : ISystem
         DynamicBuffer<AttackDefinitionElement> attackDefinitions,
         float deltaTime)
     {
+        // 攻撃IDからマスタ値を解決し、クールダウンが空いていれば種別ごとのリクエストを発行する。
         var definition = hasAttackDefinitions
             ? AttackDefinitionCatalog.Get(attackDefinitions, attackDefinitionId)
             : AttackDefinitionCatalog.Get(attackDefinitionId);

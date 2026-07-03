@@ -4,8 +4,8 @@ using Unity.Mathematics;
 using Unity.Transforms;
 
 /// <summary>
-/// ActorBody に積まれた DamageEvent を集計し、Health へ反映するシステム。
-/// 表示や効果音などの演出は VfxRequest として別システムへ渡す。
+/// ActorBodyに積まれたDamageEventを集計し、Healthへ反映するシステム。
+/// 表示や効果音などの演出はVfxRequestとして別Systemへ渡す。
 /// </summary>
 [BurstCompile]
 public partial struct ActorDamageEventSystem : ISystem
@@ -29,6 +29,7 @@ public partial struct ActorDamageEventSystem : ISystem
             var pos = transform.ValueRO.Position + new float3(0f, 1f, 0f);
             var totalDamage = 0;
 
+            // このフレームに溜まったダメージをまとめて減算し、各ヒットの表示だけ別リクエストへ逃がす。
             foreach (var damage in damageEventBuffer)
             {
                 totalDamage += damage.Damage;
@@ -49,7 +50,7 @@ public partial struct ActorDamageEventSystem : ISystem
 }
 
 /// <summary>
-/// ゲームロジックから演出層へ渡す、使い捨ての演出要求。
+/// ゲームロジックから演出層へ渡す、使い捨ての演出リクエスト。
 /// ダメージ、死亡、攻撃発生などの見た目をロジック本体から分離するために使う。
 /// </summary>
 public struct VfxRequest : IComponentData
@@ -60,7 +61,7 @@ public struct VfxRequest : IComponentData
 }
 
 /// <summary>
-/// VfxRequestSystem が処理できる演出の種類。
+/// VfxRequestSystemが処理できる演出の種類。
 /// </summary>
 public enum VfxRequestKind : byte
 {
@@ -68,8 +69,8 @@ public enum VfxRequestKind : byte
 }
 
 /// <summary>
-/// VfxRequest を消費し、実際の演出エンティティ生成へ変換するシステム。
-/// ロジック側は演出Prefabや表示方式を知らず、ここを演出の窓口にする。
+/// VfxRequestを消費し、実際の演出エンティティ生成へ変換するシステム。
+/// ロジック側は演出Prefabや表示方式を知らず、このSystemが演出の窓口になる。
 /// </summary>
 [BurstCompile]
 [UpdateAfter(typeof(ActorDamageEventSystem))]

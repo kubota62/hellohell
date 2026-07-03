@@ -5,8 +5,8 @@ using Unity.Rendering;
 using Unity.Transforms;
 
 /// <summary>
-/// ProjectileAttackRequest を消費して Projectile エンティティを生成または再利用するシステム。
-/// PooledInstance がある弾は Destroy せず、GameplayActive を有効化して再初期化する。
+/// ProjectileAttackRequest を消費してProjectileエンティティを生成、またはプールから再利用するシステム。
+/// PooledInstance を持つ弾はDestroyせず、GameplayActiveを切り替えて再初期化する。
 /// </summary>
 [UpdateAfter(typeof(AttackRequestSystem))]
 [UpdateBefore(typeof(TransformSystemGroup))]
@@ -38,6 +38,7 @@ public partial struct ProjectileSpawnSystem : ISystem
         var requests = requestQuery.ToComponentDataArray<ProjectileAttackRequest>(Allocator.Temp);
         var pooledProjectiles = pooledProjectileQuery.ToEntityArray(Allocator.Temp);
 
+        // リクエスト単位で弾を借り、位置、速度、寿命、Modifier状態をまとめて初期化する。
         for (var i = 0; i < requestEntities.Length; i++)
         {
             var value = requests[i];
@@ -57,6 +58,7 @@ public partial struct ProjectileSpawnSystem : ISystem
         NativeArray<Entity> pooledProjectiles,
         Entity projectilePrefab)
     {
+        // 同じPrefab由来で非アクティブな弾があれば再利用する。なければ初回だけInstantiateする。
         for (var i = 0; i < pooledProjectiles.Length; i++)
         {
             var candidate = pooledProjectiles[i];
@@ -136,6 +138,7 @@ public partial struct ProjectileSpawnSystem : ISystem
         Entity projectileEntity,
         ProjectileAttackRequest value)
     {
+        // Modifierはタグと状態値を分けて持たせる。検索はタグ、残り回数や範囲は状態値で読む。
         SetTag<PiercingProjectile>(
             entityManager,
             projectileEntity,
