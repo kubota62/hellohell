@@ -4,17 +4,17 @@ using Unity.Entities;
 /// BakerがScriptableObjectの敵定義をECS側へ渡すためのバッファ要素。
 /// スポーンシステムはmanagedなScriptableObjectではなく、この値だけを読む。
 /// </summary>
-public struct EnemyDefinitionElement : IBufferElementData
+public struct EnemyMasterElement : IBufferElementData
 {
     public int TypeId;
-    public EnemyStatDefinition Stats;
-    public EnemyMovementDefinition Movement;
-    public EnemyCombatDefinition Combat;
-    public EnemyVisualDefinition Visual;
+    public EnemyStatMaster Stats;
+    public EnemyMovementMaster Movement;
+    public EnemyCombatMaster Combat;
+    public EnemyVisualMaster Visual;
 
-    public static EnemyDefinitionElement FromDefinition(EnemyDefinitionData definition)
+    public static EnemyMasterElement FromMaster(EnemyMasterData definition)
     {
-        return new EnemyDefinitionElement
+        return new EnemyMasterElement
         {
             TypeId = definition.TypeId,
             Stats = definition.Stats,
@@ -24,9 +24,9 @@ public struct EnemyDefinitionElement : IBufferElementData
         };
     }
 
-    public EnemyDefinitionData ToRuntimeDefinition()
+    public EnemyMasterData ToRuntimeMaster()
     {
-        return new EnemyDefinitionData
+        return new EnemyMasterData
         {
             TypeId = TypeId,
             Stats = Stats,

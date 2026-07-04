@@ -6,5 +6,5 @@ using Unity.Entities;
 /// </summary>
 public struct AttackLoadout : IComponentData
 {
-    public AttackDefinitionId PrimaryAttack;
+    public AttackMasterId PrimaryAttack;
 }

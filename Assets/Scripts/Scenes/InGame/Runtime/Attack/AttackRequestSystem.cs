@@ -21,14 +21,14 @@ public partial struct AttackRequestSystem : ISystem
     public void OnUpdate(ref SystemState state)
     {
         var deltaTime = SystemAPI.Time.DeltaTime;
-        var hasAttackDefinitions = SystemAPI.TryGetSingletonBuffer<AttackDefinitionElement>(
-            out var attackDefinitions,
+        var hasAttackMasters = SystemAPI.TryGetSingletonBuffer<AttackMasterElement>(
+            out var attackMasters,
             true);
         var ecb = new EntityCommandBuffer(Unity.Collections.Allocator.Temp);
 
         // 入力やAI判断を攻撃リクエストへ変換する。ここでは弾やエフェクトを直接生成しない。
-        RequestPlayerAttack(ref state, ecb, hasAttackDefinitions, attackDefinitions, deltaTime);
-        RequestEnemyAttack(ref state, ecb, hasAttackDefinitions, attackDefinitions, deltaTime);
+        RequestPlayerAttack(ref state, ecb, hasAttackMasters, attackMasters, deltaTime);
+        RequestEnemyAttack(ref state, ecb, hasAttackMasters, attackMasters, deltaTime);
 
         ecb.Playback(state.EntityManager);
         ecb.Dispose();
@@ -37,8 +37,8 @@ public partial struct AttackRequestSystem : ISystem
     private void RequestPlayerAttack(
         ref SystemState state,
         EntityCommandBuffer ecb,
-        bool hasAttackDefinitions,
-        DynamicBuffer<AttackDefinitionElement> attackDefinitions,
+        bool hasAttackMasters,
+        DynamicBuffer<AttackMasterElement> attackMasters,
         float deltaTime)
     {
         var input = SystemAPI.GetSingleton<PlayerInput>();
@@ -52,11 +52,11 @@ public partial struct AttackRequestSystem : ISystem
                 ref state,
                 actorEntity,
                 cooldown,
-                ResolveAttackDefinitionId(ref state, actorEntity),
+                ResolveAttackMasterId(ref state, actorEntity),
                 input.IsFire,
                 ecb,
-                hasAttackDefinitions,
-                attackDefinitions,
+                hasAttackMasters,
+                attackMasters,
                 deltaTime);
         }
     }
@@ -64,8 +64,8 @@ public partial struct AttackRequestSystem : ISystem
     private void RequestEnemyAttack(
         ref SystemState state,
         EntityCommandBuffer ecb,
-        bool hasAttackDefinitions,
-        DynamicBuffer<AttackDefinitionElement> attackDefinitions,
+        bool hasAttackMasters,
+        DynamicBuffer<AttackMasterElement> attackMasters,
         float deltaTime)
     {
         var hasPlayer = SystemAPI.TryGetSingletonEntity<Player>(out var playerEntity) &&
@@ -89,11 +89,11 @@ public partial struct AttackRequestSystem : ISystem
                 ref state,
                 actorEntity,
                 cooldown,
-                ResolveAttackDefinitionId(ref state, actorEntity),
+                ResolveAttackMasterId(ref state, actorEntity),
                 canFire,
                 ecb,
-                hasAttackDefinitions,
-                attackDefinitions,
+                hasAttackMasters,
+                attackMasters,
                 deltaTime);
         }
     }
@@ -102,17 +102,17 @@ public partial struct AttackRequestSystem : ISystem
         ref SystemState state,
         Entity actorEntity,
         RefRW<AttackCooldown> cooldown,
-        AttackDefinitionId attackDefinitionId,
+        AttackMasterId attackMasterId,
         bool wantsAttack,
         EntityCommandBuffer ecb,
-        bool hasAttackDefinitions,
-        DynamicBuffer<AttackDefinitionElement> attackDefinitions,
+        bool hasAttackMasters,
+        DynamicBuffer<AttackMasterElement> attackMasters,
         float deltaTime)
     {
         // 攻撃IDからマスタ値を解決し、クールダウンが空いていれば種別ごとのリクエストを発行する。
-        var definition = hasAttackDefinitions
-            ? AttackDefinitionCatalog.Get(attackDefinitions, attackDefinitionId)
-            : AttackDefinitionCatalog.Get(attackDefinitionId);
+        var definition = hasAttackMasters
+            ? AttackMasterCatalog.Get(attackMasters, attackMasterId)
+            : AttackMasterCatalog.Get(attackMasterId);
 
         cooldown.ValueRW.Remaining = math.max(0f, cooldown.ValueRO.Remaining - deltaTime);
         if (!wantsAttack || cooldown.ValueRO.Remaining > 0f)
@@ -155,13 +155,13 @@ public partial struct AttackRequestSystem : ISystem
         Entity actorEntity,
         TeamId team,
         LocalToWorld canonLtw,
-        AttackDefinitionData definition,
+        AttackMasterData definition,
         EntityCommandBuffer ecb)
     {
         var requestEntity = ecb.CreateEntity();
         ecb.AddComponent(requestEntity, new ProjectileAttackRequest
         {
-            AttackDefinitionId = definition.Id,
+            AttackMasterId = definition.Id,
             Owner = actorEntity,
             Team = team,
             Position = canonLtw.Position,
@@ -183,13 +183,13 @@ public partial struct AttackRequestSystem : ISystem
         Entity actorEntity,
         TeamId team,
         float3 position,
-        AttackDefinitionData definition,
+        AttackMasterData definition,
         EntityCommandBuffer ecb)
     {
         var requestEntity = ecb.CreateEntity();
         ecb.AddComponent(requestEntity, new AuraAttackRequest
         {
-            AttackDefinitionId = definition.Id,
+            AttackMasterId = definition.Id,
             Owner = actorEntity,
             Team = team,
             Position = position,
@@ -203,13 +203,13 @@ public partial struct AttackRequestSystem : ISystem
         TeamId team,
         float3 actorPosition,
         LocalToWorld canonLtw,
-        AttackDefinitionData definition,
+        AttackMasterData definition,
         EntityCommandBuffer ecb)
     {
         var requestEntity = ecb.CreateEntity();
         ecb.AddComponent(requestEntity, new MeleeArcAttackRequest
         {
-            AttackDefinitionId = definition.Id,
+            AttackMasterId = definition.Id,
             Owner = actorEntity,
             Team = team,
             Position = actorPosition,
@@ -221,11 +221,11 @@ public partial struct AttackRequestSystem : ISystem
         });
     }
 
-    private AttackDefinitionId ResolveAttackDefinitionId(ref SystemState state, Entity actorEntity)
+    private AttackMasterId ResolveAttackMasterId(ref SystemState state, Entity actorEntity)
     {
         if (!SystemAPI.HasComponent<AttackLoadout>(actorEntity))
         {
-            return AttackDefinitionId.BasicProjectile;
+            return AttackMasterId.BasicProjectile;
         }
 
         return SystemAPI.GetComponent<AttackLoadout>(actorEntity).PrimaryAttack;

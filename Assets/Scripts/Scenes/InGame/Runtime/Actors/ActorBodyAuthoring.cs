@@ -3,7 +3,7 @@ using UnityEngine;
 
 /// <summary>
 /// Player と Enemy が共有する ActorBody プレハブを ECS に変換する Authoring。
-/// 敵の種類ごとの差分は EnemyDefinition 側で上書きする。
+/// 敵の種類ごとの差分は EnemyMaster 側で上書きする。
 /// </summary>
 public class ActorBodyAuthoring : MonoBehaviour
 {
@@ -32,7 +32,7 @@ public class ActorBodyAuthoring : MonoBehaviour
             AddComponent<MoveIntent>(actorEntity);
             AddComponent(actorEntity, new AttackLoadout
             {
-                PrimaryAttack = AttackDefinitionId.BasicMeleeArc,
+                PrimaryAttack = AttackMasterId.BasicMeleeArc,
             });
             AddComponent<AttackCooldown>(actorEntity);
             AddBuffer<DamageEvent>(actorEntity);

@@ -4,16 +4,16 @@ using Unity.Entities;
 /// 攻撃マスタへアクセスする仮の窓口。
 /// Baker が作った定義バッファがあればそちらを優先し、未配置でも最低限の既定値で動く。
 /// </summary>
-public static class AttackDefinitionCatalog
+public static class AttackMasterCatalog
 {
-    public static AttackDefinitionData Get(AttackDefinitionId id)
+    public static AttackMasterData Get(AttackMasterId id)
     {
         switch (id)
         {
-            case AttackDefinitionId.BasicAura:
-                return new AttackDefinitionData
+            case AttackMasterId.BasicAura:
+                return new AttackMasterData
                 {
-                    Id = AttackDefinitionId.BasicAura,
+                    Id = AttackMasterId.BasicAura,
                     Kind = AttackKind.Aura,
                     Cooldown = 1.5f,
                     Damage = 20,
@@ -31,10 +31,10 @@ public static class AttackDefinitionCatalog
                     VisualDuration = 0.12f,
                 };
 
-            case AttackDefinitionId.BasicMeleeArc:
-                return new AttackDefinitionData
+            case AttackMasterId.BasicMeleeArc:
+                return new AttackMasterData
                 {
-                    Id = AttackDefinitionId.BasicMeleeArc,
+                    Id = AttackMasterId.BasicMeleeArc,
                     Kind = AttackKind.MeleeArc,
                     Cooldown = 0.45f,
                     Damage = 28,
@@ -52,10 +52,10 @@ public static class AttackDefinitionCatalog
                     VisualDuration = 0.14f,
                 };
 
-            case AttackDefinitionId.BasicChainProjectile:
-                return new AttackDefinitionData
+            case AttackMasterId.BasicChainProjectile:
+                return new AttackMasterData
                 {
-                    Id = AttackDefinitionId.BasicChainProjectile,
+                    Id = AttackMasterId.BasicChainProjectile,
                     Kind = AttackKind.Projectile,
                     Cooldown = 0.9f,
                     Damage = 22,
@@ -73,11 +73,11 @@ public static class AttackDefinitionCatalog
                     VisualDuration = 0f,
                 };
 
-            case AttackDefinitionId.BasicProjectile:
+            case AttackMasterId.BasicProjectile:
             default:
-                return new AttackDefinitionData
+                return new AttackMasterData
                 {
-                    Id = AttackDefinitionId.BasicProjectile,
+                    Id = AttackMasterId.BasicProjectile,
                     Kind = AttackKind.Projectile,
                     Cooldown = 1f,
                     Damage = 34,
@@ -97,15 +97,15 @@ public static class AttackDefinitionCatalog
         }
     }
 
-    public static AttackDefinitionData Get(
-        DynamicBuffer<AttackDefinitionElement> definitions,
-        AttackDefinitionId id)
+    public static AttackMasterData Get(
+        DynamicBuffer<AttackMasterElement> definitions,
+        AttackMasterId id)
     {
         for (var i = 0; i < definitions.Length; i++)
         {
             if (definitions[i].Id == id)
             {
-                return definitions[i].ToDefinition();
+                return definitions[i].ToMaster();
             }
         }
 

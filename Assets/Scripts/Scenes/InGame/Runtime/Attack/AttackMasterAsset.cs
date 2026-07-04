@@ -5,10 +5,10 @@ using UnityEngine.Serialization;
 /// 攻撃の調整値をエディタ上で管理する ScriptableObject。
 /// Projectile は攻撃手段の一種として扱い、Aura や MeleeArc も同じ入口から追加する。
 /// </summary>
-[CreateAssetMenu(menuName = "HelloHell/Definitions/Attack Definition")]
-public class AttackDefinitionAsset : ScriptableObject
+[CreateAssetMenu(menuName = "HelloHell/Masters/Attack Master")]
+public class AttackMasterAsset : ScriptableObject
 {
-    public AttackDefinitionId Id = AttackDefinitionId.BasicProjectile;
+    public AttackMasterId Id = AttackMasterId.BasicProjectile;
     public AttackKind Kind = AttackKind.Projectile;
     public float Cooldown = 1f;
     public int Damage = 34;
@@ -30,9 +30,9 @@ public class AttackDefinitionAsset : ScriptableObject
     public float ArcAngleDegrees = 95f;
     public float VisualDuration = 0.16f;
 
-    public AttackDefinitionData ToRuntimeDefinition()
+    public AttackMasterData ToRuntimeMaster()
     {
-        return new AttackDefinitionData
+        return new AttackMasterData
         {
             Id = Id,
             Kind = Kind,

@@ -80,13 +80,13 @@ public partial struct ActorSpawnSystem : ISystem
         }
         else
         {
-            var hasEnemyDefinitions = SystemAPI.TryGetSingletonBuffer<EnemyDefinitionElement>(
-                out var enemyDefinitions,
+            var hasEnemyMasters = SystemAPI.TryGetSingletonBuffer<EnemyMasterElement>(
+                out var enemyMasters,
                 true);
             var enemySpawnIndex = spawnedCount - 1;
-            var definition = hasEnemyDefinitions
-                ? EnemyDefinitionCatalog.PickSpawnDefinition(enemyDefinitions, enemySpawnIndex)
-                : EnemyDefinitionCatalog.Get(EnemyDefinitionCatalog.PickSpawnType(enemySpawnIndex));
+            var definition = hasEnemyMasters
+                ? EnemyMasterCatalog.PickSpawnMaster(enemyMasters, enemySpawnIndex)
+                : EnemyMasterCatalog.Get(EnemyMasterCatalog.PickSpawnType(enemySpawnIndex));
             AddEnemyComponents(entityManager, actorEntity, definition);
         }
 
@@ -100,7 +100,7 @@ public partial struct ActorSpawnSystem : ISystem
         entityManager.SetComponentData(actorEntity, new Team { Value = TeamId.Player });
         entityManager.SetComponentData(actorEntity, new AttackLoadout
         {
-            PrimaryAttack = AttackDefinitionId.BasicMeleeArc,
+            PrimaryAttack = AttackMasterId.BasicMeleeArc,
         });
         entityManager.SetComponentData(actorEntity, new AttackCooldown());
 
@@ -111,7 +111,7 @@ public partial struct ActorSpawnSystem : ISystem
     private static void AddEnemyComponents(
         EntityManager entityManager,
         Entity actorEntity,
-        EnemyDefinitionData definition)
+        EnemyMasterData definition)
     {
         entityManager.AddComponent<Enemy>(actorEntity);
         entityManager.AddComponentData(actorEntity, new EnemyTypeId { Value = definition.TypeId });
@@ -128,7 +128,7 @@ public partial struct ActorSpawnSystem : ISystem
     private static void ApplyEnemyStats(
         EntityManager entityManager,
         Entity actorEntity,
-        EnemyStatDefinition stats)
+        EnemyStatMaster stats)
     {
         entityManager.SetComponentData(actorEntity, new Team { Value = TeamId.Enemy });
         entityManager.SetComponentData(actorEntity, Health.FromMax(stats.MaxHealth));
@@ -145,7 +145,7 @@ public partial struct ActorSpawnSystem : ISystem
     private static void ApplyEnemyMovement(
         EntityManager entityManager,
         Entity actorEntity,
-        EnemyMovementDefinition movement)
+        EnemyMovementMaster movement)
     {
         SetOrAddMoveSpeed(entityManager, actorEntity, movement.MoveSpeed);
 
@@ -172,7 +172,7 @@ public partial struct ActorSpawnSystem : ISystem
     private static void ApplyEnemyCombat(
         EntityManager entityManager,
         Entity actorEntity,
-        EnemyCombatDefinition combat)
+        EnemyCombatMaster combat)
     {
         SetOrAddAttackRange(entityManager, actorEntity, combat.MinAttackRange, combat.MaxAttackRange);
         entityManager.SetComponentData(actorEntity, new AttackLoadout
@@ -188,7 +188,7 @@ public partial struct ActorSpawnSystem : ISystem
     private static void ApplyEnemyVisual(
         EntityManager entityManager,
         Entity actorEntity,
-        EnemyVisualDefinition visual)
+        EnemyVisualMaster visual)
     {
         SetOrAddColor(entityManager, actorEntity, new URPMaterialPropertyBaseColor
         {

@@ -15,7 +15,7 @@ public enum EnemyMovementKind : byte
 /// <summary>
 /// HP、当たり判定、見た目サイズなど、敵の身体的な基本値。
 /// </summary>
-public struct EnemyStatDefinition
+public struct EnemyStatMaster
 {
     public int MaxHealth;
     public float HitRadius;
@@ -25,7 +25,7 @@ public struct EnemyStatDefinition
 /// <summary>
 /// どのAIで動くかと、そのAIが使う移動速度。
 /// </summary>
-public struct EnemyMovementDefinition
+public struct EnemyMovementMaster
 {
     public EnemyMovementKind Kind;
     public float MoveSpeed;
@@ -34,9 +34,9 @@ public struct EnemyMovementDefinition
 /// <summary>
 /// 敵が使う攻撃と、攻撃可能な距離帯。
 /// </summary>
-public struct EnemyCombatDefinition
+public struct EnemyCombatMaster
 {
-    public AttackDefinitionId PrimaryAttack;
+    public AttackMasterId PrimaryAttack;
     public float MinAttackRange;
     public float MaxAttackRange;
 }
@@ -44,7 +44,7 @@ public struct EnemyCombatDefinition
 /// <summary>
 /// 色など、敵の見た目に関わる軽量な値。
 /// </summary>
-public struct EnemyVisualDefinition
+public struct EnemyVisualMaster
 {
     public float4 Color;
 }
@@ -53,17 +53,17 @@ public struct EnemyVisualDefinition
 /// ランタイムで参照する敵定義の軽量データ。
 /// ScriptableObjectから焼き込まれた値を、Actor生成時にカテゴリごとへ適用する。
 /// </summary>
-public struct EnemyDefinitionData
+public struct EnemyMasterData
 {
     public int TypeId;
-    public EnemyStatDefinition Stats;
-    public EnemyMovementDefinition Movement;
-    public EnemyCombatDefinition Combat;
-    public EnemyVisualDefinition Visual;
+    public EnemyStatMaster Stats;
+    public EnemyMovementMaster Movement;
+    public EnemyCombatMaster Combat;
+    public EnemyVisualMaster Visual;
 }
 
 /// <summary>
-/// EnemyDefinitionから注入される敵ごとの攻撃可能距離。
+/// EnemyMasterから注入される敵ごとの攻撃可能距離。
 /// AIの移動距離とは別に持たせ、同じ移動パターンでも近接型や射撃型へ調整できるようにする。
 /// </summary>
 public struct EnemyAttackRange : IComponentData

@@ -4,9 +4,9 @@ using Unity.Entities;
 /// Baker が ScriptableObject の攻撃定義を ECS 側へ渡すためのバッファ要素。
 /// 実行中のシステムは managed な ScriptableObject ではなく、この値だけを読む。
 /// </summary>
-public struct AttackDefinitionElement : IBufferElementData
+public struct AttackMasterElement : IBufferElementData
 {
-    public AttackDefinitionId Id;
+    public AttackMasterId Id;
     public AttackKind Kind;
     public float Cooldown;
     public int Damage;
@@ -23,9 +23,9 @@ public struct AttackDefinitionElement : IBufferElementData
     public float ArcAngleDegrees;
     public float VisualDuration;
 
-    public static AttackDefinitionElement FromDefinition(AttackDefinitionData definition)
+    public static AttackMasterElement FromMaster(AttackMasterData definition)
     {
-        return new AttackDefinitionElement
+        return new AttackMasterElement
         {
             Id = definition.Id,
             Kind = definition.Kind,
@@ -46,9 +46,9 @@ public struct AttackDefinitionElement : IBufferElementData
         };
     }
 
-    public AttackDefinitionData ToDefinition()
+    public AttackMasterData ToMaster()
     {
-        return new AttackDefinitionData
+        return new AttackMasterData
         {
             Id = Id,
             Kind = Kind,

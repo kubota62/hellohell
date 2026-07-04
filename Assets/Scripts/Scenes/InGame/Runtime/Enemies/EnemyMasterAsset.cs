@@ -5,8 +5,8 @@ using UnityEngine;
 /// 敵の種類、移動、初期ステータス、攻撃をまとめて管理するScriptableObject。
 /// Inspector上では調整しやすい平らな項目にし、ECSへ渡す時にカテゴリ構造へ詰め替える。
 /// </summary>
-[CreateAssetMenu(menuName = "HelloHell/Definitions/Enemy Definition")]
-public class EnemyDefinitionAsset : ScriptableObject
+[CreateAssetMenu(menuName = "HelloHell/Masters/Enemy Master")]
+public class EnemyMasterAsset : ScriptableObject
 {
     [Header("Identity")]
     public int TypeId = 1;
@@ -21,42 +21,42 @@ public class EnemyDefinitionAsset : ScriptableObject
     public float MoveSpeed = 2.8f;
 
     [Header("Combat")]
-    public AttackDefinitionId PrimaryAttack = AttackDefinitionId.BasicProjectile;
+    public AttackMasterId PrimaryAttack = AttackMasterId.BasicProjectile;
     public float MinAttackRange = 5f;
     public float MaxAttackRange = 24f;
 
     [Header("Visual")]
     public Color Color = UnityEngine.Color.magenta;
 
-    public EnemyDefinitionData ToRuntimeDefinition()
+    public EnemyMasterData ToRuntimeMaster()
     {
-        var fallback = EnemyDefinitionCatalog.Get(TypeId);
+        var fallback = EnemyMasterCatalog.Get(TypeId);
         var moveSpeed = MoveSpeed > 0f ? MoveSpeed : fallback.Movement.MoveSpeed;
         var bodyScale = BodyScale > 0f ? BodyScale : fallback.Stats.BodyScale;
         var minAttackRange = MinAttackRange > 0f ? MinAttackRange : fallback.Combat.MinAttackRange;
         var maxAttackRange = MaxAttackRange > 0f ? MaxAttackRange : fallback.Combat.MaxAttackRange;
 
-        return new EnemyDefinitionData
+        return new EnemyMasterData
         {
             TypeId = TypeId,
-            Stats = new EnemyStatDefinition
+            Stats = new EnemyStatMaster
             {
                 MaxHealth = MaxHealth,
                 HitRadius = HitRadius,
                 BodyScale = bodyScale,
             },
-            Movement = new EnemyMovementDefinition
+            Movement = new EnemyMovementMaster
             {
                 Kind = Movement,
                 MoveSpeed = moveSpeed,
             },
-            Combat = new EnemyCombatDefinition
+            Combat = new EnemyCombatMaster
             {
                 PrimaryAttack = PrimaryAttack,
                 MinAttackRange = minAttackRange,
                 MaxAttackRange = math.max(minAttackRange, maxAttackRange),
             },
-            Visual = new EnemyVisualDefinition
+            Visual = new EnemyVisualMaster
             {
                 Color = new float4(Color.r, Color.g, Color.b, Color.a),
             },

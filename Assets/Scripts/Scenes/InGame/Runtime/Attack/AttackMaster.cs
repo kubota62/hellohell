@@ -2,7 +2,7 @@
 /// 攻撃マスタを参照するための軽量ID。
 /// 将来的には ScriptableObject や BlobAsset の定義IDと対応させる。
 /// </summary>
-public enum AttackDefinitionId
+public enum AttackMasterId
 {
     BasicProjectile = 1,
     BasicAura = 2,
@@ -38,9 +38,9 @@ public enum ProjectileModifierFlags : byte
 /// 攻撃マスタから取得するランタイム用の調整値。
 /// 共通値と攻撃方式ごとの固有値を同じ構造体に置き、必要に応じて段階的に分割する。
 /// </summary>
-public struct AttackDefinitionData
+public struct AttackMasterData
 {
-    public AttackDefinitionId Id;
+    public AttackMasterId Id;
     public AttackKind Kind;
     public float Cooldown;
     public int Damage;

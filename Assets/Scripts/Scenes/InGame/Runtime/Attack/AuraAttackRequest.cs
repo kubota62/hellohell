@@ -7,7 +7,7 @@ using Unity.Mathematics;
 /// </summary>
 public struct AuraAttackRequest : IComponentData
 {
-    public AttackDefinitionId AttackDefinitionId;
+    public AttackMasterId AttackMasterId;
     public Entity Owner;
     public TeamId Team;
     public float3 Position;
