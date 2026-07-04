@@ -1,37 +1,26 @@
 using Unity.Entities;
-using Unity.Mathematics;
 
 /// <summary>
-/// Baker が ScriptableObject の敵定義を ECS 側へ渡すためのバッファ要素。
-/// スポーンシステムは managed な ScriptableObject ではなく、この値だけを読む。
+/// BakerがScriptableObjectの敵定義をECS側へ渡すためのバッファ要素。
+/// スポーンシステムはmanagedなScriptableObjectではなく、この値だけを読む。
 /// </summary>
 public struct EnemyDefinitionElement : IBufferElementData
 {
     public int TypeId;
-    public EnemyMovementKind Movement;
-    public int MaxHealth;
-    public float MoveSpeed;
-    public float BodyScale;
-    public float HitRadius;
-    public float MinAttackRange;
-    public float MaxAttackRange;
-    public AttackDefinitionId PrimaryAttack;
-    public float4 Color;
+    public EnemyStatDefinition Stats;
+    public EnemyMovementDefinition Movement;
+    public EnemyCombatDefinition Combat;
+    public EnemyVisualDefinition Visual;
 
     public static EnemyDefinitionElement FromDefinition(EnemyDefinitionData definition)
     {
         return new EnemyDefinitionElement
         {
             TypeId = definition.TypeId,
+            Stats = definition.Stats,
             Movement = definition.Movement,
-            MaxHealth = definition.MaxHealth,
-            MoveSpeed = definition.MoveSpeed,
-            BodyScale = definition.BodyScale,
-            HitRadius = definition.HitRadius,
-            MinAttackRange = definition.MinAttackRange,
-            MaxAttackRange = definition.MaxAttackRange,
-            PrimaryAttack = definition.PrimaryAttack,
-            Color = definition.Color,
+            Combat = definition.Combat,
+            Visual = definition.Visual,
         };
     }
 
@@ -40,15 +29,10 @@ public struct EnemyDefinitionElement : IBufferElementData
         return new EnemyDefinitionData
         {
             TypeId = TypeId,
+            Stats = Stats,
             Movement = Movement,
-            MaxHealth = MaxHealth,
-            MoveSpeed = MoveSpeed,
-            BodyScale = BodyScale,
-            HitRadius = HitRadius,
-            MinAttackRange = MinAttackRange,
-            MaxAttackRange = MaxAttackRange,
-            PrimaryAttack = PrimaryAttack,
-            Color = Color,
+            Combat = Combat,
+            Visual = Visual,
         };
     }
 }

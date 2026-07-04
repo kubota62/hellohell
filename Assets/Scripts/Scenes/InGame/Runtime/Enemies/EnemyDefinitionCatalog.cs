@@ -49,65 +49,57 @@ public static class EnemyDefinitionCatalog
         switch (typeId)
         {
             case KiteEnemy:
-                return new EnemyDefinitionData
-                {
-                    TypeId = KiteEnemy,
-                    Movement = EnemyMovementKind.Kite,
-                    MaxHealth = 80,
-                    MoveSpeed = 3.2f,
-                    BodyScale = 0.9f,
-                    HitRadius = 1.8f,
-                    MinAttackRange = 8f,
-                    MaxAttackRange = 24f,
-                    PrimaryAttack = AttackDefinitionId.BasicChainProjectile,
-                    Color = new float4(0.1f, 0.35f, 1f, 1f),
-                };
+                return Create(
+                    KiteEnemy,
+                    EnemyMovementKind.Kite,
+                    maxHealth: 80,
+                    hitRadius: 1.8f,
+                    bodyScale: 0.9f,
+                    moveSpeed: 3.2f,
+                    primaryAttack: AttackDefinitionId.BasicChainProjectile,
+                    minAttackRange: 8f,
+                    maxAttackRange: 24f,
+                    color: new float4(0.1f, 0.35f, 1f, 1f));
 
             case ChainEnemy:
-                return new EnemyDefinitionData
-                {
-                    TypeId = ChainEnemy,
-                    Movement = EnemyMovementKind.Forward,
-                    MaxHealth = 120,
-                    MoveSpeed = 2.1f,
-                    BodyScale = 1.15f,
-                    HitRadius = 2f,
-                    MinAttackRange = 5f,
-                    MaxAttackRange = 22f,
-                    PrimaryAttack = AttackDefinitionId.BasicChainProjectile,
-                    Color = new float4(0.1f, 0.85f, 1f, 1f),
-                };
+                return Create(
+                    ChainEnemy,
+                    EnemyMovementKind.Forward,
+                    maxHealth: 120,
+                    hitRadius: 2f,
+                    bodyScale: 1.15f,
+                    moveSpeed: 2.1f,
+                    primaryAttack: AttackDefinitionId.BasicChainProjectile,
+                    minAttackRange: 5f,
+                    maxAttackRange: 22f,
+                    color: new float4(0.1f, 0.85f, 1f, 1f));
 
             case RandomEnemy:
-                return new EnemyDefinitionData
-                {
-                    TypeId = RandomEnemy,
-                    Movement = EnemyMovementKind.Random,
-                    MaxHealth = 100,
-                    MoveSpeed = 2.4f,
-                    BodyScale = 1f,
-                    HitRadius = 2f,
-                    MinAttackRange = 5f,
-                    MaxAttackRange = 24f,
-                    PrimaryAttack = AttackDefinitionId.BasicProjectile,
-                    Color = new float4(1f, 1f, 0f, 1f),
-                };
+                return Create(
+                    RandomEnemy,
+                    EnemyMovementKind.Random,
+                    maxHealth: 100,
+                    hitRadius: 2f,
+                    bodyScale: 1f,
+                    moveSpeed: 2.4f,
+                    primaryAttack: AttackDefinitionId.BasicProjectile,
+                    minAttackRange: 5f,
+                    maxAttackRange: 24f,
+                    color: new float4(1f, 1f, 0f, 1f));
 
             case ForwardEnemy:
             default:
-                return new EnemyDefinitionData
-                {
-                    TypeId = ForwardEnemy,
-                    Movement = EnemyMovementKind.Forward,
-                    MaxHealth = 100,
-                    MoveSpeed = 2.8f,
-                    BodyScale = 1f,
-                    HitRadius = 2f,
-                    MinAttackRange = 5f,
-                    MaxAttackRange = 24f,
-                    PrimaryAttack = AttackDefinitionId.BasicProjectile,
-                    Color = new float4(1f, 0f, 1f, 1f),
-                };
+                return Create(
+                    ForwardEnemy,
+                    EnemyMovementKind.Forward,
+                    maxHealth: 100,
+                    hitRadius: 2f,
+                    bodyScale: 1f,
+                    moveSpeed: 2.8f,
+                    primaryAttack: AttackDefinitionId.BasicProjectile,
+                    minAttackRange: 5f,
+                    maxAttackRange: 24f,
+                    color: new float4(1f, 0f, 1f, 1f));
         }
     }
 
@@ -124,5 +116,44 @@ public static class EnemyDefinitionCatalog
         }
 
         return Get(typeId);
+    }
+
+    private static EnemyDefinitionData Create(
+        int typeId,
+        EnemyMovementKind movement,
+        int maxHealth,
+        float hitRadius,
+        float bodyScale,
+        float moveSpeed,
+        AttackDefinitionId primaryAttack,
+        float minAttackRange,
+        float maxAttackRange,
+        float4 color)
+    {
+        return new EnemyDefinitionData
+        {
+            TypeId = typeId,
+            Stats = new EnemyStatDefinition
+            {
+                MaxHealth = maxHealth,
+                HitRadius = hitRadius,
+                BodyScale = bodyScale,
+            },
+            Movement = new EnemyMovementDefinition
+            {
+                Kind = movement,
+                MoveSpeed = moveSpeed,
+            },
+            Combat = new EnemyCombatDefinition
+            {
+                PrimaryAttack = primaryAttack,
+                MinAttackRange = minAttackRange,
+                MaxAttackRange = math.max(minAttackRange, maxAttackRange),
+            },
+            Visual = new EnemyVisualDefinition
+            {
+                Color = color,
+            },
+        };
     }
 }

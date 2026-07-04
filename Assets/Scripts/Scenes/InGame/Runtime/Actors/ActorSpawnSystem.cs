@@ -6,8 +6,8 @@ using UnityEngine;
 using Random = Unity.Mathematics.Random;
 
 /// <summary>
-/// 初期 Player と継続的な Enemy を ActorBody プレハブから生成するシステム。
-/// 生成直後の位置を同フレームの描画へ反映するため、TransformSystemGroup より前に実行する。
+/// 初期Playerと継続的なEnemyをActorBodyプレハブから生成するシステム。
+/// 生成直後の位置を同フレームの描画へ反映するため、TransformSystemGroupより前に実行する。
 /// </summary>
 [UpdateBefore(typeof(TransformSystemGroup))]
 public partial struct ActorSpawnSystem : ISystem
@@ -115,18 +115,35 @@ public partial struct ActorSpawnSystem : ISystem
     {
         entityManager.AddComponent<Enemy>(actorEntity);
         entityManager.AddComponentData(actorEntity, new EnemyTypeId { Value = definition.TypeId });
-        entityManager.SetComponentData(actorEntity, new Team { Value = TeamId.Enemy });
-        entityManager.SetComponentData(actorEntity, Health.FromMax(definition.MaxHealth));
-        entityManager.SetComponentData(actorEntity, new Hitbox { Radius = definition.HitRadius });
-        SetOrAddMoveSpeed(entityManager, actorEntity, definition.MoveSpeed);
-        SetOrAddAttackRange(entityManager, actorEntity, definition.MinAttackRange, definition.MaxAttackRange);
-        entityManager.SetComponentData(actorEntity, new AttackLoadout
-        {
-            PrimaryAttack = definition.PrimaryAttack,
-        });
-        entityManager.SetComponentData(actorEntity, new AttackCooldown());
 
-        switch (definition.Movement)
+        ApplyEnemyStats(entityManager, actorEntity, definition.Stats);
+        ApplyEnemyMovement(entityManager, actorEntity, definition.Movement);
+        ApplyEnemyCombat(entityManager, actorEntity, definition.Combat);
+        ApplyEnemyVisual(entityManager, actorEntity, definition.Visual);
+    }
+
+    private static void ApplyEnemyStats(
+        EntityManager entityManager,
+        Entity actorEntity,
+        EnemyStatDefinition stats)
+    {
+        entityManager.SetComponentData(actorEntity, new Team { Value = TeamId.Enemy });
+        entityManager.SetComponentData(actorEntity, Health.FromMax(stats.MaxHealth));
+        entityManager.SetComponentData(actorEntity, new Hitbox { Radius = stats.HitRadius });
+
+        var transform = entityManager.GetComponentData<LocalTransform>(actorEntity);
+        transform.Scale = math.max(0.01f, stats.BodyScale);
+        entityManager.SetComponentData(actorEntity, transform);
+    }
+
+    private static void ApplyEnemyMovement(
+        EntityManager entityManager,
+        Entity actorEntity,
+        EnemyMovementDefinition movement)
+    {
+        SetOrAddMoveSpeed(entityManager, actorEntity, movement.MoveSpeed);
+
+        switch (movement.Kind)
         {
             case EnemyMovementKind.Kite:
                 entityManager.AddComponent<EnemyMovementKite>(actorEntity);
@@ -141,15 +158,30 @@ public partial struct ActorSpawnSystem : ISystem
                 entityManager.AddComponent<EnemyMovementForward>(actorEntity);
                 break;
         }
+    }
 
+    private static void ApplyEnemyCombat(
+        EntityManager entityManager,
+        Entity actorEntity,
+        EnemyCombatDefinition combat)
+    {
+        SetOrAddAttackRange(entityManager, actorEntity, combat.MinAttackRange, combat.MaxAttackRange);
+        entityManager.SetComponentData(actorEntity, new AttackLoadout
+        {
+            PrimaryAttack = combat.PrimaryAttack,
+        });
+        entityManager.SetComponentData(actorEntity, new AttackCooldown());
+    }
+
+    private static void ApplyEnemyVisual(
+        EntityManager entityManager,
+        Entity actorEntity,
+        EnemyVisualDefinition visual)
+    {
         SetOrAddColor(entityManager, actorEntity, new URPMaterialPropertyBaseColor
         {
-            Value = definition.Color,
+            Value = visual.Color,
         });
-
-        var transform = entityManager.GetComponentData<LocalTransform>(actorEntity);
-        transform.Scale = math.max(0.01f, definition.BodyScale);
-        entityManager.SetComponentData(actorEntity, transform);
     }
 
     private static void SetOrAddMoveSpeed(

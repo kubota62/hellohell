@@ -2,43 +2,64 @@ using Unity.Mathematics;
 using UnityEngine;
 
 /// <summary>
-/// 敵の種類、移動、初期ステータス、攻撃をまとめて管理する ScriptableObject。
-/// 将来はこの定義を Baker で BlobAsset 化し、スポーン時に参照する。
+/// 敵の種類、移動、初期ステータス、攻撃をまとめて管理するScriptableObject。
+/// Inspector上では調整しやすいように平らな項目にし、ECSへ渡す時にカテゴリ構造へ詰め替える。
 /// </summary>
 [CreateAssetMenu(menuName = "HelloHell/Definitions/Enemy Definition")]
 public class EnemyDefinitionAsset : ScriptableObject
 {
+    [Header("Identity")]
     public int TypeId = 1;
-    public EnemyMovementKind Movement = EnemyMovementKind.Forward;
+
+    [Header("Stats")]
     public int MaxHealth = 100;
-    public float MoveSpeed = 2.8f;
-    public float BodyScale = 1f;
     public float HitRadius = 2f;
+    public float BodyScale = 1f;
+
+    [Header("Movement")]
+    public EnemyMovementKind Movement = EnemyMovementKind.Forward;
+    public float MoveSpeed = 2.8f;
+
+    [Header("Combat")]
+    public AttackDefinitionId PrimaryAttack = AttackDefinitionId.BasicProjectile;
     public float MinAttackRange = 5f;
     public float MaxAttackRange = 24f;
-    public AttackDefinitionId PrimaryAttack = AttackDefinitionId.BasicProjectile;
+
+    [Header("Visual")]
     public Color Color = UnityEngine.Color.magenta;
 
     public EnemyDefinitionData ToRuntimeDefinition()
     {
         var fallback = EnemyDefinitionCatalog.Get(TypeId);
-        var moveSpeed = MoveSpeed > 0f ? MoveSpeed : fallback.MoveSpeed;
-        var bodyScale = BodyScale > 0f ? BodyScale : fallback.BodyScale;
-        var minAttackRange = MinAttackRange > 0f ? MinAttackRange : fallback.MinAttackRange;
-        var maxAttackRange = MaxAttackRange > 0f ? MaxAttackRange : fallback.MaxAttackRange;
+        var moveSpeed = MoveSpeed > 0f ? MoveSpeed : fallback.Movement.MoveSpeed;
+        var bodyScale = BodyScale > 0f ? BodyScale : fallback.Stats.BodyScale;
+        var minAttackRange = MinAttackRange > 0f ? MinAttackRange : fallback.Combat.MinAttackRange;
+        var maxAttackRange = MaxAttackRange > 0f ? MaxAttackRange : fallback.Combat.MaxAttackRange;
 
         return new EnemyDefinitionData
         {
             TypeId = TypeId,
-            Movement = Movement,
-            MaxHealth = MaxHealth,
-            MoveSpeed = moveSpeed,
-            BodyScale = bodyScale,
-            HitRadius = HitRadius,
-            MinAttackRange = minAttackRange,
-            MaxAttackRange = math.max(minAttackRange, maxAttackRange),
-            PrimaryAttack = PrimaryAttack,
-            Color = new float4(Color.r, Color.g, Color.b, Color.a),
+            Stats = new EnemyStatDefinition
+            {
+                MaxHealth = MaxHealth,
+                HitRadius = HitRadius,
+                BodyScale = bodyScale,
+            },
+            Movement = new EnemyMovementDefinition
+            {
+                Kind = Movement,
+                MoveSpeed = moveSpeed,
+            },
+            Combat = new EnemyCombatDefinition
+            {
+                PrimaryAttack = PrimaryAttack,
+                MinAttackRange = minAttackRange,
+                MaxAttackRange = math.max(minAttackRange, maxAttackRange),
+            },
+            Visual = new EnemyVisualDefinition
+            {
+                Color = new float4(Color.r, Color.g, Color.b, Color.a),
+            },
         };
     }
 }
