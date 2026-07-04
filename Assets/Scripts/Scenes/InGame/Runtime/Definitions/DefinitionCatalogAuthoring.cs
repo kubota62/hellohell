@@ -2,7 +2,7 @@ using Unity.Entities;
 using UnityEngine;
 
 /// <summary>
-/// ScriptableObject の定義一覧を ECS の定義バッファへ焼き込む Authoring。
+/// ScriptableObjectの定義一覧をECSの定義バッファへ焼き込むAuthoring。
 /// シーンに置くと、スポーンや攻撃生成は静的カタログではなくこの定義を優先して読む。
 /// </summary>
 public class DefinitionCatalogAuthoring : MonoBehaviour

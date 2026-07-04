@@ -3,7 +3,7 @@ using UnityEngine;
 
 /// <summary>
 /// 敵の種類、移動、初期ステータス、攻撃をまとめて管理するScriptableObject。
-/// Inspector上では調整しやすいように平らな項目にし、ECSへ渡す時にカテゴリ構造へ詰め替える。
+/// Inspector上では調整しやすい平らな項目にし、ECSへ渡す時にカテゴリ構造へ詰め替える。
 /// </summary>
 [CreateAssetMenu(menuName = "HelloHell/Definitions/Enemy Definition")]
 public class EnemyDefinitionAsset : ScriptableObject

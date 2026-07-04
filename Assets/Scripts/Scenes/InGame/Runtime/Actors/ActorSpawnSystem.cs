@@ -122,6 +122,9 @@ public partial struct ActorSpawnSystem : ISystem
         ApplyEnemyVisual(entityManager, actorEntity, definition.Visual);
     }
 
+    /// <summary>
+    /// HP、当たり判定、見た目サイズなど、敵の身体に関わる値をまとめて適用する。
+    /// </summary>
     private static void ApplyEnemyStats(
         EntityManager entityManager,
         Entity actorEntity,
@@ -136,6 +139,9 @@ public partial struct ActorSpawnSystem : ISystem
         entityManager.SetComponentData(actorEntity, transform);
     }
 
+    /// <summary>
+    /// 敵定義で選ばれた移動タイプに応じて、必要な移動コンポーネントを付与する。
+    /// </summary>
     private static void ApplyEnemyMovement(
         EntityManager entityManager,
         Entity actorEntity,
@@ -160,6 +166,9 @@ public partial struct ActorSpawnSystem : ISystem
         }
     }
 
+    /// <summary>
+    /// 敵定義で選ばれた攻撃IDと攻撃距離を、攻撃システムが読める形に変換する。
+    /// </summary>
     private static void ApplyEnemyCombat(
         EntityManager entityManager,
         Entity actorEntity,
@@ -173,6 +182,9 @@ public partial struct ActorSpawnSystem : ISystem
         entityManager.SetComponentData(actorEntity, new AttackCooldown());
     }
 
+    /// <summary>
+    /// 本体と子パーツへ同期するため、敵定義の色をActor本体に付与する。
+    /// </summary>
     private static void ApplyEnemyVisual(
         EntityManager entityManager,
         Entity actorEntity,
