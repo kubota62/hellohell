@@ -2,7 +2,7 @@ using Unity.Burst;
 using Unity.Entities;
 
 /// <summary>
-/// 現在生存している ActorBody と active な Projectile の数を集計し、Managed 側の HUD へ渡す。
+/// 現在生存している ActorBody、active な Projectile、PlayerProgressを集計し、Managed 側の HUD へ渡す。
 /// inactive なプール待機弾は Projectile 数に含めない。
 /// </summary>
 [BurstCompile]
@@ -28,5 +28,14 @@ public partial struct HUDSystem : ISystem
 
         hudBridge.SetActorCount(actorCountQuery.CalculateEntityCount());
         hudBridge.SetProjectileCount(projectileCountQuery.CalculateEntityCount());
+
+        if (SystemAPI.TryGetSingleton<PlayerProgress>(out var progress))
+        {
+            hudBridge.SetPlayerProgress(
+                progress.Level,
+                progress.Experience,
+                progress.ExperienceToNextLevel,
+                progress.Score);
+        }
     }
 }

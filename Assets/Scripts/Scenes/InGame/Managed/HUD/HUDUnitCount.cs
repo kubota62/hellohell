@@ -10,9 +10,15 @@ public class HUDUnitCount : MonoBehaviour
     public TMP_Text unitText;
     public TMP_Text bulletText;
 
-    public void SetCount(int unitNum, int bulletNum)
+    public void SetCount(
+        int unitNum,
+        int bulletNum,
+        int level,
+        int experience,
+        int experienceToNextLevel,
+        int score)
     {
-        unitText.text = $"Actors: {unitNum}";
-        bulletText.text = $"Projectiles: {bulletNum}";
+        unitText.text = $"Actors: {unitNum}  Lv: {level}  EXP: {experience}/{experienceToNextLevel}";
+        bulletText.text = $"Projectiles: {bulletNum}  Score: {score}";
     }
 }

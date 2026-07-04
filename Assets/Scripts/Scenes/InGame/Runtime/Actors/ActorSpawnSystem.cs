@@ -112,6 +112,7 @@ public partial struct ActorSpawnSystem : ISystem
             PrimaryAttack = AttackMasterId.BasicMeleeArc,
         });
         entityManager.SetComponentData(actorEntity, new AttackCooldown());
+        entityManager.AddComponentData(actorEntity, PlayerProgressSystem.CreateInitialProgress());
 
         var playerColor = new URPMaterialPropertyBaseColor { Value = new float4(1f, 1f, 1f, 1f) };
         SetOrAddColor(entityManager, actorEntity, playerColor);
