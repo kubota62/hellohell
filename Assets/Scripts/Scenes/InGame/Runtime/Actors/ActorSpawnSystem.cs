@@ -113,6 +113,7 @@ public partial struct ActorSpawnSystem : ISystem
         });
         entityManager.SetComponentData(actorEntity, new AttackCooldown());
         entityManager.AddComponentData(actorEntity, PlayerProgressSystem.CreateInitialProgress());
+        entityManager.AddComponentData(actorEntity, new PlayerSkillStats());
 
         var playerColor = new URPMaterialPropertyBaseColor { Value = new float4(1f, 1f, 1f, 1f) };
         SetOrAddColor(entityManager, actorEntity, playerColor);

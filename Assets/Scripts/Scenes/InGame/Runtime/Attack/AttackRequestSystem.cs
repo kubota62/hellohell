@@ -113,6 +113,7 @@ public partial struct AttackRequestSystem : ISystem
         var definition = hasAttackMasters
             ? AttackMasterCatalog.Get(attackMasters, attackMasterId)
             : AttackMasterCatalog.Get(attackMasterId);
+        ApplyPlayerSkillStats(ref state, actorEntity, ref definition);
 
         cooldown.ValueRW.Remaining = math.max(0f, cooldown.ValueRO.Remaining - deltaTime);
         if (!wantsAttack || cooldown.ValueRO.Remaining > 0f)
@@ -149,6 +150,21 @@ public partial struct AttackRequestSystem : ISystem
         }
 
         cooldown.ValueRW.Remaining = math.max(0.01f, definition.Cooldown);
+    }
+
+    private static void ApplyPlayerSkillStats(
+        ref SystemState state,
+        Entity actorEntity,
+        ref AttackMasterData definition)
+    {
+        if (!state.EntityManager.HasComponent<PlayerSkillStats>(actorEntity))
+        {
+            return;
+        }
+
+        var stats = state.EntityManager.GetComponentData<PlayerSkillStats>(actorEntity);
+        definition.Damage = math.max(1, (int)math.round(definition.Damage * PlayerAutoSkillSystem.GetDamageMultiplier(stats)));
+        definition.Cooldown *= PlayerAutoSkillSystem.GetCooldownMultiplier(stats);
     }
 
     private void CreateProjectileRequest(

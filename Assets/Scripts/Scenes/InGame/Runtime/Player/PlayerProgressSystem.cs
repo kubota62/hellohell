@@ -34,23 +34,43 @@ public partial struct PlayerProgressSystem : ISystem
             return;
         }
 
-        foreach (var progress in SystemAPI.Query<RefRW<PlayerProgress>>().WithAll<Player>())
+        var ecb = new EntityCommandBuffer(Unity.Collections.Allocator.Temp);
+        foreach (var (progress, playerEntity) in
+                 SystemAPI.Query<RefRW<PlayerProgress>>()
+                     .WithAll<Player>()
+                     .WithEntityAccess())
         {
             var value = progress.ValueRO;
             value.Level = math.max(1, value.Level);
             value.ExperienceToNextLevel = math.max(1, value.ExperienceToNextLevel);
             value.Experience += totalExperience;
             value.Score += totalScore;
+            var levelsGained = 0;
 
             while (value.Experience >= value.ExperienceToNextLevel)
             {
                 value.Experience -= value.ExperienceToNextLevel;
                 value.Level++;
+                levelsGained++;
                 value.ExperienceToNextLevel = CalculateExperienceToNextLevel(value.Level);
             }
 
             progress.ValueRW = value;
+
+            if (levelsGained > 0)
+            {
+                var eventEntity = ecb.CreateEntity();
+                ecb.AddComponent(eventEntity, new PlayerLevelUpEvent
+                {
+                    Player = playerEntity,
+                    NewLevel = value.Level,
+                    LevelsGained = levelsGained,
+                });
+            }
         }
+
+        ecb.Playback(state.EntityManager);
+        ecb.Dispose();
     }
 
     public static PlayerProgress CreateInitialProgress()

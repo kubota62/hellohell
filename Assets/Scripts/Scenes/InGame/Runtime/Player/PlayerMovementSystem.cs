@@ -33,11 +33,17 @@ public partial struct PlayerMovementSystem : ISystem
         }
 
         var direction = math.normalizesafe(new float3(input.Movement.x, 0f, input.Movement.y));
+        var moveSpeed = MoveSpeed;
+        if (SystemAPI.TryGetSingleton<PlayerSkillStats>(out var skillStats))
+        {
+            moveSpeed *= PlayerAutoSkillSystem.GetMoveSpeedMultiplier(skillStats);
+        }
+
         var job = new PlayerMovementJob
         {
             Direction = direction,
             DeltaTime = SystemAPI.Time.DeltaTime,
-            Speed = MoveSpeed
+            Speed = moveSpeed
         };
 
         state.Dependency = job.ScheduleParallel(state.Dependency);
