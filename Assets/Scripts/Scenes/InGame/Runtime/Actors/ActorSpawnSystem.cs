@@ -12,8 +12,6 @@ using Random = Unity.Mathematics.Random;
 [UpdateBefore(typeof(TransformSystemGroup))]
 public partial struct ActorSpawnSystem : ISystem
 {
-    const float InitialEnemySpawnDelay = 1f;
-
     private Random Rand;
     private int spawnedCount;
     private float spawnTimer;
@@ -33,22 +31,33 @@ public partial struct ActorSpawnSystem : ISystem
         {
             SpawnActor(true, float3.zero, ref state);
             spawnedCount++;
-            spawnTimer = -InitialEnemySpawnDelay;
+            spawnTimer = -ResolveSpawnMaster(ref state).InitialEnemySpawnDelay;
             return;
         }
 
-        var config = SystemAPI.GetSingleton<Config>();
+        var spawnMaster = ResolveSpawnMaster(ref state);
         spawnTimer += SystemAPI.Time.DeltaTime;
-        if (spawnTimer > config.SpawnTime)
+        if (spawnTimer > spawnMaster.SpawnInterval)
         {
-            SpawnActor(false, GetEnemySpawnPosition(config, ref state), ref state);
+            SpawnActor(false, GetEnemySpawnPosition(spawnMaster, ref state), ref state);
 
             spawnTimer = 0;
             spawnedCount++;
         }
     }
 
-    private float3 GetEnemySpawnPosition(in Config config, ref SystemState state)
+    private SpawnMasterData ResolveSpawnMaster(ref SystemState state)
+    {
+        var config = SystemAPI.GetSingleton<Config>();
+        if (SystemAPI.TryGetSingletonBuffer<SpawnMasterElement>(out var spawnMasters, true))
+        {
+            return SpawnMasterCatalog.Get(spawnMasters, SpawnMasterId.Default);
+        }
+
+        return SpawnMasterCatalog.Get(config);
+    }
+
+    private float3 GetEnemySpawnPosition(in SpawnMasterData spawnMaster, ref SystemState state)
     {
         var playerPosition = float3.zero;
         if (SystemAPI.TryGetSingletonEntity<Player>(out var playerEntity) &&
@@ -58,7 +67,7 @@ public partial struct ActorSpawnSystem : ISystem
         }
 
         var angle = Rand.NextFloat(0f, 2f * math.PI);
-        var distance = Rand.NextFloat(config.MinSpawnDistance, config.MaxSpawnDistance);
+        var distance = Rand.NextFloat(spawnMaster.MinSpawnDistance, spawnMaster.MaxSpawnDistance);
         var offset = new float3(math.cos(angle), 0f, math.sin(angle)) * distance;
 
         return playerPosition + offset;
@@ -120,6 +129,7 @@ public partial struct ActorSpawnSystem : ISystem
         ApplyEnemyMovement(entityManager, actorEntity, definition.Movement);
         ApplyEnemyCombat(entityManager, actorEntity, definition.Combat);
         ApplyEnemyVisual(entityManager, actorEntity, definition.Visual);
+        ApplyEnemyReward(entityManager, actorEntity, definition.Reward);
     }
 
     /// <summary>
@@ -193,6 +203,21 @@ public partial struct ActorSpawnSystem : ISystem
         SetOrAddColor(entityManager, actorEntity, new URPMaterialPropertyBaseColor
         {
             Value = visual.Color,
+        });
+    }
+
+    /// <summary>
+    /// 死亡時に報酬イベントへ変換できるよう、敵ごとの報酬値をActorへ持たせる。
+    /// </summary>
+    private static void ApplyEnemyReward(
+        EntityManager entityManager,
+        Entity actorEntity,
+        EnemyRewardMaster reward)
+    {
+        entityManager.AddComponentData(actorEntity, new EnemyReward
+        {
+            Experience = math.max(0, reward.Experience),
+            Score = math.max(0, reward.Score),
         });
     }
 

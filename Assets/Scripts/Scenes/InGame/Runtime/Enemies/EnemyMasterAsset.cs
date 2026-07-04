@@ -28,6 +28,10 @@ public class EnemyMasterAsset : ScriptableObject
     [Header("Visual")]
     public Color Color = UnityEngine.Color.magenta;
 
+    [Header("Reward")]
+    public int Experience = 1;
+    public int Score = 10;
+
     public EnemyMasterData ToRuntimeMaster()
     {
         var fallback = EnemyMasterCatalog.Get(TypeId);
@@ -59,6 +63,11 @@ public class EnemyMasterAsset : ScriptableObject
             Visual = new EnemyVisualMaster
             {
                 Color = new float4(Color.r, Color.g, Color.b, Color.a),
+            },
+            Reward = new EnemyRewardMaster
+            {
+                Experience = Experience > 0 ? Experience : fallback.Reward.Experience,
+                Score = Score > 0 ? Score : fallback.Reward.Score,
             },
         };
     }

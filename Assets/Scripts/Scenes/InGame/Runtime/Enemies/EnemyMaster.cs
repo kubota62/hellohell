@@ -50,6 +50,15 @@ public struct EnemyVisualMaster
 }
 
 /// <summary>
+/// 敵を倒した時に発生する経験値やスコアなどの報酬値。
+/// </summary>
+public struct EnemyRewardMaster
+{
+    public int Experience;
+    public int Score;
+}
+
+/// <summary>
 /// ランタイムで参照する敵定義の軽量データ。
 /// ScriptableObjectから焼き込まれた値を、Actor生成時にカテゴリごとへ適用する。
 /// </summary>
@@ -60,6 +69,7 @@ public struct EnemyMasterData
     public EnemyMovementMaster Movement;
     public EnemyCombatMaster Combat;
     public EnemyVisualMaster Visual;
+    public EnemyRewardMaster Reward;
 }
 
 /// <summary>

@@ -11,6 +11,7 @@ public struct EnemyMasterElement : IBufferElementData
     public EnemyMovementMaster Movement;
     public EnemyCombatMaster Combat;
     public EnemyVisualMaster Visual;
+    public EnemyRewardMaster Reward;
 
     public static EnemyMasterElement FromMaster(EnemyMasterData definition)
     {
@@ -21,6 +22,7 @@ public struct EnemyMasterElement : IBufferElementData
             Movement = definition.Movement,
             Combat = definition.Combat,
             Visual = definition.Visual,
+            Reward = definition.Reward,
         };
     }
 
@@ -33,6 +35,7 @@ public struct EnemyMasterElement : IBufferElementData
             Movement = Movement,
             Combat = Combat,
             Visual = Visual,
+            Reward = Reward,
         };
     }
 }

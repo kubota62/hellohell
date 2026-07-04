@@ -59,7 +59,9 @@ public static class EnemyMasterCatalog
                     primaryAttack: AttackMasterId.BasicChainProjectile,
                     minAttackRange: 8f,
                     maxAttackRange: 24f,
-                    color: new float4(0.1f, 0.35f, 1f, 1f));
+                    color: new float4(0.1f, 0.35f, 1f, 1f),
+                    experience: 2,
+                    score: 18);
 
             case ChainEnemy:
                 return Create(
@@ -72,7 +74,9 @@ public static class EnemyMasterCatalog
                     primaryAttack: AttackMasterId.BasicChainProjectile,
                     minAttackRange: 5f,
                     maxAttackRange: 22f,
-                    color: new float4(0.1f, 0.85f, 1f, 1f));
+                    color: new float4(0.1f, 0.85f, 1f, 1f),
+                    experience: 2,
+                    score: 20);
 
             case RandomEnemy:
                 return Create(
@@ -85,7 +89,9 @@ public static class EnemyMasterCatalog
                     primaryAttack: AttackMasterId.BasicProjectile,
                     minAttackRange: 5f,
                     maxAttackRange: 24f,
-                    color: new float4(1f, 1f, 0f, 1f));
+                    color: new float4(1f, 1f, 0f, 1f),
+                    experience: 1,
+                    score: 12);
 
             case ForwardEnemy:
             default:
@@ -99,7 +105,9 @@ public static class EnemyMasterCatalog
                     primaryAttack: AttackMasterId.BasicProjectile,
                     minAttackRange: 5f,
                     maxAttackRange: 24f,
-                    color: new float4(1f, 0f, 1f, 1f));
+                    color: new float4(1f, 0f, 1f, 1f),
+                    experience: 1,
+                    score: 10);
         }
     }
 
@@ -128,7 +136,9 @@ public static class EnemyMasterCatalog
         AttackMasterId primaryAttack,
         float minAttackRange,
         float maxAttackRange,
-        float4 color)
+        float4 color,
+        int experience,
+        int score)
     {
         return new EnemyMasterData
         {
@@ -153,6 +163,11 @@ public static class EnemyMasterCatalog
             Visual = new EnemyVisualMaster
             {
                 Color = color,
+            },
+            Reward = new EnemyRewardMaster
+            {
+                Experience = experience,
+                Score = score,
             },
         };
     }

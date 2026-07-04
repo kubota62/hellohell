@@ -14,6 +14,8 @@ public partial struct ActorDeathSystem : ISystem
     {
         var ecb = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>()
             .CreateCommandBuffer(state.WorldUnmanaged);
+        var rewardLookup = SystemAPI.GetComponentLookup<EnemyReward>(true);
+        var enemyTypeLookup = SystemAPI.GetComponentLookup<EnemyTypeId>(true);
 
         foreach (var (health, entity) in
                  SystemAPI.Query<RefRO<Health>>()
@@ -24,6 +26,21 @@ public partial struct ActorDeathSystem : ISystem
             if (health.ValueRO.Current > 0)
             {
                 continue;
+            }
+
+            if (rewardLookup.HasComponent(entity))
+            {
+                var reward = rewardLookup[entity];
+                var enemyTypeId = enemyTypeLookup.HasComponent(entity)
+                    ? enemyTypeLookup[entity].Value
+                    : 0;
+                var rewardEventEntity = ecb.CreateEntity();
+                ecb.AddComponent(rewardEventEntity, new EnemyRewardEvent
+                {
+                    EnemyTypeId = enemyTypeId,
+                    Experience = reward.Experience,
+                    Score = reward.Score,
+                });
             }
 
             ecb.DestroyEntity(entity);

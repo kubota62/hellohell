@@ -9,6 +9,7 @@ public class MasterCatalogAuthoring : MonoBehaviour
 {
     public AttackMasterAsset[] AttackMasters;
     public EnemyMasterAsset[] EnemyMasters;
+    public SpawnMasterAsset[] SpawnMasters;
 
     class Baker : Baker<MasterCatalogAuthoring>
     {
@@ -46,6 +47,18 @@ public class MasterCatalogAuthoring : MonoBehaviour
             EnsureEnemyMaster(enemyBuffer, EnemyMasterCatalog.RandomEnemy);
             EnsureEnemyMaster(enemyBuffer, EnemyMasterCatalog.ChainEnemy);
             EnsureEnemyMaster(enemyBuffer, EnemyMasterCatalog.KiteEnemy);
+
+            var spawnBuffer = AddBuffer<SpawnMasterElement>(entity);
+            if (authoring.SpawnMasters is { Length: > 0 })
+            {
+                foreach (var asset in authoring.SpawnMasters)
+                {
+                    if (asset == null) continue;
+                    spawnBuffer.Add(SpawnMasterElement.FromMaster(asset.ToRuntimeMaster()));
+                }
+            }
+
+            EnsureSpawnMaster(spawnBuffer, SpawnMasterId.Default);
         }
 
         private static void EnsureAttackMaster(
@@ -76,6 +89,21 @@ public class MasterCatalogAuthoring : MonoBehaviour
             }
 
             enemyBuffer.Add(EnemyMasterElement.FromMaster(EnemyMasterCatalog.Get(typeId)));
+        }
+
+        private static void EnsureSpawnMaster(
+            DynamicBuffer<SpawnMasterElement> spawnBuffer,
+            SpawnMasterId id)
+        {
+            for (var i = 0; i < spawnBuffer.Length; i++)
+            {
+                if (spawnBuffer[i].Id == id)
+                {
+                    return;
+                }
+            }
+
+            spawnBuffer.Add(SpawnMasterElement.FromMaster(SpawnMasterCatalog.Get(id)));
         }
     }
 }
