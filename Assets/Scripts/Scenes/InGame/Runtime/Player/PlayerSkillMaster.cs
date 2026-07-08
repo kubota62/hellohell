@@ -26,6 +26,7 @@ public enum PlayerSkillKind : byte
 /// レベルアップ時に適用するスキル強化のランタイム用マスタ値。
 /// 選択UIが入るまではWeightを使って自動選択の出現比率として扱う。
 /// MaxLevelは同じスキルを積める上限で、0以下なら上限なしとして扱う。
+/// EffectPerLevelはKindごとの倍率増加量として扱う。
 /// </summary>
 public struct PlayerSkillMasterData
 {
@@ -33,6 +34,7 @@ public struct PlayerSkillMasterData
     public PlayerSkillKind Kind;
     public int AddLevel;
     public int MaxLevel;
+    public float EffectPerLevel;
     public int Weight;
 }
 
@@ -45,6 +47,7 @@ public struct PlayerSkillMasterElement : IBufferElementData
     public PlayerSkillKind Kind;
     public int AddLevel;
     public int MaxLevel;
+    public float EffectPerLevel;
     public int Weight;
 
     public static PlayerSkillMasterElement FromMaster(PlayerSkillMasterData master)
@@ -55,6 +58,7 @@ public struct PlayerSkillMasterElement : IBufferElementData
             Kind = master.Kind,
             AddLevel = master.AddLevel,
             MaxLevel = master.MaxLevel,
+            EffectPerLevel = master.EffectPerLevel,
             Weight = master.Weight,
         };
     }
@@ -67,6 +71,7 @@ public struct PlayerSkillMasterElement : IBufferElementData
             Kind = Kind,
             AddLevel = AddLevel,
             MaxLevel = MaxLevel,
+            EffectPerLevel = EffectPerLevel,
             Weight = Weight,
         };
     }

@@ -18,4 +18,5 @@ MonoBehaviour:
   Kind: 1
   AddLevel: 1
   MaxLevel: 20
+  EffectPerLevel: 0.15
   Weight: 1

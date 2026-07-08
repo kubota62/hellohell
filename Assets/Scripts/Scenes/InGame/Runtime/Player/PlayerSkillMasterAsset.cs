@@ -15,6 +15,7 @@ public class PlayerSkillMasterAsset : ScriptableObject
     public PlayerSkillKind Kind = PlayerSkillKind.Damage;
     public int AddLevel = 1;
     public int MaxLevel = 0;
+    public float EffectPerLevel = 0f;
     public int Weight = 1;
 
     public PlayerSkillMasterData ToRuntimeMaster()
@@ -26,6 +27,7 @@ public class PlayerSkillMasterAsset : ScriptableObject
             Kind = Kind,
             AddLevel = AddLevel > 0 ? AddLevel : fallback.AddLevel,
             MaxLevel = MaxLevel > 0 ? MaxLevel : fallback.MaxLevel,
+            EffectPerLevel = EffectPerLevel > 0f ? EffectPerLevel : fallback.EffectPerLevel,
             Weight = math.max(0, Weight),
         };
     }

@@ -67,6 +67,16 @@ public partial struct ActorSpawnSystem : ISystem
         return PlayerProgressMasterCatalog.Get(PlayerProgressMasterId.Default);
     }
 
+    private PlayerMasterData ResolvePlayerMaster(ref SystemState state)
+    {
+        if (SystemAPI.TryGetSingletonBuffer<PlayerMasterElement>(out var playerMasters, true))
+        {
+            return PlayerMasterCatalog.Get(playerMasters, PlayerMasterId.Default);
+        }
+
+        return PlayerMasterCatalog.Get(PlayerMasterId.Default);
+    }
+
     private float3 GetEnemySpawnPosition(in SpawnMasterData spawnMaster, ref SystemState state)
     {
         var playerPosition = float3.zero;
@@ -95,7 +105,11 @@ public partial struct ActorSpawnSystem : ISystem
 
         if (isPlayer)
         {
-            AddPlayerComponents(entityManager, actorEntity, ResolvePlayerProgressMaster(ref state));
+            AddPlayerComponents(
+                entityManager,
+                actorEntity,
+                ResolvePlayerMaster(ref state),
+                ResolvePlayerProgressMaster(ref state));
         }
         else
         {
@@ -126,6 +140,7 @@ public partial struct ActorSpawnSystem : ISystem
     private static void AddPlayerComponents(
         EntityManager entityManager,
         Entity actorEntity,
+        PlayerMasterData playerMaster,
         PlayerProgressMasterData progressMaster)
     {
         entityManager.AddComponent<Player>(actorEntity);
@@ -133,7 +148,7 @@ public partial struct ActorSpawnSystem : ISystem
         entityManager.SetComponentData(actorEntity, new Team { Value = TeamId.Player });
         entityManager.SetComponentData(actorEntity, new AttackLoadout
         {
-            PrimaryAttack = AttackMasterId.BasicMeleeArc,
+            PrimaryAttack = playerMaster.PrimaryAttack,
         });
         entityManager.SetComponentData(actorEntity, new AttackCooldown());
         entityManager.AddComponentData(actorEntity, PlayerProgressSystem.CreateInitialProgress(progressMaster));

@@ -10,6 +10,7 @@ public class MasterCatalogAuthoring : MonoBehaviour
     public AttackMasterAsset[] AttackMasters;
     public EnemyMasterAsset[] EnemyMasters;
     public SpawnMasterAsset[] SpawnMasters;
+    public PlayerMasterAsset[] PlayerMasters;
     public PlayerSkillMasterAsset[] PlayerSkillMasters;
     public PlayerProgressMasterAsset[] PlayerProgressMasters;
 
@@ -61,6 +62,18 @@ public class MasterCatalogAuthoring : MonoBehaviour
             }
 
             EnsureSpawnMaster(spawnBuffer, SpawnMasterId.Default);
+
+            var playerBuffer = AddBuffer<PlayerMasterElement>(entity);
+            if (authoring.PlayerMasters is { Length: > 0 })
+            {
+                foreach (var asset in authoring.PlayerMasters)
+                {
+                    if (asset == null) continue;
+                    playerBuffer.Add(PlayerMasterElement.FromMaster(asset.ToRuntimeMaster()));
+                }
+            }
+
+            EnsurePlayerMaster(playerBuffer, PlayerMasterId.Default);
 
             var playerSkillBuffer = AddBuffer<PlayerSkillMasterElement>(entity);
             if (authoring.PlayerSkillMasters is { Length: > 0 })
@@ -132,6 +145,21 @@ public class MasterCatalogAuthoring : MonoBehaviour
             }
 
             spawnBuffer.Add(SpawnMasterElement.FromMaster(SpawnMasterCatalog.Get(id)));
+        }
+
+        private static void EnsurePlayerMaster(
+            DynamicBuffer<PlayerMasterElement> playerBuffer,
+            PlayerMasterId id)
+        {
+            for (var i = 0; i < playerBuffer.Length; i++)
+            {
+                if (playerBuffer[i].Id == id)
+                {
+                    return;
+                }
+            }
+
+            playerBuffer.Add(PlayerMasterElement.FromMaster(PlayerMasterCatalog.Get(id)));
         }
 
         private static void EnsurePlayerSkillMaster(

@@ -1,9 +1,10 @@
 using Unity.Burst;
 using Unity.Entities;
+using Unity.Mathematics;
 
 /// <summary>
 /// PlayerLevelUpEventを仮スキルへ変換するシステム。
-/// 現時点では選択UIがないため、ダメージ、攻撃速度、移動速度を順番に自動強化する。
+/// 現時点では選択UIがないため、マスタ候補から自動でスキル強化を選ぶ。
 /// </summary>
 [BurstCompile]
 [UpdateAfter(typeof(PlayerProgressSystem))]
@@ -29,7 +30,9 @@ public partial struct PlayerAutoSkillSystem : ISystem
                     levelUpEvent.ValueRO.NewLevel,
                     levelUpEvent.ValueRO.LevelsGained,
                     hasSkillMasters,
-                    skillMasters);
+                    skillMasters,
+                    levelUpEvent.ValueRO.Player,
+                    ecb);
                 ecb.SetComponent(levelUpEvent.ValueRO.Player, stats);
             }
 
@@ -45,57 +48,122 @@ public partial struct PlayerAutoSkillSystem : ISystem
         int newLevel,
         int levelsGained,
         bool hasSkillMasters,
-        DynamicBuffer<PlayerSkillMasterElement> skillMasters)
+        DynamicBuffer<PlayerSkillMasterElement> skillMasters,
+        Entity playerEntity,
+        EntityCommandBuffer ecb)
     {
         for (var i = 0; i < levelsGained; i++)
         {
             var gainedLevel = newLevel - levelsGained + 1 + i;
             var skill = hasSkillMasters
-                ? PlayerSkillMasterCatalog.PickAutoSkill(skillMasters, gainedLevel - 1)
-                : PlayerSkillMasterCatalog.GetByFallbackOrder(gainedLevel - 1);
-            ApplySkill(ref stats, skill);
+                ? PlayerSkillMasterCatalog.PickAutoSkill(skillMasters, gainedLevel - 1, stats)
+                : PlayerSkillMasterCatalog.GetByFallbackOrder(gainedLevel - 1, stats);
+            var appliedLevel = ApplySkill(ref stats, skill);
+            if (appliedLevel > 0)
+            {
+                CreateSkillAppliedEvent(playerEntity, skill, appliedLevel, GetCurrentSkillLevel(stats, skill.Kind), ecb);
+            }
         }
     }
 
-    static void ApplySkill(ref PlayerSkillStats stats, PlayerSkillMasterData skill)
+    static int ApplySkill(ref PlayerSkillStats stats, PlayerSkillMasterData skill)
     {
         var addLevel = skill.AddLevel <= 0 ? 1 : skill.AddLevel;
         switch (skill.Kind)
         {
             case PlayerSkillKind.MoveSpeed:
-                stats.MoveSpeedLevel = AddClampedLevel(stats.MoveSpeedLevel, addLevel, skill.MaxLevel);
-                break;
+                return AddSkillLevel(
+                    ref stats.MoveSpeedLevel,
+                    ref stats.MoveSpeedMultiplierAdd,
+                    addLevel,
+                    skill.MaxLevel,
+                    skill.EffectPerLevel);
 
             case PlayerSkillKind.AttackSpeed:
-                stats.AttackSpeedLevel = AddClampedLevel(stats.AttackSpeedLevel, addLevel, skill.MaxLevel);
-                break;
+                return AddSkillLevel(
+                    ref stats.AttackSpeedLevel,
+                    ref stats.CooldownMultiplierReduction,
+                    addLevel,
+                    skill.MaxLevel,
+                    skill.EffectPerLevel);
 
             case PlayerSkillKind.Damage:
             default:
-                stats.DamageLevel = AddClampedLevel(stats.DamageLevel, addLevel, skill.MaxLevel);
-                break;
+                return AddSkillLevel(
+                    ref stats.DamageLevel,
+                    ref stats.DamageMultiplierAdd,
+                    addLevel,
+                    skill.MaxLevel,
+                    skill.EffectPerLevel);
         }
     }
 
-    static int AddClampedLevel(int currentLevel, int addLevel, int maxLevel)
+    static int AddSkillLevel(
+        ref int currentLevel,
+        ref float currentEffect,
+        int addLevel,
+        int maxLevel,
+        float effectPerLevel)
     {
         var nextLevel = currentLevel + addLevel;
-        return maxLevel > 0 && nextLevel > maxLevel ? maxLevel : nextLevel;
+        if (maxLevel > 0 && nextLevel > maxLevel)
+        {
+            nextLevel = maxLevel;
+        }
+
+        var gainedLevel = nextLevel - currentLevel;
+        currentLevel = nextLevel;
+        currentEffect += gainedLevel * math.max(0f, effectPerLevel);
+        return gainedLevel;
+    }
+
+    static void CreateSkillAppliedEvent(
+        Entity playerEntity,
+        PlayerSkillMasterData skill,
+        int addedLevel,
+        int newSkillLevel,
+        EntityCommandBuffer ecb)
+    {
+        var eventEntity = ecb.CreateEntity();
+        ecb.AddComponent(eventEntity, new PlayerSkillAppliedEvent
+        {
+            Player = playerEntity,
+            SkillId = skill.Id,
+            Kind = skill.Kind,
+            AddedLevel = addedLevel,
+            NewSkillLevel = newSkillLevel,
+        });
+    }
+
+    static int GetCurrentSkillLevel(PlayerSkillStats stats, PlayerSkillKind kind)
+    {
+        switch (kind)
+        {
+            case PlayerSkillKind.MoveSpeed:
+                return stats.MoveSpeedLevel;
+
+            case PlayerSkillKind.AttackSpeed:
+                return stats.AttackSpeedLevel;
+
+            case PlayerSkillKind.Damage:
+            default:
+                return stats.DamageLevel;
+        }
     }
 
     public static float GetDamageMultiplier(in PlayerSkillStats stats)
     {
-        return 1f + stats.DamageLevel * 0.15f;
+        return 1f + stats.DamageMultiplierAdd;
     }
 
     public static float GetCooldownMultiplier(in PlayerSkillStats stats)
     {
-        var multiplier = 1f - stats.AttackSpeedLevel * 0.08f;
+        var multiplier = 1f - stats.CooldownMultiplierReduction;
         return multiplier < 0.25f ? 0.25f : multiplier;
     }
 
     public static float GetMoveSpeedMultiplier(in PlayerSkillStats stats)
     {
-        return 1f + stats.MoveSpeedLevel * 0.1f;
+        return 1f + stats.MoveSpeedMultiplierAdd;
     }
 }

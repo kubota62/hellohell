@@ -14,8 +14,6 @@ using Unity.Transforms;
 [UpdateBefore(typeof(TransformSystemGroup))]
 public partial struct PlayerMovementSystem : ISystem
 {
-    const float MoveSpeed = 5f;
-
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
@@ -33,7 +31,7 @@ public partial struct PlayerMovementSystem : ISystem
         }
 
         var direction = math.normalizesafe(new float3(input.Movement.x, 0f, input.Movement.y));
-        var moveSpeed = MoveSpeed;
+        var moveSpeed = ResolveMoveSpeed(ref state);
         if (SystemAPI.TryGetSingleton<PlayerSkillStats>(out var skillStats))
         {
             moveSpeed *= PlayerAutoSkillSystem.GetMoveSpeedMultiplier(skillStats);
@@ -47,6 +45,16 @@ public partial struct PlayerMovementSystem : ISystem
         };
 
         state.Dependency = job.ScheduleParallel(state.Dependency);
+    }
+
+    private float ResolveMoveSpeed(ref SystemState state)
+    {
+        if (SystemAPI.TryGetSingletonBuffer<PlayerMasterElement>(out var playerMasters, true))
+        {
+            return PlayerMasterCatalog.Get(playerMasters, PlayerMasterId.Default).MoveSpeed;
+        }
+
+        return PlayerMasterCatalog.Get(PlayerMasterId.Default).MoveSpeed;
     }
 }
 
