@@ -48,12 +48,12 @@ public partial struct ActorSpawnSystem : ISystem
 
     private SpawnMasterData ResolveSpawnMaster(ref SystemState state)
     {
-        var config = SystemAPI.GetSingleton<Config>();
         if (SystemAPI.TryGetSingletonBuffer<SpawnMasterElement>(out var spawnMasters, true))
         {
             return SpawnMasterCatalog.Get(spawnMasters, SpawnMasterId.Default);
         }
 
+        var config = SystemAPI.GetSingleton<Config>();
         return SpawnMasterCatalog.Get(config);
     }
 
