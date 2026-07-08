@@ -13,8 +13,14 @@ MonoBehaviour:
   m_Name: RandomEnemy
   m_EditorClassIdentifier: 
   TypeId: 2
-  Movement: 2
   MaxHealth: 100
   HitRadius: 2
+  BodyScale: 1
+  Movement: 2
+  MoveSpeed: 2.4
   PrimaryAttack: 1
+  MinAttackRange: 5
+  MaxAttackRange: 24
   Color: {r: 1, g: 1, b: 0, a: 1}
+  Experience: 1
+  Score: 12

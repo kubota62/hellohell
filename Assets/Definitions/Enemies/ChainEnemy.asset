@@ -10,17 +10,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 42f7117437f74b0f8f615ed3d9c34c9f, type: 3}
-  m_Name: ForwardEnemy
-  m_EditorClassIdentifier: 
-  TypeId: 1
-  MaxHealth: 100
+  m_Name: ChainEnemy
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyMasterAsset
+  TypeId: 3
+  MaxHealth: 120
   HitRadius: 2
-  BodyScale: 1
+  BodyScale: 1.15
   Movement: 1
-  MoveSpeed: 2.8
-  PrimaryAttack: 1
+  MoveSpeed: 2.1
+  PrimaryAttack: 4
   MinAttackRange: 5
-  MaxAttackRange: 24
-  Color: {r: 1, g: 0, b: 1, a: 1}
-  Experience: 1
-  Score: 10
+  MaxAttackRange: 22
+  Color: {r: 0.1, g: 0.85, b: 1, a: 1}
+  Experience: 2
+  Score: 20

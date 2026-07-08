@@ -10,21 +10,21 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 735e644801a942e8a2f4019485fe8441, type: 3}
-  m_Name: BasicProjectile
-  m_EditorClassIdentifier: 
-  Id: 1
+  m_Name: BasicChainProjectile
+  m_EditorClassIdentifier: Assembly-CSharp::AttackMasterAsset
+  Id: 4
   Kind: 1
-  Cooldown: 1
-  Damage: 34
+  Cooldown: 0.9
+  Damage: 22
   HitRadius: 0.5
   AreaRadius: 0
-  ProjectileSpeed: 10
-  Lifetime: 5
-  Scale: 0.5
-  ProjectileModifiers: 0
+  ProjectileSpeed: 12
+  Lifetime: 4
+  Scale: 0.45
+  ProjectileModifiers: 2
   PierceCount: 0
-  ChainCount: 0
-  ChainRange: 0
+  ChainCount: 3
+  ChainRange: 7
   ImpactAreaRadius: 0
   ArcAngleDegrees: 0
   VisualDuration: 0

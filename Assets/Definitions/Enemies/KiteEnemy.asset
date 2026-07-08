@@ -10,17 +10,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 42f7117437f74b0f8f615ed3d9c34c9f, type: 3}
-  m_Name: ForwardEnemy
-  m_EditorClassIdentifier: 
-  TypeId: 1
-  MaxHealth: 100
-  HitRadius: 2
-  BodyScale: 1
-  Movement: 1
-  MoveSpeed: 2.8
-  PrimaryAttack: 1
-  MinAttackRange: 5
+  m_Name: KiteEnemy
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyMasterAsset
+  TypeId: 4
+  MaxHealth: 80
+  HitRadius: 1.8
+  BodyScale: 0.9
+  Movement: 3
+  MoveSpeed: 3.2
+  PrimaryAttack: 4
+  MinAttackRange: 8
   MaxAttackRange: 24
-  Color: {r: 1, g: 0, b: 1, a: 1}
-  Experience: 1
-  Score: 10
+  Color: {r: 0.1, g: 0.35, b: 1, a: 1}
+  Experience: 2
+  Score: 18

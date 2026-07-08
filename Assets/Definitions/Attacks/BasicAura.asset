@@ -21,3 +21,10 @@ MonoBehaviour:
   ProjectileSpeed: 0
   Lifetime: 0
   Scale: 1
+  ProjectileModifiers: 0
+  PierceCount: 0
+  ChainCount: 0
+  ChainRange: 0
+  ImpactAreaRadius: 0
+  ArcAngleDegrees: 360
+  VisualDuration: 0.12
