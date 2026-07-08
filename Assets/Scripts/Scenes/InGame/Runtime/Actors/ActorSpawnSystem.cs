@@ -48,6 +48,7 @@ public partial struct ActorSpawnSystem : ISystem
 
     private SpawnMasterData ResolveSpawnMaster(ref SystemState state)
     {
+        // MasterCatalogがある場合はそちらを優先し、未配置の検証シーンではConfig由来の既定値で動かす。
         if (SystemAPI.TryGetSingletonBuffer<SpawnMasterElement>(out var spawnMasters, true))
         {
             return SpawnMasterCatalog.Get(spawnMasters, SpawnMasterId.Default);
@@ -59,6 +60,7 @@ public partial struct ActorSpawnSystem : ISystem
 
     private PlayerProgressMasterData ResolvePlayerProgressMaster(ref SystemState state)
     {
+        // 経験値曲線はPlayer生成時に初期Progressへ焼き込むため、ここで一度だけ解決する。
         if (SystemAPI.TryGetSingletonBuffer<PlayerProgressMasterElement>(out var progressMasters, true))
         {
             return PlayerProgressMasterCatalog.Get(progressMasters, PlayerProgressMasterId.Default);
@@ -69,6 +71,7 @@ public partial struct ActorSpawnSystem : ISystem
 
     private PlayerMasterData ResolvePlayerMaster(ref SystemState state)
     {
+        // 初期攻撃や基礎移動速度など、Player本体の固定値を解決する。
         if (SystemAPI.TryGetSingletonBuffer<PlayerMasterElement>(out var playerMasters, true))
         {
             return PlayerMasterCatalog.Get(playerMasters, PlayerMasterId.Default);
@@ -79,6 +82,7 @@ public partial struct ActorSpawnSystem : ISystem
 
     private float3 GetEnemySpawnPosition(in SpawnMasterData spawnMaster, ref SystemState state)
     {
+        // Player中心のリング上へEnemyを出す。Player未生成時だけ原点基準にフォールバックする。
         var playerPosition = float3.zero;
         if (SystemAPI.TryGetSingletonEntity<Player>(out var playerEntity) &&
             SystemAPI.HasComponent<LocalTransform>(playerEntity))
@@ -129,6 +133,7 @@ public partial struct ActorSpawnSystem : ISystem
 
     private int ResolvePlayerLevel(ref SystemState state)
     {
+        // 敵マスタのMinPlayerLevel判定用。PlayerProgressがまだない初期フレームはLv1として扱う。
         if (SystemAPI.TryGetSingleton<PlayerProgress>(out var progress))
         {
             return progress.Level;

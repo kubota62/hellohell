@@ -49,6 +49,7 @@ public partial struct PlayerMovementSystem : ISystem
 
     private float ResolveMoveSpeed(ref SystemState state)
     {
+        // Playerの基礎移動速度はマスタから読む。スキルによる倍率はOnUpdate側で最後に掛ける。
         if (SystemAPI.TryGetSingletonBuffer<PlayerMasterElement>(out var playerMasters, true))
         {
             return PlayerMasterCatalog.Get(playerMasters, PlayerMasterId.Default).MoveSpeed;

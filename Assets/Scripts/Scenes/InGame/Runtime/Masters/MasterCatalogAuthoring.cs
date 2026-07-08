@@ -7,9 +7,16 @@ using UnityEngine;
 /// </summary>
 public class MasterCatalogAuthoring : MonoBehaviour
 {
+    [Header("Attack")]
     public AttackMasterAsset[] AttackMasters;
+
+    [Header("Enemy")]
     public EnemyMasterAsset[] EnemyMasters;
+
+    [Header("Spawn")]
     public SpawnMasterAsset[] SpawnMasters;
+
+    [Header("Player")]
     public PlayerMasterAsset[] PlayerMasters;
     public PlayerSkillMasterAsset[] PlayerSkillMasters;
     public PlayerProgressMasterAsset[] PlayerProgressMasters;
@@ -21,6 +28,7 @@ public class MasterCatalogAuthoring : MonoBehaviour
             var entity = GetEntity(authoring, TransformUsageFlags.None);
             AddComponent<MasterCatalogTag>(entity);
 
+            // 攻撃マスタはPlayer/EnemyのLoadoutから参照されるため、未設定でも既定値を必ず焼き込む。
             var attackBuffer = AddBuffer<AttackMasterElement>(entity);
             if (authoring.AttackMasters is { Length: > 0 })
             {
@@ -36,6 +44,7 @@ public class MasterCatalogAuthoring : MonoBehaviour
             EnsureAttackMaster(attackBuffer, AttackMasterId.BasicMeleeArc);
             EnsureAttackMaster(attackBuffer, AttackMasterId.BasicChainProjectile);
 
+            // 敵マスタはスポーン時に身体・移動・攻撃・報酬へ分解して適用する。
             var enemyBuffer = AddBuffer<EnemyMasterElement>(entity);
             if (authoring.EnemyMasters is { Length: > 0 })
             {
@@ -51,6 +60,7 @@ public class MasterCatalogAuthoring : MonoBehaviour
             EnsureEnemyMaster(enemyBuffer, EnemyMasterCatalog.ChainEnemy);
             EnsureEnemyMaster(enemyBuffer, EnemyMasterCatalog.KiteEnemy);
 
+            // スポーン間隔や出現距離はゲーム全体の進行値なので、専用のマスタとして扱う。
             var spawnBuffer = AddBuffer<SpawnMasterElement>(entity);
             if (authoring.SpawnMasters is { Length: > 0 })
             {
@@ -63,6 +73,7 @@ public class MasterCatalogAuthoring : MonoBehaviour
 
             EnsureSpawnMaster(spawnBuffer, SpawnMasterId.Default);
 
+            // Player本体の基礎値。成長値やスキル効果とは分けて、キャラ差し替えしやすくする。
             var playerBuffer = AddBuffer<PlayerMasterElement>(entity);
             if (authoring.PlayerMasters is { Length: > 0 })
             {
@@ -75,6 +86,7 @@ public class MasterCatalogAuthoring : MonoBehaviour
 
             EnsurePlayerMaster(playerBuffer, PlayerMasterId.Default);
 
+            // レベルアップ時の候補。将来の選択UIもこのバッファを候補リストとして読める。
             var playerSkillBuffer = AddBuffer<PlayerSkillMasterElement>(entity);
             if (authoring.PlayerSkillMasters is { Length: > 0 })
             {
@@ -89,6 +101,7 @@ public class MasterCatalogAuthoring : MonoBehaviour
             EnsurePlayerSkillMaster(playerSkillBuffer, PlayerSkillMasterId.AttackSpeedBoost);
             EnsurePlayerSkillMaster(playerSkillBuffer, PlayerSkillMasterId.MoveSpeedBoost);
 
+            // 経験値カーブ。Player生成時の初期値と、レベルアップ後の次要求値に使う。
             var playerProgressBuffer = AddBuffer<PlayerProgressMasterElement>(entity);
             if (authoring.PlayerProgressMasters is { Length: > 0 })
             {

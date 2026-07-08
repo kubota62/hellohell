@@ -58,6 +58,7 @@ public static class PlayerSkillMasterCatalog
         var totalWeight = 0;
         for (var i = 0; i < masters.Length; i++)
         {
+            // 上限到達済みのスキルは候補から外し、レベルアップが空振りしないようにする。
             if (CanApply(masters[i].ToRuntimeMaster(), stats))
             {
                 totalWeight += math.max(0, masters[i].Weight);
@@ -154,6 +155,7 @@ public static class PlayerSkillMasterCatalog
 
     private static int PickWeightTarget(int pickIndex, int totalWeight)
     {
+        // Burstで扱いやすい決定的な疑似ランダム。将来選択UIが入るまではレベル番号を種にする。
         var safeIndex = (uint)math.max(0, pickIndex);
         var hash = math.hash(new uint2(safeIndex + 1u, 0x9E3779B9u));
         return (int)(hash % (uint)totalWeight);
