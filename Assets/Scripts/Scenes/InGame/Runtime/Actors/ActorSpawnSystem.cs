@@ -57,6 +57,16 @@ public partial struct ActorSpawnSystem : ISystem
         return SpawnMasterCatalog.Get(config);
     }
 
+    private PlayerProgressMasterData ResolvePlayerProgressMaster(ref SystemState state)
+    {
+        if (SystemAPI.TryGetSingletonBuffer<PlayerProgressMasterElement>(out var progressMasters, true))
+        {
+            return PlayerProgressMasterCatalog.Get(progressMasters, PlayerProgressMasterId.Default);
+        }
+
+        return PlayerProgressMasterCatalog.Get(PlayerProgressMasterId.Default);
+    }
+
     private float3 GetEnemySpawnPosition(in SpawnMasterData spawnMaster, ref SystemState state)
     {
         var playerPosition = float3.zero;
@@ -85,7 +95,7 @@ public partial struct ActorSpawnSystem : ISystem
 
         if (isPlayer)
         {
-            AddPlayerComponents(entityManager, actorEntity);
+            AddPlayerComponents(entityManager, actorEntity, ResolvePlayerProgressMaster(ref state));
         }
         else
         {
@@ -93,8 +103,9 @@ public partial struct ActorSpawnSystem : ISystem
                 out var enemyMasters,
                 true);
             var enemySpawnIndex = spawnedCount - 1;
+            var playerLevel = ResolvePlayerLevel(ref state);
             var definition = hasEnemyMasters
-                ? EnemyMasterCatalog.PickSpawnMaster(enemyMasters, enemySpawnIndex)
+                ? EnemyMasterCatalog.PickSpawnMaster(enemyMasters, enemySpawnIndex, playerLevel)
                 : EnemyMasterCatalog.Get(EnemyMasterCatalog.PickSpawnType(enemySpawnIndex));
             AddEnemyComponents(entityManager, actorEntity, definition);
         }
@@ -102,7 +113,20 @@ public partial struct ActorSpawnSystem : ISystem
         ApplySpawnedActorColor(ref state, actorEntity);
     }
 
-    private static void AddPlayerComponents(EntityManager entityManager, Entity actorEntity)
+    private int ResolvePlayerLevel(ref SystemState state)
+    {
+        if (SystemAPI.TryGetSingleton<PlayerProgress>(out var progress))
+        {
+            return progress.Level;
+        }
+
+        return 1;
+    }
+
+    private static void AddPlayerComponents(
+        EntityManager entityManager,
+        Entity actorEntity,
+        PlayerProgressMasterData progressMaster)
     {
         entityManager.AddComponent<Player>(actorEntity);
         entityManager.AddComponent<CameraTarget>(actorEntity);
@@ -112,7 +136,7 @@ public partial struct ActorSpawnSystem : ISystem
             PrimaryAttack = AttackMasterId.BasicMeleeArc,
         });
         entityManager.SetComponentData(actorEntity, new AttackCooldown());
-        entityManager.AddComponentData(actorEntity, PlayerProgressSystem.CreateInitialProgress());
+        entityManager.AddComponentData(actorEntity, PlayerProgressSystem.CreateInitialProgress(progressMaster));
         entityManager.AddComponentData(actorEntity, new PlayerSkillStats());
 
         var playerColor = new URPMaterialPropertyBaseColor { Value = new float4(1f, 1f, 1f, 1f) };

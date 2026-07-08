@@ -24,3 +24,5 @@ MonoBehaviour:
   Color: {r: 1, g: 1, b: 0, a: 1}
   Experience: 1
   Score: 12
+  SpawnWeight: 3
+  MinPlayerLevel: 1

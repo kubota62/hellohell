@@ -33,15 +33,46 @@ public static class EnemyMasterCatalog
 
     public static EnemyMasterData PickSpawnMaster(
         DynamicBuffer<EnemyMasterElement> definitions,
-        int spawnIndex)
+        int spawnIndex,
+        int playerLevel)
     {
         if (definitions.Length <= 0)
         {
             return Get(PickSpawnType(spawnIndex));
         }
 
-        var safeIndex = spawnIndex < 0 ? 0 : spawnIndex;
-        return definitions[safeIndex % definitions.Length].ToRuntimeMaster();
+        var totalWeight = 0;
+        for (var i = 0; i < definitions.Length; i++)
+        {
+            if (IsSpawnUnlocked(definitions[i].Spawn, playerLevel))
+            {
+                totalWeight += math.max(0, definitions[i].Spawn.Weight);
+            }
+        }
+
+        if (totalWeight <= 0)
+        {
+            var safeIndex = spawnIndex < 0 ? 0 : spawnIndex;
+            return definitions[safeIndex % definitions.Length].ToRuntimeMaster();
+        }
+
+        var targetWeight = (spawnIndex < 0 ? 0 : spawnIndex) % totalWeight;
+        var accumulatedWeight = 0;
+        for (var i = 0; i < definitions.Length; i++)
+        {
+            if (!IsSpawnUnlocked(definitions[i].Spawn, playerLevel))
+            {
+                continue;
+            }
+
+            accumulatedWeight += math.max(0, definitions[i].Spawn.Weight);
+            if (targetWeight < accumulatedWeight)
+            {
+                return definitions[i].ToRuntimeMaster();
+            }
+        }
+
+        return definitions[definitions.Length - 1].ToRuntimeMaster();
     }
 
     public static EnemyMasterData Get(int typeId)
@@ -61,7 +92,9 @@ public static class EnemyMasterCatalog
                     maxAttackRange: 24f,
                     color: new float4(0.1f, 0.35f, 1f, 1f),
                     experience: 2,
-                    score: 18);
+                    score: 18,
+                    spawnWeight: 2,
+                    minPlayerLevel: 3);
 
             case ChainEnemy:
                 return Create(
@@ -76,7 +109,9 @@ public static class EnemyMasterCatalog
                     maxAttackRange: 22f,
                     color: new float4(0.1f, 0.85f, 1f, 1f),
                     experience: 2,
-                    score: 20);
+                    score: 20,
+                    spawnWeight: 2,
+                    minPlayerLevel: 2);
 
             case RandomEnemy:
                 return Create(
@@ -91,7 +126,9 @@ public static class EnemyMasterCatalog
                     maxAttackRange: 24f,
                     color: new float4(1f, 1f, 0f, 1f),
                     experience: 1,
-                    score: 12);
+                    score: 12,
+                    spawnWeight: 3,
+                    minPlayerLevel: 1);
 
             case ForwardEnemy:
             default:
@@ -107,7 +144,9 @@ public static class EnemyMasterCatalog
                     maxAttackRange: 24f,
                     color: new float4(1f, 0f, 1f, 1f),
                     experience: 1,
-                    score: 10);
+                    score: 10,
+                    spawnWeight: 5,
+                    minPlayerLevel: 1);
         }
     }
 
@@ -138,7 +177,9 @@ public static class EnemyMasterCatalog
         float maxAttackRange,
         float4 color,
         int experience,
-        int score)
+        int score,
+        int spawnWeight,
+        int minPlayerLevel)
     {
         return new EnemyMasterData
         {
@@ -169,6 +210,17 @@ public static class EnemyMasterCatalog
                 Experience = experience,
                 Score = score,
             },
+            Spawn = new EnemySpawnMaster
+            {
+                Weight = math.max(0, spawnWeight),
+                MinPlayerLevel = math.max(1, minPlayerLevel),
+            },
         };
+    }
+
+    private static bool IsSpawnUnlocked(EnemySpawnMaster spawn, int playerLevel)
+    {
+        var requiredLevel = spawn.MinPlayerLevel <= 0 ? 1 : spawn.MinPlayerLevel;
+        return playerLevel >= requiredLevel;
     }
 }

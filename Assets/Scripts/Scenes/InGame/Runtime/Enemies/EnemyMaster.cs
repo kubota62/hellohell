@@ -59,6 +59,16 @@ public struct EnemyRewardMaster
 }
 
 /// <summary>
+/// 敵の出現制御に関わる値。
+/// 種類ごとの出やすさと解放レベルをマスタに寄せ、スポーンシステム側の分岐を増やさず調整できるようにする。
+/// </summary>
+public struct EnemySpawnMaster
+{
+    public int Weight;
+    public int MinPlayerLevel;
+}
+
+/// <summary>
 /// ランタイムで参照する敵定義の軽量データ。
 /// ScriptableObjectから焼き込まれた値を、Actor生成時にカテゴリごとへ適用する。
 /// </summary>
@@ -70,6 +80,7 @@ public struct EnemyMasterData
     public EnemyCombatMaster Combat;
     public EnemyVisualMaster Visual;
     public EnemyRewardMaster Reward;
+    public EnemySpawnMaster Spawn;
 }
 
 /// <summary>

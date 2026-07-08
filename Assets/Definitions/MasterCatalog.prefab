@@ -56,3 +56,9 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 41c95ed0f5427ca4981bbe0f43d04e83, type: 2}
   SpawnMasters:
   - {fileID: 11400000, guid: a552fdd75d22c6341b4e58c9d76bc9c5, type: 2}
+  PlayerSkillMasters:
+  - {fileID: 11400000, guid: addd74bb9b8122846bba4c97dfe77165, type: 2}
+  - {fileID: 11400000, guid: 2ca86f7c286598643ab6ebe4c3b5d53e, type: 2}
+  - {fileID: 11400000, guid: 7df0732e664e3b94a93988acb88933ff, type: 2}
+  PlayerProgressMasters:
+  - {fileID: 11400000, guid: 811840fce88b42a498a951e4ea836b3b, type: 2}

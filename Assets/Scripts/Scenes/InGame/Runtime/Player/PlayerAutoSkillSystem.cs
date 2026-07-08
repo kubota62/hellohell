@@ -12,6 +12,9 @@ public partial struct PlayerAutoSkillSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
+        var hasSkillMasters = SystemAPI.TryGetSingletonBuffer<PlayerSkillMasterElement>(
+            out var skillMasters,
+            true);
         var ecb = new EntityCommandBuffer(Unity.Collections.Allocator.Temp);
 
         foreach (var (levelUpEvent, eventEntity) in
@@ -21,7 +24,12 @@ public partial struct PlayerAutoSkillSystem : ISystem
             if (SystemAPI.HasComponent<PlayerSkillStats>(levelUpEvent.ValueRO.Player))
             {
                 var stats = SystemAPI.GetComponent<PlayerSkillStats>(levelUpEvent.ValueRO.Player);
-                ApplyAutoSkills(ref stats, levelUpEvent.ValueRO.NewLevel, levelUpEvent.ValueRO.LevelsGained);
+                ApplyAutoSkills(
+                    ref stats,
+                    levelUpEvent.ValueRO.NewLevel,
+                    levelUpEvent.ValueRO.LevelsGained,
+                    hasSkillMasters,
+                    skillMasters);
                 ecb.SetComponent(levelUpEvent.ValueRO.Player, stats);
             }
 
@@ -32,27 +40,47 @@ public partial struct PlayerAutoSkillSystem : ISystem
         ecb.Dispose();
     }
 
-    static void ApplyAutoSkills(ref PlayerSkillStats stats, int newLevel, int levelsGained)
+    static void ApplyAutoSkills(
+        ref PlayerSkillStats stats,
+        int newLevel,
+        int levelsGained,
+        bool hasSkillMasters,
+        DynamicBuffer<PlayerSkillMasterElement> skillMasters)
     {
         for (var i = 0; i < levelsGained; i++)
         {
             var gainedLevel = newLevel - levelsGained + 1 + i;
-            switch (gainedLevel % 3)
-            {
-                case 0:
-                    stats.MoveSpeedLevel++;
-                    break;
-
-                case 1:
-                    stats.DamageLevel++;
-                    break;
-
-                case 2:
-                default:
-                    stats.AttackSpeedLevel++;
-                    break;
-            }
+            var skill = hasSkillMasters
+                ? PlayerSkillMasterCatalog.PickAutoSkill(skillMasters, gainedLevel - 1)
+                : PlayerSkillMasterCatalog.GetByFallbackOrder(gainedLevel - 1);
+            ApplySkill(ref stats, skill);
         }
+    }
+
+    static void ApplySkill(ref PlayerSkillStats stats, PlayerSkillMasterData skill)
+    {
+        var addLevel = skill.AddLevel <= 0 ? 1 : skill.AddLevel;
+        switch (skill.Kind)
+        {
+            case PlayerSkillKind.MoveSpeed:
+                stats.MoveSpeedLevel = AddClampedLevel(stats.MoveSpeedLevel, addLevel, skill.MaxLevel);
+                break;
+
+            case PlayerSkillKind.AttackSpeed:
+                stats.AttackSpeedLevel = AddClampedLevel(stats.AttackSpeedLevel, addLevel, skill.MaxLevel);
+                break;
+
+            case PlayerSkillKind.Damage:
+            default:
+                stats.DamageLevel = AddClampedLevel(stats.DamageLevel, addLevel, skill.MaxLevel);
+                break;
+        }
+    }
+
+    static int AddClampedLevel(int currentLevel, int addLevel, int maxLevel)
+    {
+        var nextLevel = currentLevel + addLevel;
+        return maxLevel > 0 && nextLevel > maxLevel ? maxLevel : nextLevel;
     }
 
     public static float GetDamageMultiplier(in PlayerSkillStats stats)

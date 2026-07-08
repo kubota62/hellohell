@@ -32,6 +32,10 @@ public class EnemyMasterAsset : ScriptableObject
     public int Experience = 1;
     public int Score = 10;
 
+    [Header("Spawn")]
+    public int SpawnWeight = 1;
+    public int MinPlayerLevel = 1;
+
     public EnemyMasterData ToRuntimeMaster()
     {
         var fallback = EnemyMasterCatalog.Get(TypeId);
@@ -68,6 +72,11 @@ public class EnemyMasterAsset : ScriptableObject
             {
                 Experience = Experience > 0 ? Experience : fallback.Reward.Experience,
                 Score = Score > 0 ? Score : fallback.Reward.Score,
+            },
+            Spawn = new EnemySpawnMaster
+            {
+                Weight = SpawnWeight > 0 ? SpawnWeight : fallback.Spawn.Weight,
+                MinPlayerLevel = MinPlayerLevel > 0 ? MinPlayerLevel : fallback.Spawn.MinPlayerLevel,
             },
         };
     }

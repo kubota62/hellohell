@@ -10,6 +10,8 @@ public class MasterCatalogAuthoring : MonoBehaviour
     public AttackMasterAsset[] AttackMasters;
     public EnemyMasterAsset[] EnemyMasters;
     public SpawnMasterAsset[] SpawnMasters;
+    public PlayerSkillMasterAsset[] PlayerSkillMasters;
+    public PlayerProgressMasterAsset[] PlayerProgressMasters;
 
     class Baker : Baker<MasterCatalogAuthoring>
     {
@@ -59,6 +61,32 @@ public class MasterCatalogAuthoring : MonoBehaviour
             }
 
             EnsureSpawnMaster(spawnBuffer, SpawnMasterId.Default);
+
+            var playerSkillBuffer = AddBuffer<PlayerSkillMasterElement>(entity);
+            if (authoring.PlayerSkillMasters is { Length: > 0 })
+            {
+                foreach (var asset in authoring.PlayerSkillMasters)
+                {
+                    if (asset == null) continue;
+                    playerSkillBuffer.Add(PlayerSkillMasterElement.FromMaster(asset.ToRuntimeMaster()));
+                }
+            }
+
+            EnsurePlayerSkillMaster(playerSkillBuffer, PlayerSkillMasterId.DamageBoost);
+            EnsurePlayerSkillMaster(playerSkillBuffer, PlayerSkillMasterId.AttackSpeedBoost);
+            EnsurePlayerSkillMaster(playerSkillBuffer, PlayerSkillMasterId.MoveSpeedBoost);
+
+            var playerProgressBuffer = AddBuffer<PlayerProgressMasterElement>(entity);
+            if (authoring.PlayerProgressMasters is { Length: > 0 })
+            {
+                foreach (var asset in authoring.PlayerProgressMasters)
+                {
+                    if (asset == null) continue;
+                    playerProgressBuffer.Add(PlayerProgressMasterElement.FromMaster(asset.ToRuntimeMaster()));
+                }
+            }
+
+            EnsurePlayerProgressMaster(playerProgressBuffer, PlayerProgressMasterId.Default);
         }
 
         private static void EnsureAttackMaster(
@@ -104,6 +132,36 @@ public class MasterCatalogAuthoring : MonoBehaviour
             }
 
             spawnBuffer.Add(SpawnMasterElement.FromMaster(SpawnMasterCatalog.Get(id)));
+        }
+
+        private static void EnsurePlayerSkillMaster(
+            DynamicBuffer<PlayerSkillMasterElement> playerSkillBuffer,
+            PlayerSkillMasterId id)
+        {
+            for (var i = 0; i < playerSkillBuffer.Length; i++)
+            {
+                if (playerSkillBuffer[i].Id == id)
+                {
+                    return;
+                }
+            }
+
+            playerSkillBuffer.Add(PlayerSkillMasterElement.FromMaster(PlayerSkillMasterCatalog.Get(id)));
+        }
+
+        private static void EnsurePlayerProgressMaster(
+            DynamicBuffer<PlayerProgressMasterElement> playerProgressBuffer,
+            PlayerProgressMasterId id)
+        {
+            for (var i = 0; i < playerProgressBuffer.Length; i++)
+            {
+                if (playerProgressBuffer[i].Id == id)
+                {
+                    return;
+                }
+            }
+
+            playerProgressBuffer.Add(PlayerProgressMasterElement.FromMaster(PlayerProgressMasterCatalog.Get(id)));
         }
     }
 }

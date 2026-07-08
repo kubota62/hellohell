@@ -9,8 +9,6 @@ using Unity.Mathematics;
 [BurstCompile]
 public partial struct PlayerProgressSystem : ISystem
 {
-    const int InitialExperienceToNextLevel = 5;
-
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
@@ -34,6 +32,7 @@ public partial struct PlayerProgressSystem : ISystem
             return;
         }
 
+        var progressMaster = ResolveProgressMaster(ref state);
         var ecb = new EntityCommandBuffer(Unity.Collections.Allocator.Temp);
         foreach (var (progress, playerEntity) in
                  SystemAPI.Query<RefRW<PlayerProgress>>()
@@ -52,7 +51,7 @@ public partial struct PlayerProgressSystem : ISystem
                 value.Experience -= value.ExperienceToNextLevel;
                 value.Level++;
                 levelsGained++;
-                value.ExperienceToNextLevel = CalculateExperienceToNextLevel(value.Level);
+                value.ExperienceToNextLevel = CalculateExperienceToNextLevel(value.Level, progressMaster);
             }
 
             progress.ValueRW = value;
@@ -75,17 +74,33 @@ public partial struct PlayerProgressSystem : ISystem
 
     public static PlayerProgress CreateInitialProgress()
     {
+        return CreateInitialProgress(PlayerProgressMasterCatalog.Get(PlayerProgressMasterId.Default));
+    }
+
+    public static PlayerProgress CreateInitialProgress(PlayerProgressMasterData master)
+    {
         return new PlayerProgress
         {
-            Level = 1,
+            Level = math.max(1, master.InitialLevel),
             Experience = 0,
-            ExperienceToNextLevel = InitialExperienceToNextLevel,
+            ExperienceToNextLevel = math.max(1, master.InitialExperienceToNextLevel),
             Score = 0,
         };
     }
 
-    static int CalculateExperienceToNextLevel(int level)
+    private PlayerProgressMasterData ResolveProgressMaster(ref SystemState state)
     {
-        return InitialExperienceToNextLevel + math.max(0, level - 1) * 3;
+        if (SystemAPI.TryGetSingletonBuffer<PlayerProgressMasterElement>(out var masters, true))
+        {
+            return PlayerProgressMasterCatalog.Get(masters, PlayerProgressMasterId.Default);
+        }
+
+        return PlayerProgressMasterCatalog.Get(PlayerProgressMasterId.Default);
+    }
+
+    static int CalculateExperienceToNextLevel(int level, PlayerProgressMasterData master)
+    {
+        return math.max(1, master.InitialExperienceToNextLevel) +
+            math.max(0, level - 1) * math.max(0, master.ExperienceToNextLevelAdd);
     }
 }
