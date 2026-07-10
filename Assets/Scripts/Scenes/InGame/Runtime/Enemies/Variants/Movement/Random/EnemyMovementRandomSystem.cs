@@ -6,12 +6,13 @@ using Unity.Mathematics;
 using Unity.Transforms;
 
 /// <summary>
-/// EnemyMovementForward を持つ Enemy の移動意図を作るシステム。
-/// 実際の座標更新は EnemyMoveIntentApplySystem に集約する。
+/// Enemies/Variants/Movement/Random の移動意思生成システム。
+/// EnemyMovementRandom を持つ Enemy の移動意図を作る。
+/// ノイズで横方向に揺らしつつ、座標更新は共通の適用システムへ任せる。
 /// </summary>
 [BurstCompile]
 [UpdateBefore(typeof(EnemyMoveIntentApplySystem))]
-public partial struct EnemyMovementForwardSystem : ISystem
+public partial struct EnemyMovementRandomSystem : ISystem
 {
     [BurstCompile]
     public void OnCreate(ref SystemState state)
@@ -26,10 +27,11 @@ public partial struct EnemyMovementForwardSystem : ISystem
         var playerEntity = SystemAPI.GetSingletonEntity<Player>();
         var playerPosition = SystemAPI.GetComponent<LocalTransform>(playerEntity).Position;
 
-        var job = new EnemyMovementForwardJob
+        var job = new EnemyMovementRandomJob
         {
             PlayerPosition = playerPosition,
             DeltaTime = SystemAPI.Time.DeltaTime,
+            ElapsedTime = (float)SystemAPI.Time.ElapsedTime,
             TransformLookup = SystemAPI.GetComponentLookup<LocalTransform>(false)
         };
 
@@ -38,21 +40,22 @@ public partial struct EnemyMovementForwardSystem : ISystem
 }
 
 /// <summary>
-/// 直進型 Enemy の移動方向と速度を MoveIntent に書き込む Job。
-/// 敵同士が完全に重なりにくいよう、わずかなレーン差もここで作る。
+/// 揺れながら接近する Enemy の移動方向と速度を MoveIntent に書き込む Job。
+/// ノイズで回り込み方向を作り、単純な直進敵と違う動きに見せる。
 /// </summary>
 [BurstCompile]
 [WithAll(typeof(ActorBody))]
 [WithAll(typeof(Enemy))]
-[WithAll(typeof(EnemyMovementForward))]
+[WithAll(typeof(EnemyMovementRandom))]
 [WithNone(typeof(Player))]
-public partial struct EnemyMovementForwardJob : IJobEntity
+public partial struct EnemyMovementRandomJob : IJobEntity
 {
-    const float PersonalSpace = 3.5f;
+    const float PersonalSpace = 4f;
     const float PushBackSpeed = 4f;
 
     public float3 PlayerPosition;
     public float DeltaTime;
+    public float ElapsedTime;
 
     [NativeDisableParallelForRestriction]
     [NativeDisableContainerSafetyRestriction]
@@ -87,10 +90,15 @@ public partial struct EnemyMovementForwardJob : IJobEntity
         }
 
         var tangent = new float3(-forward.z, 0f, forward.x);
-        var laneOffset = ((entity.Index % 7) - 3) * 0.04f;
-        var desiredDirection = math.normalizesafe(forward + tangent * laneOffset, forward);
+        var weave = noise.cnoise(new float3(
+            transform.Position.x * 0.12f + entity.Index * 0.17f,
+            transform.Position.z * 0.12f,
+            ElapsedTime * 0.35f));
 
-        var speed = math.lerp(moveSpeed.Value * 0.57f, moveSpeed.Value, math.saturate(distance / 18f));
+        var encircle = tangent * weave * 0.65f;
+        var desiredDirection = math.normalizesafe(forward + encircle, forward);
+
+        var speed = math.lerp(moveSpeed.Value * 0.54f, moveSpeed.Value, math.saturate(distance / 16f));
         if (distance < 6f)
         {
             speed *= math.saturate((distance - PersonalSpace) / (6f - PersonalSpace));
@@ -103,7 +111,7 @@ public partial struct EnemyMovementForwardJob : IJobEntity
 
     private void RotateTurret(in ActorBody actorBody, float deltaTime)
     {
-        // 接近中も敵のシルエットが読めるように砲塔をゆっくり回す。
+        // 直進型と見分けやすいシルエットになるように砲塔を回転させる。
         if (TransformLookup.HasComponent(actorBody.Turret))
         {
             var spin = quaternion.RotateY(deltaTime * math.PI);
@@ -111,52 +119,5 @@ public partial struct EnemyMovementForwardJob : IJobEntity
             turretTrans.Rotation = math.mul(spin, turretTrans.Rotation);
             TransformLookup[actorBody.Turret] = turretTrans;
         }
-    }
-}
-
-/// <summary>
-/// Enemy の MoveIntent を実際の移動と向きへ反映するシステム。
-/// AIごとの判断と移動適用を分け、敵種類を増やしても共通処理を再利用する。
-/// </summary>
-[BurstCompile]
-[UpdateBefore(typeof(TransformSystemGroup))]
-public partial struct EnemyMoveIntentApplySystem : ISystem
-{
-    [BurstCompile]
-    public void OnUpdate(ref SystemState state)
-    {
-        var job = new EnemyMoveIntentApplyJob
-        {
-            DeltaTime = SystemAPI.Time.DeltaTime
-        };
-
-        state.Dependency = job.ScheduleParallel(state.Dependency);
-    }
-}
-
-[BurstCompile]
-[WithAll(typeof(ActorBody))]
-[WithAll(typeof(Enemy))]
-[WithNone(typeof(Player))]
-public partial struct EnemyMoveIntentApplyJob : IJobEntity
-{
-    public float DeltaTime;
-
-    [BurstCompile]
-    public void Execute(ref LocalTransform transform, ref MoveIntent moveIntent)
-    {
-        if (moveIntent.Magnitude <= 0f || math.lengthsq(moveIntent.Direction) < 0.0001f)
-        {
-            moveIntent.Direction = float3.zero;
-            moveIntent.Magnitude = 0f;
-            return;
-        }
-
-        var direction = math.normalizesafe(moveIntent.Direction);
-        transform.Position += direction * moveIntent.Magnitude * DeltaTime;
-        transform.Rotation = quaternion.LookRotationSafe(direction, math.up());
-
-        moveIntent.Direction = float3.zero;
-        moveIntent.Magnitude = 0f;
     }
 }
