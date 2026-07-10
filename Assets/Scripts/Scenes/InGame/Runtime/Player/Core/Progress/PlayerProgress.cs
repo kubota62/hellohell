@@ -1,7 +1,8 @@
 using Unity.Entities;
 
 /// <summary>
-/// Playerの成長状態とスコアを保持するコンポーネント。
+/// Player/Core/Progress の共通コンポーネント。
+/// Playerの成長状態とスコアを保持する。
 /// 敵死亡時のEnemyRewardEventを集計し、将来のスキル選択やレベルアップ演出の入口にする。
 /// </summary>
 public struct PlayerProgress : IComponentData

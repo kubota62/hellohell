@@ -3,7 +3,8 @@ using Unity.Entities;
 using Unity.Mathematics;
 
 /// <summary>
-/// PlayerLevelUpEventを仮スキルへ変換するシステム。
+/// Player/Variants/Skills/Auto の自動スキル付与システム。
+/// PlayerLevelUpEventをスキル強化へ変換する。
 /// 現時点では選択UIがないため、マスタ候補から自動でスキル強化を選ぶ。
 /// </summary>
 [BurstCompile]

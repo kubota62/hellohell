@@ -4,6 +4,7 @@ using Unity.Mathematics;
 using Unity.Transforms;
 
 /// <summary>
+/// Player/Variants/Movement/Default のWASD移動システム。
 /// 共有の PlayerInput エンティティを読み、Player の ActorBody を移動させる。
 /// LocalTransform の変更を同フレームで LocalToWorld に反映するため、TransformSystemGroup より前に実行する。
 /// </summary>
@@ -60,7 +61,7 @@ public partial struct PlayerMovementSystem : ISystem
 }
 
 /// <summary>
-/// Player タグを持つ ActorBody だけを移動させる。
+/// Default移動方式で、Player タグを持つ ActorBody だけを移動させるJob。
 /// 入力値はスケジュール前に XZ 平面上のワールド方向へ変換しておく。
 /// </summary>
 [BurstCompile]

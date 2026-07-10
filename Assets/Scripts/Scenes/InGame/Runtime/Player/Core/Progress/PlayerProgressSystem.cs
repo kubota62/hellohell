@@ -3,7 +3,8 @@ using Unity.Entities;
 using Unity.Mathematics;
 
 /// <summary>
-/// EnemyRewardEventをPlayerProgressへ加算するシステム。
+/// Player/Core/Progress の成長集計システム。
+/// EnemyRewardEventをPlayerProgressへ加算する。
 /// レベルアップ時は必要経験値を段階的に増やし、後続のスキル選択処理から参照できる状態にする。
 /// </summary>
 [BurstCompile]
