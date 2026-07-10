@@ -2,8 +2,8 @@ using Unity.Entities;
 using Unity.Mathematics;
 
 /// <summary>
-/// Projectile攻撃を生成するための一回きりのリクエスト。
-/// AttackRequestSystem が攻撃マスタから作り、ProjectileSpawnSystem が消費して実体化する。
+/// Attack/Variants/Projectiles 用の一回きりの生成リクエスト。
+/// AttackRequestSystem が攻撃マスタから作り、ProjectileSpawnSystem が消費して弾を実体化する。
 /// </summary>
 public struct ProjectileAttackRequest : IComponentData
 {

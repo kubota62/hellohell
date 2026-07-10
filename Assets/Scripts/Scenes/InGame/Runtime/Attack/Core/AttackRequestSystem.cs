@@ -4,8 +4,9 @@ using Unity.Mathematics;
 using Unity.Transforms;
 
 /// <summary>
-/// Player と Enemy の攻撃意思を読み、攻撃種別ごとの実行リクエストへ変換するシステム。
-/// 攻撃そのものはここで実行せず、Projectile / Aura / MeleeArc などの専用Systemへ薄いデータとして渡す。
+/// Attack/Core の共通入口。
+/// Player と Enemy の攻撃意思を読み、攻撃マスタを解決して、攻撃種別ごとの実行リクエストへ変換する。
+/// Projectile / Aura / MeleeArc などの実処理は Attack/Variants 以下の専用Systemへ渡す。
 /// </summary>
 [UpdateBefore(typeof(ProjectileSpawnSystem))]
 public partial struct AttackRequestSystem : ISystem
@@ -26,7 +27,7 @@ public partial struct AttackRequestSystem : ISystem
             true);
         var ecb = new EntityCommandBuffer(Unity.Collections.Allocator.Temp);
 
-        // 入力やAI判断を攻撃リクエストへ変換する。ここでは弾やエフェクトを直接生成しない。
+        // 入力やAI判断を攻撃リクエストへ変換する。ここでは弾、範囲判定、エフェクトを直接生成しない。
         RequestPlayerAttack(ref state, ecb, hasAttackMasters, attackMasters, deltaTime);
         RequestEnemyAttack(ref state, ecb, hasAttackMasters, attackMasters, deltaTime);
 
@@ -109,7 +110,7 @@ public partial struct AttackRequestSystem : ISystem
         DynamicBuffer<AttackMasterElement> attackMasters,
         float deltaTime)
     {
-        // 攻撃IDからマスタ値を解決し、クールダウンが空いていれば種別ごとのリクエストを発行する。
+        // 攻撃IDからマスタ値を解決し、クールダウンが空いていればVariants向けのリクエストを発行する。
         var definition = hasAttackMasters
             ? AttackMasterCatalog.Get(attackMasters, attackMasterId)
             : AttackMasterCatalog.Get(attackMasterId);

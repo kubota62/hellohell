@@ -2,7 +2,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 
 /// <summary>
-/// 扇状近接攻撃を解決するための一回きりのリクエスト。
+/// Attack/Variants/MeleeArc 用の一回きりの扇状攻撃リクエスト。
 /// 攻撃判定と見た目は別システムで処理し、攻撃種別の追加に備えて薄いデータだけを渡す。
 /// </summary>
 public struct MeleeArcAttackRequest : IComponentData
@@ -19,7 +19,7 @@ public struct MeleeArcAttackRequest : IComponentData
 }
 
 /// <summary>
-/// 扇状近接攻撃の表示だけを生成するためのリクエスト。
+/// Attack/Variants/MeleeArc 用の表示リクエスト。
 /// ロジック側を GameObject ベースの演出に依存させないため、攻撃判定後に別途発行する。
 /// </summary>
 public struct MeleeArcVfxRequest : IComponentData

@@ -5,27 +5,28 @@ using Unity.Mathematics;
 using Unity.Transforms;
 
 /// <summary>
-/// MeleeArcAttackRequest を消費し、扇形範囲内の敵へ DamageEvent を積むシステム。
-/// Actor 検索は空間ハッシュで近隣セルに絞り、敵数が増えても全件走査しない。
+/// Attack/Variants/Aura の命中解決システム。
+/// AuraAttackRequest を消費し、範囲内の敵 Actor へ DamageEvent を積む。
+/// Actor の検索は空間ハッシュで近隣セルに絞り、数が増えても総当たりにならないようにする。
 /// </summary>
 [BurstCompile]
 [UpdateAfter(typeof(AttackRequestSystem))]
-public partial struct MeleeArcAttackSystem : ISystem
+public partial struct AuraAttackSystem : ISystem
 {
     private EntityQuery targetQuery;
 
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
-        state.RequireForUpdate<MeleeArcAttackRequest>();
+        state.RequireForUpdate<AuraAttackRequest>();
         state.RequireForUpdate<SpatialHashSettings>();
+        state.RequireForUpdate<EndSimulationEntityCommandBufferSystem.Singleton>();
 
         targetQuery = new EntityQueryBuilder(Allocator.Temp)
             .WithAll<ActorBody, SpatialHashTarget, LocalTransform, Team, Hitbox>()
             .Build(ref state);
     }
 
-    [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
         var settings = SystemAPI.GetSingleton<SpatialHashSettings>();
@@ -46,12 +47,14 @@ public partial struct MeleeArcAttackSystem : ISystem
             spatialHash.Add(hash, i);
         }
 
-        var ecb = new EntityCommandBuffer(Allocator.Temp);
+        var ecb = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>()
+            .CreateCommandBuffer(state.WorldUnmanaged);
+
         foreach (var (request, requestEntity) in
-                 SystemAPI.Query<RefRO<MeleeArcAttackRequest>>()
+                 SystemAPI.Query<RefRO<AuraAttackRequest>>()
                      .WithEntityAccess())
         {
-            ResolveMeleeArcRequest(
+            ResolveAuraRequest(
                 ecb,
                 request.ValueRO,
                 cellSize,
@@ -61,17 +64,13 @@ public partial struct MeleeArcAttackSystem : ISystem
                 targetTeams,
                 targetHitboxes);
 
-            CreateVfxRequest(ecb, request.ValueRO);
             ecb.DestroyEntity(requestEntity);
         }
-
-        ecb.Playback(state.EntityManager);
-        ecb.Dispose();
     }
 
-    private static void ResolveMeleeArcRequest(
+    private static void ResolveAuraRequest(
         EntityCommandBuffer ecb,
-        MeleeArcAttackRequest request,
+        AuraAttackRequest request,
         float cellSize,
         NativeParallelMultiHashMap<int, int> spatialHash,
         NativeArray<Entity> targetEntities,
@@ -81,9 +80,6 @@ public partial struct MeleeArcAttackSystem : ISystem
     {
         var requestCell = SpatialHashUtility.GetCell(request.Position, cellSize);
         var searchRadius = math.max(1, (int)math.ceil(request.Radius / cellSize) + 1);
-        var forward = FlattenDirection(request.Direction);
-        var halfAngleRadians = math.radians(math.clamp(request.AngleDegrees, 1f, 360f) * 0.5f);
-        var minDot = math.cos(halfAngleRadians);
 
         for (var x = -searchRadius; x <= searchRadius; x++)
         {
@@ -100,8 +96,6 @@ public partial struct MeleeArcAttackSystem : ISystem
                     TryDamageTarget(
                         ecb,
                         request,
-                        forward,
-                        minDot,
                         targetEntities,
                         targetTransforms,
                         targetTeams,
@@ -115,9 +109,7 @@ public partial struct MeleeArcAttackSystem : ISystem
 
     private static void TryDamageTarget(
         EntityCommandBuffer ecb,
-        MeleeArcAttackRequest request,
-        float3 forward,
-        float minDot,
+        AuraAttackRequest request,
         NativeArray<Entity> targetEntities,
         NativeArray<LocalTransform> targetTransforms,
         NativeArray<Team> targetTeams,
@@ -127,17 +119,8 @@ public partial struct MeleeArcAttackSystem : ISystem
         if (targetEntities[targetIndex] == request.Owner) return;
         if (!TeamUtility.AreHostile(request.Team, targetTeams[targetIndex].Value)) return;
 
-        var toTarget = targetTransforms[targetIndex].Position - request.Position;
-        toTarget.y = 0f;
-        var distanceSq = math.lengthsq(toTarget);
-        var hitDistance = request.Radius + targetHitboxes[targetIndex].Radius;
-        if (distanceSq > hitDistance * hitDistance)
-        {
-            return;
-        }
-
-        var targetDirection = math.normalizesafe(toTarget, forward);
-        if (math.dot(forward, targetDirection) < minDot)
+        var hitRadius = request.Radius + targetHitboxes[targetIndex].Radius;
+        if (math.distancesq(request.Position, targetTransforms[targetIndex].Position) > hitRadius * hitRadius)
         {
             return;
         }
@@ -147,25 +130,5 @@ public partial struct MeleeArcAttackSystem : ISystem
             Damage = request.Damage,
             Attacker = request.Owner,
         });
-    }
-
-    private static void CreateVfxRequest(EntityCommandBuffer ecb, MeleeArcAttackRequest request)
-    {
-        var entity = ecb.CreateEntity();
-        ecb.AddComponent(entity, new MeleeArcVfxRequest
-        {
-            Position = request.Position,
-            Direction = FlattenDirection(request.Direction),
-            Radius = request.Radius,
-            AngleDegrees = request.AngleDegrees,
-            Duration = request.VisualDuration,
-            Color = new float4(1f, 0.92f, 0.18f, 0.38f),
-        });
-    }
-
-    private static float3 FlattenDirection(float3 direction)
-    {
-        direction.y = 0f;
-        return math.normalizesafe(direction, new float3(0f, 0f, 1f));
     }
 }

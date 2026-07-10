@@ -5,6 +5,7 @@ using Unity.Mathematics;
 using Unity.Transforms;
 
 /// <summary>
+/// Attack/Variants/Projectiles の命中解決システム。
 /// Projectile と ActorBody の命中を空間ハッシュで判定し、命中先の DamageEvent バッファへダメージを積む。
 /// 貫通、範囲、チェーンなどのProjectile Modifierもここで解決する。
 /// </summary>

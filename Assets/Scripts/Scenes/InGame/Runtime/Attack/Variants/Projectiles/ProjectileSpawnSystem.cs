@@ -5,7 +5,8 @@ using Unity.Rendering;
 using Unity.Transforms;
 
 /// <summary>
-/// ProjectileAttackRequest を消費してProjectileエンティティを生成、またはプールから再利用するシステム。
+/// Attack/Variants/Projectiles の生成処理。
+/// ProjectileAttackRequest を消費してProjectileエンティティを生成、またはプールから再利用する。
 /// PooledInstance を持つ弾はDestroyせず、GameplayActiveを切り替えて再初期化する。
 /// </summary>
 [UpdateAfter(typeof(AttackRequestSystem))]

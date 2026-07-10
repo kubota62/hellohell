@@ -2,7 +2,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 
 /// <summary>
-/// Aura 攻撃を解決するための一回限りのリクエスト。
+/// Attack/Variants/Aura 用の一回限りの範囲攻撃リクエスト。
 /// 現時点では範囲内の敵へ即時ダメージを与え、将来的な演出は VfxRequest 側へ分離する。
 /// </summary>
 public struct AuraAttackRequest : IComponentData

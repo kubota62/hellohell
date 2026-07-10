@@ -3,7 +3,8 @@ using Unity.Mathematics;
 using UnityEngine;
 
 /// <summary>
-/// MeleeArcVfxRequest を消費し、半透明の扇形メッシュを短時間表示する managed VFX システム。
+/// Attack/Variants/MeleeArc の表示専用システム。
+/// MeleeArcVfxRequest を消費し、半透明の扇形メッシュを短時間表示する。
 /// ゲームロジックは ECS のリクエストだけを扱い、表示は GameObject 側に閉じ込める。
 /// </summary>
 [UpdateAfter(typeof(MeleeArcAttackSystem))]

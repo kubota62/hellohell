@@ -1,7 +1,7 @@
 using Unity.Entities;
 
 /// <summary>
-/// 命中フィルタとダメージ解決に使うProjectile共通データ。
+/// Attack/Variants/Projectiles の命中フィルタとダメージ解決に使う共通データ。
 /// 移動状態は ProjectileMotion に分け、複数のProjectile挙動で共有できるようにする。
 /// </summary>
 public struct Projectile : IComponentData
