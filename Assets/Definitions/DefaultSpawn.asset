@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: DefaultSpawn
   m_EditorClassIdentifier: Assembly-CSharp::SpawnMasterAsset
   Id: 1
-  SpawnInterval: 0.5
+  SpawnInterval: 0.65
   InitialEnemySpawnDelay: 1
-  MinSpawnDistance: 15
-  MaxSpawnDistance: 25
+  MinSpawnDistance: 26
+  MaxSpawnDistance: 34

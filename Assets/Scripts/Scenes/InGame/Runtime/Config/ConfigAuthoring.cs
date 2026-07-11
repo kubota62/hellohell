@@ -15,9 +15,9 @@ public class ConfigAuthoring : MonoBehaviour
     public GameObject DamageDigitPrefab;
 
     [Header("Enemy Spawn")]
-    public float SpawnTime = 0.5f;
-    public float MinSpawnDistance = 15f;
-    public float MaxSpawnDistance = 25f;
+    public float SpawnTime = 0.65f;
+    public float MinSpawnDistance = 26f;
+    public float MaxSpawnDistance = 34f;
 
     [Header("Spatial Hash")]
     public float SpatialHashCellSize = 4f;

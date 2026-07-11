@@ -94,7 +94,7 @@ public static class EnemyMasterCatalog
                     experience: 2,
                     score: 18,
                     spawnWeight: 2,
-                    minPlayerLevel: 3);
+                    minPlayerLevel: 7);
 
             case ChainEnemy:
                 return Create(
@@ -111,7 +111,7 @@ public static class EnemyMasterCatalog
                     experience: 2,
                     score: 20,
                     spawnWeight: 2,
-                    minPlayerLevel: 2);
+                    minPlayerLevel: 5);
 
             case RandomEnemy:
                 return Create(
@@ -128,24 +128,24 @@ public static class EnemyMasterCatalog
                     experience: 1,
                     score: 12,
                     spawnWeight: 3,
-                    minPlayerLevel: 1);
+                    minPlayerLevel: 4);
 
             case ForwardEnemy:
             default:
                 return Create(
                     ForwardEnemy,
                     EnemyMovementKind.Forward,
-                    maxHealth: 100,
-                    hitRadius: 2f,
-                    bodyScale: 1f,
-                    moveSpeed: 2.8f,
-                    primaryAttack: AttackMasterId.BasicProjectile,
-                    minAttackRange: 5f,
-                    maxAttackRange: 24f,
-                    color: new float4(1f, 0f, 1f, 1f),
+                    maxHealth: 45,
+                    hitRadius: 1.3f,
+                    bodyScale: 0.75f,
+                    moveSpeed: 1.35f,
+                    primaryAttack: AttackMasterId.BasicAura,
+                    minAttackRange: 0f,
+                    maxAttackRange: 2.4f,
+                    color: new float4(0.42f, 0.5f, 0.32f, 1f),
                     experience: 1,
                     score: 10,
-                    spawnWeight: 5,
+                    spawnWeight: 10,
                     minPlayerLevel: 1);
         }
     }

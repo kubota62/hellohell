@@ -49,9 +49,6 @@ public partial struct EnemyMovementForwardSystem : ISystem
 [WithNone(typeof(Player))]
 public partial struct EnemyMovementForwardJob : IJobEntity
 {
-    const float PersonalSpace = 3.5f;
-    const float PushBackSpeed = 4f;
-
     public float3 PlayerPosition;
     public float DeltaTime;
 
@@ -73,32 +70,18 @@ public partial struct EnemyMovementForwardJob : IJobEntity
         var distance = math.length(toPlayer);
         if (distance < 0.001f)
         {
-            moveIntent.Direction = new float3(1f, 0f, 0f);
-            moveIntent.Magnitude = PushBackSpeed;
+            moveIntent.Direction = float3.zero;
+            moveIntent.Magnitude = 0f;
             return;
         }
 
         var forward = toPlayer / distance;
-        if (distance < PersonalSpace)
-        {
-            moveIntent.Direction = -forward;
-            moveIntent.Magnitude = PushBackSpeed;
-            RotateTurret(actorBody, DeltaTime);
-            return;
-        }
-
         var tangent = new float3(-forward.z, 0f, forward.x);
         var laneOffset = ((entity.Index % 7) - 3) * 0.04f;
         var desiredDirection = math.normalizesafe(forward + tangent * laneOffset, forward);
 
-        var speed = math.lerp(moveSpeed.Value * 0.57f, moveSpeed.Value, math.saturate(distance / 18f));
-        if (distance < 6f)
-        {
-            speed *= math.saturate((distance - PersonalSpace) / (6f - PersonalSpace));
-        }
-
         moveIntent.Direction = desiredDirection;
-        moveIntent.Magnitude = speed;
+        moveIntent.Magnitude = moveSpeed.Value;
         RotateTurret(actorBody, DeltaTime);
     }
 

@@ -5,6 +5,7 @@
 /// </summary>
 public enum AttackMasterId
 {
+    None = 0,
     BasicProjectile = 1,
     BasicAura = 2,
     BasicMeleeArc = 3,

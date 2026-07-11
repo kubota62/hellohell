@@ -9,10 +9,10 @@ using UnityEngine;
 public class SpawnMasterAsset : ScriptableObject
 {
     public SpawnMasterId Id = SpawnMasterId.Default;
-    public float SpawnInterval = 0.5f;
+    public float SpawnInterval = 0.65f;
     public float InitialEnemySpawnDelay = 1f;
-    public float MinSpawnDistance = 15f;
-    public float MaxSpawnDistance = 25f;
+    public float MinSpawnDistance = 26f;
+    public float MaxSpawnDistance = 34f;
 
     public SpawnMasterData ToRuntimeMaster()
     {

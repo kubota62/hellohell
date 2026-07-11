@@ -9,6 +9,9 @@ using UnityEngine;
 [UpdateInGroup(typeof(PresentationSystemGroup))]
 public partial class CameraFollowSystem : SystemBase
 {
+    private const float CameraHeight = 18f;
+    private const float CameraBackOffset = 8f;
+
     protected override void OnCreate()
     {
         RequireForUpdate<CameraTarget>();
@@ -22,7 +25,10 @@ public partial class CameraFollowSystem : SystemBase
         foreach (var transform in SystemAPI.Query<RefRO<LocalTransform>>().WithAll<CameraTarget>())
         {
             var targetPos = transform.ValueRO.Position;
-            mainCamera.transform.position = new Vector3(targetPos.x, targetPos.y + 10f, targetPos.z - 10f);
+            mainCamera.transform.position = new Vector3(
+                targetPos.x,
+                targetPos.y + CameraHeight,
+                targetPos.z - CameraBackOffset);
             mainCamera.transform.LookAt(new Vector3(targetPos.x, targetPos.y, targetPos.z));
             break;
         }

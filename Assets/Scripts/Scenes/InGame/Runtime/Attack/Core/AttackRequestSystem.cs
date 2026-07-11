@@ -80,6 +80,12 @@ public partial struct AttackRequestSystem : ISystem
                      .WithAll<Enemy>()
                      .WithEntityAccess())
         {
+            var attackMasterId = ResolveAttackMasterId(ref state, actorEntity);
+            if (attackMasterId == AttackMasterId.None)
+            {
+                continue;
+            }
+
             // 敵は定義された距離帯にPlayerがいると発射意思ありとして扱う。
             var distanceToPlayer = math.distance(transform.ValueRO.Position, playerPosition);
             var canFire = hasPlayer &&
@@ -90,7 +96,7 @@ public partial struct AttackRequestSystem : ISystem
                 ref state,
                 actorEntity,
                 cooldown,
-                ResolveAttackMasterId(ref state, actorEntity),
+                attackMasterId,
                 canFire,
                 ecb,
                 hasAttackMasters,

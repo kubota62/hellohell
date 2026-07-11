@@ -15,10 +15,10 @@ public static class SpawnMasterCatalog
                 return new SpawnMasterData
                 {
                     Id = SpawnMasterId.Default,
-                    SpawnInterval = 0.5f,
+                    SpawnInterval = 0.65f,
                     InitialEnemySpawnDelay = 1f,
-                    MinSpawnDistance = 15f,
-                    MaxSpawnDistance = 25f,
+                    MinSpawnDistance = 26f,
+                    MaxSpawnDistance = 34f,
                 };
         }
     }

@@ -25,4 +25,4 @@ MonoBehaviour:
   Experience: 2
   Score: 20
   SpawnWeight: 2
-  MinPlayerLevel: 2
+  MinPlayerLevel: 5
