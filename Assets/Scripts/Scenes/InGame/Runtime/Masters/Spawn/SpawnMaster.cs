@@ -1,6 +1,7 @@
 using Unity.Entities;
 
 /// <summary>
+/// Masters/Spawn のID定義。
 /// スポーン設定マスタを参照するための軽量ID。
 /// 将来ウェーブやステージごとにスポーン設定を切り替える入口にする。
 /// </summary>

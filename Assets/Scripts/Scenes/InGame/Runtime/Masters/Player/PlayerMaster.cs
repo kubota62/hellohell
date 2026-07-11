@@ -1,6 +1,7 @@
 using Unity.Entities;
 
 /// <summary>
+/// Masters/Player のID定義。
 /// Player定義を参照するための軽量ID。
 /// 将来プレイアブルキャラが増えた場合も、このIDを選択結果として扱う。
 /// </summary>

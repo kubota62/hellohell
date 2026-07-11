@@ -2,6 +2,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 
 /// <summary>
+/// Masters/Enemy の移動方式定義。
 /// 敵定義が選ぶ移動パターン。
 /// 敵の種類が増えても、移動ロジックと数値定義を分けて扱えるようにする。
 /// </summary>

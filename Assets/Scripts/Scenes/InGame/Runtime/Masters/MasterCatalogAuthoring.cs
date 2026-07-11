@@ -2,6 +2,7 @@ using Unity.Entities;
 using UnityEngine;
 
 /// <summary>
+/// Runtime/Masters 直下の全マスタをシーンからECSへ渡す集約入口。
 /// ScriptableObjectの定義一覧をECSの定義バッファへ焼き込むAuthoring。
 /// シーンに置くと、スポーンや攻撃生成は静的カタログではなくこの定義を優先して読む。
 /// </summary>

@@ -1,4 +1,5 @@
 /// <summary>
+/// Masters/Attack のID定義。
 /// 攻撃マスタを参照するための軽量ID。
 /// 将来的には ScriptableObject や BlobAsset の定義IDと対応させる。
 /// </summary>

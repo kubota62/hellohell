@@ -37,20 +37,7 @@ public partial struct ProjectileHitSystem : ISystem
         var cellSize = math.max(0.001f, settings.CellSize);
 
         // 命中対象を配列へ固定し、このフレーム用の空間ハッシュを組み立てる。
-        var targetEntities = targetQuery.ToEntityArray(state.WorldUpdateAllocator);
-        var targetTransforms = targetQuery.ToComponentDataArray<LocalTransform>(state.WorldUpdateAllocator);
-        var targetTeams = targetQuery.ToComponentDataArray<Team>(state.WorldUpdateAllocator);
-        var targetHitboxes = targetQuery.ToComponentDataArray<Hitbox>(state.WorldUpdateAllocator);
-
-        var spatialHash = new NativeParallelMultiHashMap<int, int>(
-            math.max(1, targetEntities.Length),
-            state.WorldUpdateAllocator);
-
-        for (var i = 0; i < targetEntities.Length; i++)
-        {
-            var hash = SpatialHashUtility.GetHash(targetTransforms[i].Position, cellSize);
-            spatialHash.Add(hash, i);
-        }
+        var targets = SpatialHashUtility.BuildTargetSnapshot(targetQuery, ref state, cellSize);
 
         // Projectile側は並列Jobで処理し、命中時のDamageEvent追加だけECBへ積む。
         var ecbSingleton = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
@@ -60,11 +47,11 @@ public partial struct ProjectileHitSystem : ISystem
         {
             ECB = ecb,
             CellSize = cellSize,
-            TargetHash = spatialHash,
-            TargetEntities = targetEntities,
-            TargetTransforms = targetTransforms,
-            TargetTeams = targetTeams,
-            TargetHitboxes = targetHitboxes
+            TargetHash = targets.Hash,
+            TargetEntities = targets.Entities,
+            TargetTransforms = targets.Transforms,
+            TargetTeams = targets.Teams,
+            TargetHitboxes = targets.Hitboxes
         };
 
         state.Dependency = collisionJob.ScheduleParallel(state.Dependency);

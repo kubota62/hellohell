@@ -1,5 +1,16 @@
 using Unity.Entities;
+using Unity.Collections;
 using Unity.Mathematics;
+using Unity.Transforms;
+
+public struct SpatialHashSnapshot
+{
+    [ReadOnly] public NativeParallelMultiHashMap<int, int> Hash;
+    [ReadOnly] public NativeArray<Entity> Entities;
+    [ReadOnly] public NativeArray<LocalTransform> Transforms;
+    [ReadOnly] public NativeArray<Team> Teams;
+    [ReadOnly] public NativeArray<Hitbox> Hitboxes;
+}
 
 public struct SpatialHashEntry
 {
@@ -33,5 +44,37 @@ public static class SpatialHashUtility
     public static int GetHash(float3 position, float cellSize)
     {
         return GetHash(GetCell(position, cellSize));
+    }
+
+    /// <summary>
+    /// 攻撃判定で共通利用する、現在フレームのターゲット一覧と空間ハッシュを構築する。
+    /// 返却するNativeコンテナはWorldUpdateAllocatorに属するため、呼び出し側でDisposeしない。
+    /// </summary>
+    public static SpatialHashSnapshot BuildTargetSnapshot(
+        EntityQuery targetQuery,
+        ref SystemState state,
+        float cellSize)
+    {
+        var entities = targetQuery.ToEntityArray(state.WorldUpdateAllocator);
+        var transforms = targetQuery.ToComponentDataArray<LocalTransform>(state.WorldUpdateAllocator);
+        var teams = targetQuery.ToComponentDataArray<Team>(state.WorldUpdateAllocator);
+        var hitboxes = targetQuery.ToComponentDataArray<Hitbox>(state.WorldUpdateAllocator);
+        var hash = new NativeParallelMultiHashMap<int, int>(
+            math.max(1, entities.Length),
+            state.WorldUpdateAllocator);
+
+        for (var i = 0; i < entities.Length; i++)
+        {
+            hash.Add(GetHash(transforms[i].Position, cellSize), i);
+        }
+
+        return new SpatialHashSnapshot
+        {
+            Hash = hash,
+            Entities = entities,
+            Transforms = transforms,
+            Teams = teams,
+            Hitboxes = hitboxes,
+        };
     }
 }

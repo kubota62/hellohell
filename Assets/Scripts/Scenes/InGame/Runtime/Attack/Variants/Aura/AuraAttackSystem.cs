@@ -32,20 +32,7 @@ public partial struct AuraAttackSystem : ISystem
         var settings = SystemAPI.GetSingleton<SpatialHashSettings>();
         var cellSize = math.max(0.001f, settings.CellSize);
 
-        var targetEntities = targetQuery.ToEntityArray(state.WorldUpdateAllocator);
-        var targetTransforms = targetQuery.ToComponentDataArray<LocalTransform>(state.WorldUpdateAllocator);
-        var targetTeams = targetQuery.ToComponentDataArray<Team>(state.WorldUpdateAllocator);
-        var targetHitboxes = targetQuery.ToComponentDataArray<Hitbox>(state.WorldUpdateAllocator);
-
-        var spatialHash = new NativeParallelMultiHashMap<int, int>(
-            math.max(1, targetEntities.Length),
-            state.WorldUpdateAllocator);
-
-        for (var i = 0; i < targetEntities.Length; i++)
-        {
-            var hash = SpatialHashUtility.GetHash(targetTransforms[i].Position, cellSize);
-            spatialHash.Add(hash, i);
-        }
+        var targets = SpatialHashUtility.BuildTargetSnapshot(targetQuery, ref state, cellSize);
 
         var ecb = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>()
             .CreateCommandBuffer(state.WorldUnmanaged);
@@ -58,11 +45,7 @@ public partial struct AuraAttackSystem : ISystem
                 ecb,
                 request.ValueRO,
                 cellSize,
-                spatialHash,
-                targetEntities,
-                targetTransforms,
-                targetTeams,
-                targetHitboxes);
+                targets);
 
             ecb.DestroyEntity(requestEntity);
         }
@@ -72,11 +55,7 @@ public partial struct AuraAttackSystem : ISystem
         EntityCommandBuffer ecb,
         AuraAttackRequest request,
         float cellSize,
-        NativeParallelMultiHashMap<int, int> spatialHash,
-        NativeArray<Entity> targetEntities,
-        NativeArray<LocalTransform> targetTransforms,
-        NativeArray<Team> targetTeams,
-        NativeArray<Hitbox> targetHitboxes)
+        SpatialHashSnapshot targets)
     {
         var requestCell = SpatialHashUtility.GetCell(request.Position, cellSize);
         var searchRadius = math.max(1, (int)math.ceil(request.Radius / cellSize) + 1);
@@ -86,7 +65,7 @@ public partial struct AuraAttackSystem : ISystem
             for (var z = -searchRadius; z <= searchRadius; z++)
             {
                 var hash = SpatialHashUtility.GetHash(requestCell + new int2(x, z));
-                if (!spatialHash.TryGetFirstValue(hash, out var targetIndex, out var iterator))
+                if (!targets.Hash.TryGetFirstValue(hash, out var targetIndex, out var iterator))
                 {
                     continue;
                 }
@@ -96,13 +75,10 @@ public partial struct AuraAttackSystem : ISystem
                     TryDamageTarget(
                         ecb,
                         request,
-                        targetEntities,
-                        targetTransforms,
-                        targetTeams,
-                        targetHitboxes,
+                        targets,
                         targetIndex);
                 }
-                while (spatialHash.TryGetNextValue(out targetIndex, ref iterator));
+                while (targets.Hash.TryGetNextValue(out targetIndex, ref iterator));
             }
         }
     }
@@ -110,22 +86,19 @@ public partial struct AuraAttackSystem : ISystem
     private static void TryDamageTarget(
         EntityCommandBuffer ecb,
         AuraAttackRequest request,
-        NativeArray<Entity> targetEntities,
-        NativeArray<LocalTransform> targetTransforms,
-        NativeArray<Team> targetTeams,
-        NativeArray<Hitbox> targetHitboxes,
+        SpatialHashSnapshot targets,
         int targetIndex)
     {
-        if (targetEntities[targetIndex] == request.Owner) return;
-        if (!TeamUtility.AreHostile(request.Team, targetTeams[targetIndex].Value)) return;
+        if (targets.Entities[targetIndex] == request.Owner) return;
+        if (!TeamUtility.AreHostile(request.Team, targets.Teams[targetIndex].Value)) return;
 
-        var hitRadius = request.Radius + targetHitboxes[targetIndex].Radius;
-        if (math.distancesq(request.Position, targetTransforms[targetIndex].Position) > hitRadius * hitRadius)
+        var hitRadius = request.Radius + targets.Hitboxes[targetIndex].Radius;
+        if (math.distancesq(request.Position, targets.Transforms[targetIndex].Position) > hitRadius * hitRadius)
         {
             return;
         }
 
-        ecb.AppendToBuffer(targetEntities[targetIndex], new DamageEvent
+        ecb.AppendToBuffer(targets.Entities[targetIndex], new DamageEvent
         {
             Damage = request.Damage,
             Attacker = request.Owner,

@@ -32,20 +32,7 @@ public partial struct MeleeArcAttackSystem : ISystem
         var settings = SystemAPI.GetSingleton<SpatialHashSettings>();
         var cellSize = math.max(0.001f, settings.CellSize);
 
-        var targetEntities = targetQuery.ToEntityArray(state.WorldUpdateAllocator);
-        var targetTransforms = targetQuery.ToComponentDataArray<LocalTransform>(state.WorldUpdateAllocator);
-        var targetTeams = targetQuery.ToComponentDataArray<Team>(state.WorldUpdateAllocator);
-        var targetHitboxes = targetQuery.ToComponentDataArray<Hitbox>(state.WorldUpdateAllocator);
-
-        var spatialHash = new NativeParallelMultiHashMap<int, int>(
-            math.max(1, targetEntities.Length),
-            state.WorldUpdateAllocator);
-
-        for (var i = 0; i < targetEntities.Length; i++)
-        {
-            var hash = SpatialHashUtility.GetHash(targetTransforms[i].Position, cellSize);
-            spatialHash.Add(hash, i);
-        }
+        var targets = SpatialHashUtility.BuildTargetSnapshot(targetQuery, ref state, cellSize);
 
         var ecb = new EntityCommandBuffer(Allocator.Temp);
         foreach (var (request, requestEntity) in
@@ -56,11 +43,7 @@ public partial struct MeleeArcAttackSystem : ISystem
                 ecb,
                 request.ValueRO,
                 cellSize,
-                spatialHash,
-                targetEntities,
-                targetTransforms,
-                targetTeams,
-                targetHitboxes);
+                targets);
 
             CreateVfxRequest(ecb, request.ValueRO);
             ecb.DestroyEntity(requestEntity);
@@ -74,11 +57,7 @@ public partial struct MeleeArcAttackSystem : ISystem
         EntityCommandBuffer ecb,
         MeleeArcAttackRequest request,
         float cellSize,
-        NativeParallelMultiHashMap<int, int> spatialHash,
-        NativeArray<Entity> targetEntities,
-        NativeArray<LocalTransform> targetTransforms,
-        NativeArray<Team> targetTeams,
-        NativeArray<Hitbox> targetHitboxes)
+        SpatialHashSnapshot targets)
     {
         var requestCell = SpatialHashUtility.GetCell(request.Position, cellSize);
         var searchRadius = math.max(1, (int)math.ceil(request.Radius / cellSize) + 1);
@@ -91,7 +70,7 @@ public partial struct MeleeArcAttackSystem : ISystem
             for (var z = -searchRadius; z <= searchRadius; z++)
             {
                 var hash = SpatialHashUtility.GetHash(requestCell + new int2(x, z));
-                if (!spatialHash.TryGetFirstValue(hash, out var targetIndex, out var iterator))
+                if (!targets.Hash.TryGetFirstValue(hash, out var targetIndex, out var iterator))
                 {
                     continue;
                 }
@@ -103,13 +82,10 @@ public partial struct MeleeArcAttackSystem : ISystem
                         request,
                         forward,
                         minDot,
-                        targetEntities,
-                        targetTransforms,
-                        targetTeams,
-                        targetHitboxes,
+                        targets,
                         targetIndex);
                 }
-                while (spatialHash.TryGetNextValue(out targetIndex, ref iterator));
+                while (targets.Hash.TryGetNextValue(out targetIndex, ref iterator));
             }
         }
     }
@@ -119,19 +95,16 @@ public partial struct MeleeArcAttackSystem : ISystem
         MeleeArcAttackRequest request,
         float3 forward,
         float minDot,
-        NativeArray<Entity> targetEntities,
-        NativeArray<LocalTransform> targetTransforms,
-        NativeArray<Team> targetTeams,
-        NativeArray<Hitbox> targetHitboxes,
+        SpatialHashSnapshot targets,
         int targetIndex)
     {
-        if (targetEntities[targetIndex] == request.Owner) return;
-        if (!TeamUtility.AreHostile(request.Team, targetTeams[targetIndex].Value)) return;
+        if (targets.Entities[targetIndex] == request.Owner) return;
+        if (!TeamUtility.AreHostile(request.Team, targets.Teams[targetIndex].Value)) return;
 
-        var toTarget = targetTransforms[targetIndex].Position - request.Position;
+        var toTarget = targets.Transforms[targetIndex].Position - request.Position;
         toTarget.y = 0f;
         var distanceSq = math.lengthsq(toTarget);
-        var hitDistance = request.Radius + targetHitboxes[targetIndex].Radius;
+        var hitDistance = request.Radius + targets.Hitboxes[targetIndex].Radius;
         if (distanceSq > hitDistance * hitDistance)
         {
             return;
@@ -143,7 +116,7 @@ public partial struct MeleeArcAttackSystem : ISystem
             return;
         }
 
-        ecb.AppendToBuffer(targetEntities[targetIndex], new DamageEvent
+        ecb.AppendToBuffer(targets.Entities[targetIndex], new DamageEvent
         {
             Damage = request.Damage,
             Attacker = request.Owner,
