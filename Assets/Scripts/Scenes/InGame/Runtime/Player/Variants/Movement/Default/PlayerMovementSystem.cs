@@ -79,3 +79,56 @@ public partial struct PlayerMovementJob : IJobEntity
         transform.Rotation = quaternion.LookRotationSafe(Direction, math.up());
     }
 }
+
+/// <summary>
+/// プレイヤー本体の向きとは独立して、タレットをマウスのワールド位置へ向ける。
+/// ActorBodyAuthoring上でタレットは本体直下の子Transformとして設定する。
+/// </summary>
+[UpdateAfter(typeof(PlayerMovementSystem))]
+[UpdateBefore(typeof(TransformSystemGroup))]
+public partial struct PlayerTurretAimSystem : ISystem
+{
+    public void OnCreate(ref SystemState state)
+    {
+        state.RequireForUpdate<Player>();
+        state.RequireForUpdate<PlayerInput>();
+    }
+
+    public void OnUpdate(ref SystemState state)
+    {
+        var input = SystemAPI.GetSingleton<PlayerInput>();
+        if (!input.HasAimPosition)
+        {
+            return;
+        }
+
+        foreach (var (body, actorTransform) in
+                 SystemAPI.Query<RefRO<ActorBody>, RefRO<LocalTransform>>()
+                     .WithAll<Player>())
+        {
+            var turretEntity = body.ValueRO.Turret;
+            if (turretEntity == Entity.Null ||
+                !state.EntityManager.Exists(turretEntity) ||
+                !state.EntityManager.HasComponent<LocalTransform>(turretEntity))
+            {
+                continue;
+            }
+
+            var worldDirection = input.AimWorldPosition - actorTransform.ValueRO.Position;
+            worldDirection.y = 0f;
+            if (math.lengthsq(worldDirection) < 0.0001f)
+            {
+                continue;
+            }
+
+            var localDirection = math.rotate(
+                math.inverse(actorTransform.ValueRO.Rotation),
+                math.normalizesafe(worldDirection));
+            localDirection.y = 0f;
+
+            var turretTransform = state.EntityManager.GetComponentData<LocalTransform>(turretEntity);
+            turretTransform.Rotation = quaternion.LookRotationSafe(localDirection, math.up());
+            state.EntityManager.SetComponentData(turretEntity, turretTransform);
+        }
+    }
+}

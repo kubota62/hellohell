@@ -9,5 +9,7 @@ using Unity.Mathematics;
 public struct PlayerInput : IComponentData
 {
     public bool IsFire;
+    public bool HasAimPosition;
     public float2 Movement;
+    public float3 AimWorldPosition;
 }
