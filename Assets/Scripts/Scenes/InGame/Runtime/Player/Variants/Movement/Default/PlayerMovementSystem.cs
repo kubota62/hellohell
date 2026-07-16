@@ -9,9 +9,7 @@ using Unity.Transforms;
 /// LocalTransform の変更を同フレームで LocalToWorld に反映するため、TransformSystemGroup より前に実行する。
 /// </summary>
 [BurstCompile]
-[UpdateBefore(typeof(EnemyMovementForwardSystem))]
-[UpdateBefore(typeof(EnemyMovementRandomSystem))]
-[UpdateBefore(typeof(EnemyMovementKiteSystem))]
+[UpdateBefore(typeof(EnemyMovementSystem))]
 [UpdateBefore(typeof(TransformSystemGroup))]
 public partial struct PlayerMovementSystem : ISystem
 {

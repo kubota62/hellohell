@@ -2,9 +2,8 @@ using Unity.Entities;
 using UnityEngine;
 
 /// <summary>
-/// Runtime/Masters 直下の全マスタをシーンからECSへ渡す集約入口。
-/// ScriptableObjectの定義一覧をECSの定義バッファへ焼き込むAuthoring。
-/// シーンに置くと、スポーンや攻撃生成は静的カタログではなくこの定義を優先して読む。
+/// ScriptableObjectの各マスターを、実行時に参照するECS Bufferへ変換する。
+/// 未登録の標準定義は各Catalogのフォールバック値で補完される。
 /// </summary>
 public class MasterCatalogAuthoring : MonoBehaviour
 {
@@ -22,194 +21,239 @@ public class MasterCatalogAuthoring : MonoBehaviour
     public PlayerSkillMasterAsset[] PlayerSkillMasters;
     public PlayerProgressMasterAsset[] PlayerProgressMasters;
 
-    class Baker : Baker<MasterCatalogAuthoring>
+    private class Baker : Baker<MasterCatalogAuthoring>
     {
         public override void Bake(MasterCatalogAuthoring authoring)
         {
             var entity = GetEntity(authoring, TransformUsageFlags.None);
             AddComponent<MasterCatalogTag>(entity);
 
-            // 攻撃マスタはPlayer/EnemyのLoadoutから参照されるため、未設定でも既定値を必ず焼き込む。
-            var attackBuffer = AddBuffer<AttackMasterElement>(entity);
-            if (authoring.AttackMasters is { Length: > 0 })
+            BakeAttackMasters(entity, authoring.AttackMasters);
+            BakeEnemyMasters(entity, authoring.EnemyMasters);
+            BakeSpawnMasters(entity, authoring.SpawnMasters);
+            BakePlayerMasters(entity, authoring.PlayerMasters);
+            BakePlayerSkillMasters(entity, authoring.PlayerSkillMasters);
+            BakePlayerProgressMasters(entity, authoring.PlayerProgressMasters);
+        }
+
+        private void BakeAttackMasters(
+            Entity entity,
+            AttackMasterAsset[] assets)
+        {
+            var buffer = AddBuffer<AttackMasterElement>(entity);
+            if (assets != null)
             {
-                foreach (var asset in authoring.AttackMasters)
+                foreach (var asset in assets)
                 {
-                    if (asset == null) continue;
-                    attackBuffer.Add(AttackMasterElement.FromMaster(asset.ToRuntimeMaster()));
+                    if (asset != null)
+                    {
+                        buffer.Add(AttackMasterElement.FromMaster(
+                            asset.ToRuntimeMaster()));
+                    }
                 }
             }
 
-            EnsureAttackMaster(attackBuffer, AttackMasterId.BasicProjectile);
-            EnsureAttackMaster(attackBuffer, AttackMasterId.BasicAura);
-            EnsureAttackMaster(attackBuffer, AttackMasterId.BasicMeleeArc);
-            EnsureAttackMaster(attackBuffer, AttackMasterId.BasicChainProjectile);
-            EnsureAttackMaster(attackBuffer, AttackMasterId.RapidBolt);
-            EnsureAttackMaster(attackBuffer, AttackMasterId.PiercingLance);
-            EnsureAttackMaster(attackBuffer, AttackMasterId.ExplosiveOrb);
-
-            // 敵マスタはスポーン時に身体・移動・攻撃・報酬へ分解して適用する。
-            var enemyBuffer = AddBuffer<EnemyMasterElement>(entity);
-            if (authoring.EnemyMasters is { Length: > 0 })
+            for (var i = 0; i < AttackMasterIdUtility.All.Length; i++)
             {
-                foreach (var asset in authoring.EnemyMasters)
+                EnsureAttackMaster(buffer, AttackMasterIdUtility.All[i]);
+            }
+        }
+
+        private void BakeEnemyMasters(
+            Entity entity,
+            EnemyMasterAsset[] assets)
+        {
+            var buffer = AddBuffer<EnemyMasterElement>(entity);
+            if (assets != null)
+            {
+                foreach (var asset in assets)
                 {
-                    if (asset == null) continue;
-                    enemyBuffer.Add(EnemyMasterElement.FromMaster(asset.ToRuntimeMaster()));
+                    if (asset != null)
+                    {
+                        buffer.Add(EnemyMasterElement.FromMaster(
+                            asset.ToRuntimeMaster()));
+                    }
                 }
             }
 
-            EnsureEnemyMaster(enemyBuffer, EnemyMasterCatalog.ForwardEnemy);
-            EnsureEnemyMaster(enemyBuffer, EnemyMasterCatalog.RandomEnemy);
-            EnsureEnemyMaster(enemyBuffer, EnemyMasterCatalog.ChainEnemy);
-            EnsureEnemyMaster(enemyBuffer, EnemyMasterCatalog.KiteEnemy);
-            EnsureEnemyMaster(enemyBuffer, EnemyMasterCatalog.SkeletonDrifterEnemy);
-            EnsureEnemyMaster(enemyBuffer, EnemyMasterCatalog.RatRunnerEnemy);
-            EnsureEnemyMaster(enemyBuffer, EnemyMasterCatalog.GraveSlimeEnemy);
-
-            // スポーン間隔や出現距離はゲーム全体の進行値なので、専用のマスタとして扱う。
-            var spawnBuffer = AddBuffer<SpawnMasterElement>(entity);
-            if (authoring.SpawnMasters is { Length: > 0 })
+            for (var i = 0; i < EnemyMasterCatalog.AllTypeIds.Length; i++)
             {
-                foreach (var asset in authoring.SpawnMasters)
+                EnsureEnemyMaster(buffer, EnemyMasterCatalog.AllTypeIds[i]);
+            }
+        }
+
+        private void BakeSpawnMasters(
+            Entity entity,
+            SpawnMasterAsset[] assets)
+        {
+            var buffer = AddBuffer<SpawnMasterElement>(entity);
+            if (assets != null)
+            {
+                foreach (var asset in assets)
                 {
-                    if (asset == null) continue;
-                    spawnBuffer.Add(SpawnMasterElement.FromMaster(asset.ToRuntimeMaster()));
+                    if (asset != null)
+                    {
+                        buffer.Add(SpawnMasterElement.FromMaster(
+                            asset.ToRuntimeMaster()));
+                    }
                 }
             }
 
-            EnsureSpawnMaster(spawnBuffer, SpawnMasterId.Default);
+            EnsureSpawnMaster(buffer, SpawnMasterId.Default);
+        }
 
-            // Player本体の基礎値。成長値やスキル効果とは分けて、キャラ差し替えしやすくする。
-            var playerBuffer = AddBuffer<PlayerMasterElement>(entity);
-            if (authoring.PlayerMasters is { Length: > 0 })
+        private void BakePlayerMasters(
+            Entity entity,
+            PlayerMasterAsset[] assets)
+        {
+            var buffer = AddBuffer<PlayerMasterElement>(entity);
+            if (assets != null)
             {
-                foreach (var asset in authoring.PlayerMasters)
+                foreach (var asset in assets)
                 {
-                    if (asset == null) continue;
-                    playerBuffer.Add(PlayerMasterElement.FromMaster(asset.ToRuntimeMaster()));
+                    if (asset != null)
+                    {
+                        buffer.Add(PlayerMasterElement.FromMaster(
+                            asset.ToRuntimeMaster()));
+                    }
                 }
             }
 
-            EnsurePlayerMaster(playerBuffer, PlayerMasterId.Default);
+            EnsurePlayerMaster(buffer, PlayerMasterId.Default);
+        }
 
-            // レベルアップ時の候補。将来の選択UIもこのバッファを候補リストとして読める。
-            var playerSkillBuffer = AddBuffer<PlayerSkillMasterElement>(entity);
-            if (authoring.PlayerSkillMasters is { Length: > 0 })
+        private void BakePlayerSkillMasters(
+            Entity entity,
+            PlayerSkillMasterAsset[] assets)
+        {
+            var buffer = AddBuffer<PlayerSkillMasterElement>(entity);
+            if (assets != null)
             {
-                foreach (var asset in authoring.PlayerSkillMasters)
+                foreach (var asset in assets)
                 {
-                    if (asset == null) continue;
-                    playerSkillBuffer.Add(PlayerSkillMasterElement.FromMaster(asset.ToRuntimeMaster()));
+                    if (asset != null)
+                    {
+                        buffer.Add(PlayerSkillMasterElement.FromMaster(
+                            asset.ToRuntimeMaster()));
+                    }
                 }
             }
 
-            EnsurePlayerSkillMaster(playerSkillBuffer, PlayerSkillMasterId.DamageBoost);
-            EnsurePlayerSkillMaster(playerSkillBuffer, PlayerSkillMasterId.AttackSpeedBoost);
-            EnsurePlayerSkillMaster(playerSkillBuffer, PlayerSkillMasterId.MoveSpeedBoost);
+            EnsurePlayerSkillMaster(buffer, PlayerSkillMasterId.DamageBoost);
+            EnsurePlayerSkillMaster(buffer, PlayerSkillMasterId.AttackSpeedBoost);
+            EnsurePlayerSkillMaster(buffer, PlayerSkillMasterId.MoveSpeedBoost);
+        }
 
-            // 経験値カーブ。Player生成時の初期値と、レベルアップ後の次要求値に使う。
-            var playerProgressBuffer = AddBuffer<PlayerProgressMasterElement>(entity);
-            if (authoring.PlayerProgressMasters is { Length: > 0 })
+        private void BakePlayerProgressMasters(
+            Entity entity,
+            PlayerProgressMasterAsset[] assets)
+        {
+            var buffer = AddBuffer<PlayerProgressMasterElement>(entity);
+            if (assets != null)
             {
-                foreach (var asset in authoring.PlayerProgressMasters)
+                foreach (var asset in assets)
                 {
-                    if (asset == null) continue;
-                    playerProgressBuffer.Add(PlayerProgressMasterElement.FromMaster(asset.ToRuntimeMaster()));
+                    if (asset != null)
+                    {
+                        buffer.Add(PlayerProgressMasterElement.FromMaster(
+                            asset.ToRuntimeMaster()));
+                    }
                 }
             }
 
-            EnsurePlayerProgressMaster(playerProgressBuffer, PlayerProgressMasterId.Default);
+            EnsurePlayerProgressMaster(buffer, PlayerProgressMasterId.Default);
         }
 
         private static void EnsureAttackMaster(
-            DynamicBuffer<AttackMasterElement> attackBuffer,
+            DynamicBuffer<AttackMasterElement> buffer,
             AttackMasterId id)
         {
-            for (var i = 0; i < attackBuffer.Length; i++)
+            for (var i = 0; i < buffer.Length; i++)
             {
-                if (attackBuffer[i].Id == id)
+                if (buffer[i].Id == id)
                 {
                     return;
                 }
             }
 
-            attackBuffer.Add(AttackMasterElement.FromMaster(AttackMasterCatalog.Get(id)));
+            buffer.Add(AttackMasterElement.FromMaster(AttackMasterCatalog.Get(id)));
         }
 
         private static void EnsureEnemyMaster(
-            DynamicBuffer<EnemyMasterElement> enemyBuffer,
+            DynamicBuffer<EnemyMasterElement> buffer,
             int typeId)
         {
-            for (var i = 0; i < enemyBuffer.Length; i++)
+            for (var i = 0; i < buffer.Length; i++)
             {
-                if (enemyBuffer[i].TypeId == typeId)
+                if (buffer[i].TypeId == typeId)
                 {
                     return;
                 }
             }
 
-            enemyBuffer.Add(EnemyMasterElement.FromMaster(EnemyMasterCatalog.Get(typeId)));
+            buffer.Add(EnemyMasterElement.FromMaster(EnemyMasterCatalog.Get(typeId)));
         }
 
         private static void EnsureSpawnMaster(
-            DynamicBuffer<SpawnMasterElement> spawnBuffer,
+            DynamicBuffer<SpawnMasterElement> buffer,
             SpawnMasterId id)
         {
-            for (var i = 0; i < spawnBuffer.Length; i++)
+            for (var i = 0; i < buffer.Length; i++)
             {
-                if (spawnBuffer[i].Id == id)
+                if (buffer[i].Id == id)
                 {
                     return;
                 }
             }
 
-            spawnBuffer.Add(SpawnMasterElement.FromMaster(SpawnMasterCatalog.Get(id)));
+            buffer.Add(SpawnMasterElement.FromMaster(SpawnMasterCatalog.Get(id)));
         }
 
         private static void EnsurePlayerMaster(
-            DynamicBuffer<PlayerMasterElement> playerBuffer,
+            DynamicBuffer<PlayerMasterElement> buffer,
             PlayerMasterId id)
         {
-            for (var i = 0; i < playerBuffer.Length; i++)
+            for (var i = 0; i < buffer.Length; i++)
             {
-                if (playerBuffer[i].Id == id)
+                if (buffer[i].Id == id)
                 {
                     return;
                 }
             }
 
-            playerBuffer.Add(PlayerMasterElement.FromMaster(PlayerMasterCatalog.Get(id)));
+            buffer.Add(PlayerMasterElement.FromMaster(PlayerMasterCatalog.Get(id)));
         }
 
         private static void EnsurePlayerSkillMaster(
-            DynamicBuffer<PlayerSkillMasterElement> playerSkillBuffer,
+            DynamicBuffer<PlayerSkillMasterElement> buffer,
             PlayerSkillMasterId id)
         {
-            for (var i = 0; i < playerSkillBuffer.Length; i++)
+            for (var i = 0; i < buffer.Length; i++)
             {
-                if (playerSkillBuffer[i].Id == id)
+                if (buffer[i].Id == id)
                 {
                     return;
                 }
             }
 
-            playerSkillBuffer.Add(PlayerSkillMasterElement.FromMaster(PlayerSkillMasterCatalog.Get(id)));
+            buffer.Add(PlayerSkillMasterElement.FromMaster(
+                PlayerSkillMasterCatalog.Get(id)));
         }
 
         private static void EnsurePlayerProgressMaster(
-            DynamicBuffer<PlayerProgressMasterElement> playerProgressBuffer,
+            DynamicBuffer<PlayerProgressMasterElement> buffer,
             PlayerProgressMasterId id)
         {
-            for (var i = 0; i < playerProgressBuffer.Length; i++)
+            for (var i = 0; i < buffer.Length; i++)
             {
-                if (playerProgressBuffer[i].Id == id)
+                if (buffer[i].Id == id)
                 {
                     return;
                 }
             }
 
-            playerProgressBuffer.Add(PlayerProgressMasterElement.FromMaster(PlayerProgressMasterCatalog.Get(id)));
+            buffer.Add(PlayerProgressMasterElement.FromMaster(
+                PlayerProgressMasterCatalog.Get(id)));
         }
     }
 }

@@ -2,114 +2,69 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Rendering;
 using Unity.Transforms;
-using UnityEngine;
 using Random = Unity.Mathematics.Random;
 
 /// <summary>
-/// 初期Playerと継続的なEnemyをActorBodyプレハブから生成するシステム。
-/// 生成直後の位置を同フレームの描画へ反映するため、TransformSystemGroupより前に実行する。
+/// 共通Actor PrefabからPlayerとEnemyを生成し、マスター設定を適用する。
 /// </summary>
 [UpdateBefore(typeof(TransformSystemGroup))]
 public partial struct ActorSpawnSystem : ISystem
 {
-    private Random Rand;
-    private int spawnedCount;
-    private float spawnTimer;
+    private Random random;
+    private int spawnedActorCount;
+    private float enemySpawnTimer;
 
     public void OnCreate(ref SystemState state)
     {
-        Rand = new Random(123);
-        spawnedCount = 0;
-        spawnTimer = 0;
-
+        random = new Random(123);
+        spawnedActorCount = 0;
+        enemySpawnTimer = 0f;
         state.RequireForUpdate<Config>();
     }
 
     public void OnUpdate(ref SystemState state)
     {
-        if (spawnedCount == 0)
+        if (spawnedActorCount == 0)
         {
-            SpawnActor(true, float3.zero, ref state);
-            spawnedCount++;
-            spawnTimer = -ResolveSpawnMaster(ref state).InitialEnemySpawnDelay;
+            SpawnActor(ref state, true, float3.zero);
+            spawnedActorCount = 1;
+            enemySpawnTimer = -ResolveSpawnMaster(ref state).InitialEnemySpawnDelay;
             return;
         }
 
         var spawnMaster = ResolveSpawnMaster(ref state);
-        spawnTimer += SystemAPI.Time.DeltaTime;
-        if (spawnTimer > spawnMaster.SpawnInterval)
+        enemySpawnTimer += SystemAPI.Time.DeltaTime;
+        if (enemySpawnTimer <= spawnMaster.SpawnInterval)
         {
-            SpawnActor(false, GetEnemySpawnPosition(spawnMaster, ref state), ref state);
-
-            spawnTimer = 0;
-            spawnedCount++;
-        }
-    }
-
-    private SpawnMasterData ResolveSpawnMaster(ref SystemState state)
-    {
-        // MasterCatalogがある場合はそちらを優先し、未配置の検証シーンではConfig由来の既定値で動かす。
-        if (SystemAPI.TryGetSingletonBuffer<SpawnMasterElement>(out var spawnMasters, true))
-        {
-            return SpawnMasterCatalog.Get(spawnMasters, SpawnMasterId.Default);
+            return;
         }
 
-        var config = SystemAPI.GetSingleton<Config>();
-        return SpawnMasterCatalog.Get(config);
+        SpawnActor(
+            ref state,
+            false,
+            GetEnemySpawnPosition(ref state, spawnMaster));
+        spawnedActorCount++;
+        enemySpawnTimer = 0f;
     }
 
-    private PlayerProgressMasterData ResolvePlayerProgressMaster(ref SystemState state)
+    private void SpawnActor(
+        ref SystemState state,
+        bool isPlayer,
+        float3 position)
     {
-        // 経験値曲線はPlayer生成時に初期Progressへ焼き込むため、ここで一度だけ解決する。
-        if (SystemAPI.TryGetSingletonBuffer<PlayerProgressMasterElement>(out var progressMasters, true))
-        {
-            return PlayerProgressMasterCatalog.Get(progressMasters, PlayerProgressMasterId.Default);
-        }
-
-        return PlayerProgressMasterCatalog.Get(PlayerProgressMasterId.Default);
-    }
-
-    private PlayerMasterData ResolvePlayerMaster(ref SystemState state)
-    {
-        // 初期攻撃や基礎移動速度など、Player本体の固定値を解決する。
-        if (SystemAPI.TryGetSingletonBuffer<PlayerMasterElement>(out var playerMasters, true))
-        {
-            return PlayerMasterCatalog.Get(playerMasters, PlayerMasterId.Default);
-        }
-
-        return PlayerMasterCatalog.Get(PlayerMasterId.Default);
-    }
-
-    private float3 GetEnemySpawnPosition(in SpawnMasterData spawnMaster, ref SystemState state)
-    {
-        // Player中心のリング上へEnemyを出す。Player未生成時だけ原点基準にフォールバックする。
-        var playerPosition = float3.zero;
-        if (SystemAPI.TryGetSingletonEntity<Player>(out var playerEntity) &&
-            SystemAPI.HasComponent<LocalTransform>(playerEntity))
-        {
-            playerPosition = SystemAPI.GetComponent<LocalTransform>(playerEntity).Position;
-        }
-
-        var angle = Rand.NextFloat(0f, 2f * math.PI);
-        var distance = Rand.NextFloat(spawnMaster.MinSpawnDistance, spawnMaster.MaxSpawnDistance);
-        var offset = new float3(math.cos(angle), 0f, math.sin(angle)) * distance;
-
-        return playerPosition + offset;
-    }
-
-    private void SpawnActor(bool isPlayer, float3 position, ref SystemState state)
-    {
-        var config = SystemAPI.GetSingleton<Config>();
         var entityManager = state.EntityManager;
-
+        var config = SystemAPI.GetSingleton<Config>();
         var actorEntity = entityManager.Instantiate(config.ActorPrefab);
-        var rotation = Quaternion.Euler(0f, Rand.NextFloat(0f, 360f), 0f);
-        entityManager.SetComponentData(actorEntity, LocalTransform.FromPositionRotation(position, rotation));
-        ResetMoveIntent(entityManager, actorEntity);
+        var rotation = quaternion.RotateY(random.NextFloat(0f, 2f * math.PI));
+
+        entityManager.SetComponentData(
+            actorEntity,
+            LocalTransform.FromPositionRotation(position, rotation));
+        SetOrAddComponent(entityManager, actorEntity, new MoveIntent());
 
         if (isPlayer)
         {
-            AddPlayerComponents(
+            ConfigurePlayer(
                 entityManager,
                 actorEntity,
                 ResolvePlayerMaster(ref state),
@@ -117,249 +72,197 @@ public partial struct ActorSpawnSystem : ISystem
         }
         else
         {
-            var hasEnemyMasters = SystemAPI.TryGetSingletonBuffer<EnemyMasterElement>(
-                out var enemyMasters,
-                true);
-            var enemySpawnIndex = spawnedCount - 1;
-            var playerLevel = ResolvePlayerLevel(ref state);
-            var definition = hasEnemyMasters
-                ? EnemyMasterCatalog.PickSpawnMaster(enemyMasters, enemySpawnIndex, playerLevel)
-                : EnemyMasterCatalog.Get(EnemyMasterCatalog.PickSpawnType(enemySpawnIndex));
-            AddEnemyComponents(entityManager, actorEntity, definition);
+            ConfigureEnemy(
+                entityManager,
+                actorEntity,
+                ResolveEnemyMaster(ref state));
         }
 
-        ApplySpawnedActorColor(ref state, actorEntity);
+        ApplyActorColorToChildren(entityManager, actorEntity);
     }
 
-    private int ResolvePlayerLevel(ref SystemState state)
+    private EnemyMasterData ResolveEnemyMaster(ref SystemState state)
     {
-        // 敵マスタのMinPlayerLevel判定用。PlayerProgressがまだない初期フレームはLv1として扱う。
-        if (SystemAPI.TryGetSingleton<PlayerProgress>(out var progress))
+        var enemySpawnIndex = spawnedActorCount - 1;
+        var playerLevel = SystemAPI.TryGetSingleton<PlayerProgress>(out var progress)
+            ? progress.Level
+            : 1;
+
+        if (SystemAPI.TryGetSingletonBuffer<EnemyMasterElement>(
+                out var enemyMasters,
+                true))
         {
-            return progress.Level;
+            return EnemyMasterCatalog.PickSpawnMaster(
+                enemyMasters,
+                enemySpawnIndex,
+                playerLevel);
         }
 
-        return 1;
+        return EnemyMasterCatalog.Get(
+            EnemyMasterCatalog.PickSpawnType(enemySpawnIndex));
     }
 
-    private static void AddPlayerComponents(
+    private static void ConfigurePlayer(
         EntityManager entityManager,
         Entity actorEntity,
         PlayerMasterData playerMaster,
         PlayerProgressMasterData progressMaster)
     {
-        entityManager.AddComponent<Player>(actorEntity);
-        entityManager.AddComponent<CameraTarget>(actorEntity);
-        entityManager.SetComponentData(actorEntity, new Team { Value = TeamId.Player });
-        entityManager.SetComponentData(actorEntity, new AttackLoadout
-        {
-            PrimaryAttack = playerMaster.PrimaryAttack,
-        });
-        entityManager.SetComponentData(actorEntity, new AttackCooldown());
-        entityManager.AddComponentData(actorEntity, PlayerProgressSystem.CreateInitialProgress(progressMaster));
-        entityManager.AddComponentData(actorEntity, new PlayerSkillStats());
-        var attackCooldowns = entityManager.AddBuffer<PlayerAttackCooldown>(actorEntity);
-        attackCooldowns.Add(CreatePlayerAttackCooldown(AttackMasterId.BasicMeleeArc));
-        attackCooldowns.Add(CreatePlayerAttackCooldown(AttackMasterId.RapidBolt));
-        attackCooldowns.Add(CreatePlayerAttackCooldown(AttackMasterId.PiercingLance));
-        attackCooldowns.Add(CreatePlayerAttackCooldown(AttackMasterId.ExplosiveOrb));
+        EnsureTag<Player>(entityManager, actorEntity);
+        EnsureTag<CameraTarget>(entityManager, actorEntity);
 
-        var playerColor = new URPMaterialPropertyBaseColor { Value = new float4(1f, 1f, 1f, 1f) };
-        SetOrAddColor(entityManager, actorEntity, playerColor);
+        SetOrAddComponent(
+            entityManager,
+            actorEntity,
+            new Team { Value = TeamId.Player });
+        SetOrAddComponent(
+            entityManager,
+            actorEntity,
+            new AttackLoadout { PrimaryAttack = playerMaster.PrimaryAttack });
+        SetOrAddComponent(entityManager, actorEntity, new AttackCooldown());
+        SetOrAddComponent(
+            entityManager,
+            actorEntity,
+            PlayerProgressSystem.CreateInitialProgress(progressMaster));
+        SetOrAddComponent(entityManager, actorEntity, new PlayerSkillStats());
+        SetOrAddComponent(
+            entityManager,
+            actorEntity,
+            new URPMaterialPropertyBaseColor
+            {
+                Value = new float4(1f, 1f, 1f, 1f),
+            });
+
+        var attackSlots = entityManager.HasBuffer<PlayerAttackSlot>(actorEntity)
+            ? entityManager.GetBuffer<PlayerAttackSlot>(actorEntity)
+            : entityManager.AddBuffer<PlayerAttackSlot>(actorEntity);
+        attackSlots.Clear();
+
+        for (var i = 0; i < AttackMasterIdUtility.PlayerDefaults.Length; i++)
+        {
+            attackSlots.Add(new PlayerAttackSlot
+            {
+                AttackMasterId = AttackMasterIdUtility.PlayerDefaults[i],
+                Remaining = 0f,
+            });
+        }
     }
 
-    private static PlayerAttackCooldown CreatePlayerAttackCooldown(AttackMasterId attackMasterId)
-    {
-        return new PlayerAttackCooldown
-        {
-            AttackMasterId = attackMasterId,
-            Remaining = 0f,
-        };
-    }
-
-    private static void AddEnemyComponents(
+    private static void ConfigureEnemy(
         EntityManager entityManager,
         Entity actorEntity,
         EnemyMasterData definition)
     {
-        entityManager.AddComponent<Enemy>(actorEntity);
-        entityManager.AddComponentData(actorEntity, new EnemyTypeId { Value = definition.TypeId });
+        var minAttackRange = math.max(0f, definition.Combat.MinAttackRange);
 
-        ApplyEnemyStats(entityManager, actorEntity, definition.Stats);
-        ApplyEnemyMovement(entityManager, actorEntity, definition.Movement);
-        ApplyEnemyCombat(entityManager, actorEntity, definition.Combat);
-        ApplyEnemyVisual(entityManager, actorEntity, definition.Visual);
-        ApplyEnemyReward(entityManager, actorEntity, definition.Reward);
-    }
-
-    /// <summary>
-    /// HP、当たり判定、見た目サイズなど、敵の身体に関わる値をまとめて適用する。
-    /// </summary>
-    private static void ApplyEnemyStats(
-        EntityManager entityManager,
-        Entity actorEntity,
-        EnemyStatMaster stats)
-    {
-        entityManager.SetComponentData(actorEntity, new Team { Value = TeamId.Enemy });
-        entityManager.SetComponentData(actorEntity, Health.FromMax(stats.MaxHealth));
-        entityManager.SetComponentData(actorEntity, new Hitbox { Radius = stats.HitRadius });
+        EnsureTag<Enemy>(entityManager, actorEntity);
+        SetOrAddComponent(
+            entityManager,
+            actorEntity,
+            new EnemyTypeId { Value = definition.TypeId });
+        SetOrAddComponent(
+            entityManager,
+            actorEntity,
+            new Team { Value = TeamId.Enemy });
+        SetOrAddComponent(
+            entityManager,
+            actorEntity,
+            Health.FromMax(definition.Stats.MaxHealth));
+        SetOrAddComponent(
+            entityManager,
+            actorEntity,
+            new Hitbox { Radius = definition.Stats.HitRadius });
+        SetOrAddComponent(
+            entityManager,
+            actorEntity,
+            new EnemyMoveSpeed
+            {
+                Value = math.max(0.01f, definition.Movement.MoveSpeed),
+            });
+        SetOrAddComponent(
+            entityManager,
+            actorEntity,
+            new EnemyMovementPattern { Kind = definition.Movement.Kind });
+        SetOrAddComponent(
+            entityManager,
+            actorEntity,
+            new EnemyAttackRange
+            {
+                Min = minAttackRange,
+                Max = math.max(
+                    minAttackRange,
+                    definition.Combat.MaxAttackRange),
+            });
+        SetOrAddComponent(
+            entityManager,
+            actorEntity,
+            new AttackLoadout
+            {
+                PrimaryAttack = definition.Combat.PrimaryAttack,
+            });
+        SetOrAddComponent(entityManager, actorEntity, new AttackCooldown());
+        SetOrAddComponent(
+            entityManager,
+            actorEntity,
+            new EnemyReward
+            {
+                Experience = math.max(0, definition.Reward.Experience),
+                Score = math.max(0, definition.Reward.Score),
+            });
+        SetOrAddComponent(
+            entityManager,
+            actorEntity,
+            new URPMaterialPropertyBaseColor
+            {
+                Value = definition.Visual.Color,
+            });
 
         var transform = entityManager.GetComponentData<LocalTransform>(actorEntity);
-        transform.Scale = math.max(0.01f, stats.BodyScale);
+        transform.Scale = math.max(0.01f, definition.Stats.BodyScale);
         entityManager.SetComponentData(actorEntity, transform);
     }
 
-    /// <summary>
-    /// 敵定義で選ばれた移動タイプに応じて、必要な移動コンポーネントを付与する。
-    /// </summary>
-    private static void ApplyEnemyMovement(
-        EntityManager entityManager,
-        Entity actorEntity,
-        EnemyMovementMaster movement)
+    private float3 GetEnemySpawnPosition(
+        ref SystemState state,
+        in SpawnMasterData spawnMaster)
     {
-        SetOrAddMoveSpeed(entityManager, actorEntity, movement.MoveSpeed);
-
-        switch (movement.Kind)
+        var playerPosition = float3.zero;
+        if (SystemAPI.TryGetSingletonEntity<Player>(out var playerEntity) &&
+            SystemAPI.HasComponent<LocalTransform>(playerEntity))
         {
-            case EnemyMovementKind.Heavy:
-                entityManager.AddComponent<EnemyMovementHeavy>(actorEntity);
-                break;
-
-            case EnemyMovementKind.Runner:
-                entityManager.AddComponent<EnemyMovementRunner>(actorEntity);
-                break;
-
-            case EnemyMovementKind.Drift:
-                entityManager.AddComponent<EnemyMovementDrift>(actorEntity);
-                break;
-
-            case EnemyMovementKind.Kite:
-                entityManager.AddComponent<EnemyMovementKite>(actorEntity);
-                break;
-
-            case EnemyMovementKind.Random:
-                entityManager.AddComponent<EnemyMovementRandom>(actorEntity);
-                break;
-
-            case EnemyMovementKind.Forward:
-            default:
-                entityManager.AddComponent<EnemyMovementForward>(actorEntity);
-                break;
+            playerPosition = SystemAPI.GetComponent<LocalTransform>(playerEntity).Position;
         }
+
+        var angle = random.NextFloat(0f, 2f * math.PI);
+        var distance = random.NextFloat(
+            spawnMaster.MinSpawnDistance,
+            spawnMaster.MaxSpawnDistance);
+        return playerPosition +
+            new float3(math.cos(angle), 0f, math.sin(angle)) * distance;
     }
 
-    /// <summary>
-    /// 敵定義で選ばれた攻撃IDと攻撃距離を、攻撃システムが読める形に変換する。
-    /// </summary>
-    private static void ApplyEnemyCombat(
+    private static void ApplyActorColorToChildren(
         EntityManager entityManager,
-        Entity actorEntity,
-        EnemyCombatMaster combat)
+        Entity actorEntity)
     {
-        SetOrAddAttackRange(entityManager, actorEntity, combat.MinAttackRange, combat.MaxAttackRange);
-        entityManager.SetComponentData(actorEntity, new AttackLoadout
-        {
-            PrimaryAttack = combat.PrimaryAttack,
-        });
-        entityManager.SetComponentData(actorEntity, new AttackCooldown());
-    }
-
-    /// <summary>
-    /// 本体と子パーツへ同期するため、敵定義の色をActor本体に付与する。
-    /// </summary>
-    private static void ApplyEnemyVisual(
-        EntityManager entityManager,
-        Entity actorEntity,
-        EnemyVisualMaster visual)
-    {
-        SetOrAddColor(entityManager, actorEntity, new URPMaterialPropertyBaseColor
-        {
-            Value = visual.Color,
-        });
-    }
-
-    /// <summary>
-    /// 死亡時に報酬イベントへ変換できるよう、敵ごとの報酬値をActorへ持たせる。
-    /// </summary>
-    private static void ApplyEnemyReward(
-        EntityManager entityManager,
-        Entity actorEntity,
-        EnemyRewardMaster reward)
-    {
-        entityManager.AddComponentData(actorEntity, new EnemyReward
-        {
-            Experience = math.max(0, reward.Experience),
-            Score = math.max(0, reward.Score),
-        });
-    }
-
-    private static void SetOrAddMoveSpeed(
-        EntityManager entityManager,
-        Entity actorEntity,
-        float moveSpeed)
-    {
-        var speed = new EnemyMoveSpeed { Value = math.max(0.01f, moveSpeed) };
-        if (entityManager.HasComponent<EnemyMoveSpeed>(actorEntity))
-        {
-            entityManager.SetComponentData(actorEntity, speed);
-        }
-        else
-        {
-            entityManager.AddComponentData(actorEntity, speed);
-        }
-    }
-
-    private static void SetOrAddAttackRange(
-        EntityManager entityManager,
-        Entity actorEntity,
-        float min,
-        float max)
-    {
-        var minRange = math.max(0f, min);
-        var range = new EnemyAttackRange
-        {
-            Min = minRange,
-            Max = math.max(minRange, max),
-        };
-
-        if (entityManager.HasComponent<EnemyAttackRange>(actorEntity))
-        {
-            entityManager.SetComponentData(actorEntity, range);
-        }
-        else
-        {
-            entityManager.AddComponentData(actorEntity, range);
-        }
-    }
-
-    private static void ApplySpawnedActorColor(ref SystemState state, Entity actorEntity)
-    {
-        if (!state.EntityManager.HasComponent<ActorBody>(actorEntity) ||
-            !state.EntityManager.HasComponent<URPMaterialPropertyBaseColor>(actorEntity))
+        if (!entityManager.HasComponent<ActorBody>(actorEntity) ||
+            !entityManager.HasComponent<URPMaterialPropertyBaseColor>(actorEntity))
         {
             return;
         }
 
-        var actorBody = state.EntityManager.GetComponentData<ActorBody>(actorEntity);
-        var color = state.EntityManager.GetComponentData<URPMaterialPropertyBaseColor>(actorEntity);
+        var actorBody = entityManager.GetComponentData<ActorBody>(actorEntity);
+        var color = entityManager.GetComponentData<URPMaterialPropertyBaseColor>(actorEntity);
+        SetColorIfPresent(entityManager, actorBody.Turret, color);
+        SetColorIfPresent(entityManager, actorBody.Canon, color);
 
-        if (state.EntityManager.HasComponent<URPMaterialPropertyBaseColor>(actorBody.Turret))
+        if (entityManager.HasBuffer<SyncColor>(actorEntity))
         {
-            state.EntityManager.SetComponentData(actorBody.Turret, color);
-        }
-
-        if (state.EntityManager.HasComponent<URPMaterialPropertyBaseColor>(actorBody.Canon))
-        {
-            state.EntityManager.SetComponentData(actorBody.Canon, color);
-        }
-
-        if (state.EntityManager.HasBuffer<SyncColor>(actorEntity))
-        {
-            state.EntityManager.RemoveComponent<SyncColor>(actorEntity);
+            entityManager.RemoveComponent<SyncColor>(actorEntity);
         }
     }
 
-    private static void SetOrAddColor(
+    private static void SetColorIfPresent(
         EntityManager entityManager,
         Entity entity,
         URPMaterialPropertyBaseColor color)
@@ -368,27 +271,71 @@ public partial struct ActorSpawnSystem : ISystem
         {
             entityManager.SetComponentData(entity, color);
         }
-        else
+    }
+
+    private SpawnMasterData ResolveSpawnMaster(ref SystemState state)
+    {
+        if (SystemAPI.TryGetSingletonBuffer<SpawnMasterElement>(
+                out var spawnMasters,
+                true))
         {
-            entityManager.AddComponentData(entity, color);
+            return SpawnMasterCatalog.Get(spawnMasters, SpawnMasterId.Default);
+        }
+
+        return SpawnMasterCatalog.Get(SystemAPI.GetSingleton<Config>());
+    }
+
+    private PlayerMasterData ResolvePlayerMaster(ref SystemState state)
+    {
+        if (SystemAPI.TryGetSingletonBuffer<PlayerMasterElement>(
+                out var playerMasters,
+                true))
+        {
+            return PlayerMasterCatalog.Get(playerMasters, PlayerMasterId.Default);
+        }
+
+        return PlayerMasterCatalog.Get(PlayerMasterId.Default);
+    }
+
+    private PlayerProgressMasterData ResolvePlayerProgressMaster(
+        ref SystemState state)
+    {
+        if (SystemAPI.TryGetSingletonBuffer<PlayerProgressMasterElement>(
+                out var progressMasters,
+                true))
+        {
+            return PlayerProgressMasterCatalog.Get(
+                progressMasters,
+                PlayerProgressMasterId.Default);
+        }
+
+        return PlayerProgressMasterCatalog.Get(PlayerProgressMasterId.Default);
+    }
+
+    private static void EnsureTag<T>(
+        EntityManager entityManager,
+        Entity entity)
+        where T : unmanaged, IComponentData
+    {
+        if (!entityManager.HasComponent<T>(entity))
+        {
+            entityManager.AddComponent<T>(entity);
         }
     }
 
-    private static void ResetMoveIntent(EntityManager entityManager, Entity actorEntity)
+    private static void SetOrAddComponent<T>(
+        EntityManager entityManager,
+        Entity entity,
+        T value)
+        where T : unmanaged, IComponentData
     {
-        var intent = new MoveIntent
+        if (entityManager.HasComponent<T>(entity))
         {
-            Direction = float3.zero,
-            Magnitude = 0f,
-        };
-
-        if (entityManager.HasComponent<MoveIntent>(actorEntity))
-        {
-            entityManager.SetComponentData(actorEntity, intent);
+            entityManager.SetComponentData(entity, value);
         }
         else
         {
-            entityManager.AddComponentData(actorEntity, intent);
+            entityManager.AddComponentData(entity, value);
         }
     }
 }

@@ -10,19 +10,19 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 42f7117437f74b0f8f615ed3d9c34c9f, type: 3}
-  m_Name: RandomEnemy
+  m_Name: BasicSkeletonEnemy
   m_EditorClassIdentifier: 
-  TypeId: 2
-  MaxHealth: 80
-  HitRadius: 1.7
-  BodyScale: 0.9
+  TypeId: 1
+  MaxHealth: 45
+  HitRadius: 1.3
+  BodyScale: 0.75
   Movement: 1
-  MoveSpeed: 0.85
+  MoveSpeed: 1.35
   PrimaryAttack: 2
   MinAttackRange: 0
-  MaxAttackRange: 2.6
-  Color: {r: 0.4, g: 0.48, b: 0.36, a: 1}
+  MaxAttackRange: 2.4
+  Color: {r: 0.42, g: 0.5, b: 0.32, a: 1}
   Experience: 1
-  Score: 12
-  SpawnWeight: 3
-  MinPlayerLevel: 4
+  Score: 10
+  SpawnWeight: 10
+  MinPlayerLevel: 1

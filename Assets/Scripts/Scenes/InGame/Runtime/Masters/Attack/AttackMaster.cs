@@ -1,8 +1,4 @@
-/// <summary>
-/// Masters/Attack のID定義。
-/// 攻撃マスタを参照するための軽量ID。
-/// 将来的には ScriptableObject や BlobAsset の定義IDと対応させる。
-/// </summary>
+/// <summary>攻撃マスターを識別するID。</summary>
 public enum AttackMasterId
 {
     None = 0,
@@ -15,10 +11,7 @@ public enum AttackMasterId
     ExplosiveOrb = 7,
 }
 
-/// <summary>
-/// 攻撃の実行方式。
-/// Projectile、Aura、MeleeArc、Beam などを同じマスタ窓口から追加できるようにする。
-/// </summary>
+/// <summary>攻撃の実行方式。</summary>
 public enum AttackKind : byte
 {
     Projectile = 1,
@@ -27,10 +20,7 @@ public enum AttackKind : byte
     Beam = 4,
 }
 
-/// <summary>
-/// Projectile 攻撃に合成できる追加性質。
-/// 複数の性質を組み合わせられるよう、単一 enum 分岐ではなくビットフラグで扱う。
-/// </summary>
+/// <summary>Projectileへ追加する挙動。複数指定できる。</summary>
 public enum ProjectileModifierFlags : byte
 {
     None = 0,
@@ -39,10 +29,61 @@ public enum ProjectileModifierFlags : byte
     AreaOfEffect = 1 << 2,
 }
 
-/// <summary>
-/// 攻撃マスタから取得するランタイム用の調整値。
-/// 共通値と攻撃方式ごとの固有値を同じ構造体に置き、必要に応じて段階的に分割する。
-/// </summary>
+/// <summary>攻撃IDの共通一覧とビットマスク操作。</summary>
+public static class AttackMasterIdUtility
+{
+    public static readonly AttackMasterId[] All =
+    {
+        AttackMasterId.BasicProjectile,
+        AttackMasterId.BasicAura,
+        AttackMasterId.BasicMeleeArc,
+        AttackMasterId.BasicChainProjectile,
+        AttackMasterId.RapidBolt,
+        AttackMasterId.PiercingLance,
+        AttackMasterId.ExplosiveOrb,
+    };
+
+    public static readonly AttackMasterId[] PlayerDefaults =
+    {
+        AttackMasterId.BasicMeleeArc,
+        AttackMasterId.RapidBolt,
+        AttackMasterId.PiercingLance,
+        AttackMasterId.ExplosiveOrb,
+    };
+
+    public static uint ToMask(this AttackMasterId id)
+    {
+        return id == AttackMasterId.None ? 0u : 1u << (int)id;
+    }
+
+    public static bool Contains(this uint mask, AttackMasterId id)
+    {
+        return (mask & id.ToMask()) != 0u;
+    }
+
+    public static uint CreatePlayerDefaultMask()
+    {
+        var mask = 0u;
+        for (var i = 0; i < PlayerDefaults.Length; i++)
+        {
+            mask |= PlayerDefaults[i].ToMask();
+        }
+
+        return mask;
+    }
+}
+
+public static class ProjectileModifierFlagsUtility
+{
+    public static bool Has(
+        this ProjectileModifierFlags value,
+        ProjectileModifierFlags flag)
+    {
+        return (value & flag) != 0;
+    }
+}
+
+/// <summary>実行時に参照する攻撃設定。</summary>
 public struct AttackMasterData
 {
     public AttackMasterId Id;

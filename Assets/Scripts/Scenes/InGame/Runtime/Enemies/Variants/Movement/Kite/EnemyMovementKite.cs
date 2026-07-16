@@ -1,9 +1,1 @@
-using Unity.Entities;
-
-/// <summary>
-/// Enemies/Variants/Movement/Kite 用のタグコンポーネント。
-/// Playerとの距離を保ちながら射撃位置を探すEnemyを識別する。
-/// </summary>
-public struct EnemyMovementKite : IComponentData
-{
-}
+// Legacy file kept so Unity's generated project references remain stable.

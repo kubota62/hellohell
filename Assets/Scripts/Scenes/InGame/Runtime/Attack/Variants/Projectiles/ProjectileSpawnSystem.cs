@@ -143,19 +143,19 @@ public partial struct ProjectileSpawnSystem : ISystem
         SetTag<PiercingProjectile>(
             entityManager,
             projectileEntity,
-            HasModifier(value.Modifiers, ProjectileModifierFlags.Piercing));
+            value.Modifiers.Has(ProjectileModifierFlags.Piercing));
         SetTag<ChainingProjectile>(
             entityManager,
             projectileEntity,
-            HasModifier(value.Modifiers, ProjectileModifierFlags.Chaining));
+            value.Modifiers.Has(ProjectileModifierFlags.Chaining));
         SetTag<AreaOfEffectProjectile>(
             entityManager,
             projectileEntity,
-            HasModifier(value.Modifiers, ProjectileModifierFlags.AreaOfEffect));
+            value.Modifiers.Has(ProjectileModifierFlags.AreaOfEffect));
 
-        var hasState = HasModifier(value.Modifiers, ProjectileModifierFlags.Piercing) ||
-            HasModifier(value.Modifiers, ProjectileModifierFlags.Chaining) ||
-            HasModifier(value.Modifiers, ProjectileModifierFlags.AreaOfEffect);
+        var hasState = value.Modifiers.Has(ProjectileModifierFlags.Piercing) ||
+            value.Modifiers.Has(ProjectileModifierFlags.Chaining) ||
+            value.Modifiers.Has(ProjectileModifierFlags.AreaOfEffect);
 
         var state = new ProjectileModifierState
         {
@@ -191,11 +191,6 @@ public partial struct ProjectileSpawnSystem : ISystem
         }
 
         entityManager.GetBuffer<ProjectileHitRecord>(projectileEntity).Clear();
-    }
-
-    private static bool HasModifier(ProjectileModifierFlags value, ProjectileModifierFlags flag)
-    {
-        return (value & flag) != 0;
     }
 
     private static void SetTag<T>(

@@ -1,67 +1,52 @@
-using DG.Tweening;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 /// <summary>
-/// Unity Input System のキーボード状態を ECS の PlayerInput コンポーネントへ橋渡しする。
-/// ECS 側の移動や射撃システムは、この入力エンティティを毎フレーム参照する。
+/// Unity Input Systemの状態を、ECSのPlayerInput Singletonへ同期する。
 /// </summary>
 public class PlayerInputManager : MonoBehaviour
 {
-    EntityManager entityManager;
-    private Entity entity;
+    private EntityManager entityManager;
+    private Entity inputEntity;
     private Camera mainCamera;
     private bool autoAttackEnabled;
-    private uint activeAttackMask =
-        AttackMask(AttackMasterId.BasicMeleeArc) |
-        AttackMask(AttackMasterId.RapidBolt) |
-        AttackMask(AttackMasterId.PiercingLance) |
-        AttackMask(AttackMasterId.ExplosiveOrb);
+    private bool hasInputEntity;
+    private uint activeAttackMask = AttackMasterIdUtility.CreatePlayerDefaultMask();
 
     private void Start()
     {
-        DOTween.Init();
-        DOTween.SetTweensCapacity(10000, 5000);
-
-        // 現在の入力状態だけを保持する ECS エンティティを作る。
         entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
-        entity = entityManager.CreateEntity(typeof(PlayerInput));
+        inputEntity = entityManager.CreateEntity(typeof(PlayerInput));
+        hasInputEntity = true;
         mainCamera = Camera.main;
     }
 
-    void Update()
+    private void OnDestroy()
+    {
+        if (hasInputEntity &&
+            entityManager.Exists(inputEntity))
+        {
+            entityManager.DestroyEntity(inputEntity);
+            hasInputEntity = false;
+        }
+    }
+
+    private void Update()
     {
         var keyboard = Keyboard.current;
         var mouse = Mouse.current;
 
-        if (keyboard != null && keyboard.tKey.wasPressedThisFrame)
+        UpdateAttackToggles(keyboard);
+        var movement = ReadMovement(keyboard);
+        var hasAimPosition = TryGetAimWorldPosition(
+            mouse,
+            out var aimWorldPosition);
+
+        entityManager.SetComponentData(inputEntity, new PlayerInput
         {
-            autoAttackEnabled = !autoAttackEnabled;
-        }
-
-        if (keyboard != null)
-        {
-            if (keyboard.digit1Key.wasPressedThisFrame) ToggleAttack(AttackMasterId.BasicMeleeArc);
-            if (keyboard.digit2Key.wasPressedThisFrame) ToggleAttack(AttackMasterId.RapidBolt);
-            if (keyboard.digit3Key.wasPressedThisFrame) ToggleAttack(AttackMasterId.PiercingLance);
-            if (keyboard.digit4Key.wasPressedThisFrame) ToggleAttack(AttackMasterId.ExplosiveOrb);
-        }
-
-        var movement = new float2(
-            keyboard == null ? 0f : (keyboard.dKey.isPressed ? 1f : 0f) - (keyboard.aKey.isPressed ? 1f : 0f),
-            keyboard == null ? 0f : (keyboard.wKey.isPressed ? 1f : 0f) - (keyboard.sKey.isPressed ? 1f : 0f)
-        );
-        movement = math.normalizesafe(movement);
-
-        var isFire = keyboard != null && keyboard.spaceKey.isPressed;
-        var hasAimPosition = TryGetAimWorldPosition(mouse, out var aimWorldPosition);
-
-        // 最新のキーボード状態を PlayerInput に同期する。
-        entityManager.SetComponentData(entity, new PlayerInput
-        {
-            IsFire = isFire,
+            IsFire = keyboard != null && keyboard.spaceKey.isPressed,
             HasAimPosition = hasAimPosition,
             AutoAttackEnabled = autoAttackEnabled,
             Movement = movement,
@@ -70,17 +55,63 @@ public class PlayerInputManager : MonoBehaviour
         });
     }
 
-    private void ToggleAttack(AttackMasterId attackMasterId)
+    private void UpdateAttackToggles(Keyboard keyboard)
     {
-        activeAttackMask ^= AttackMask(attackMasterId);
+        if (keyboard == null)
+        {
+            return;
+        }
+
+        if (keyboard.tKey.wasPressedThisFrame)
+        {
+            autoAttackEnabled = !autoAttackEnabled;
+        }
+
+        ToggleAttackIfPressed(
+            keyboard.digit1Key.wasPressedThisFrame,
+            AttackMasterId.BasicMeleeArc);
+        ToggleAttackIfPressed(
+            keyboard.digit2Key.wasPressedThisFrame,
+            AttackMasterId.RapidBolt);
+        ToggleAttackIfPressed(
+            keyboard.digit3Key.wasPressedThisFrame,
+            AttackMasterId.PiercingLance);
+        ToggleAttackIfPressed(
+            keyboard.digit4Key.wasPressedThisFrame,
+            AttackMasterId.ExplosiveOrb);
     }
 
-    private static uint AttackMask(AttackMasterId attackMasterId)
+    private void ToggleAttackIfPressed(
+        bool wasPressed,
+        AttackMasterId attackMasterId)
     {
-        return 1u << (int)attackMasterId;
+        if (wasPressed)
+        {
+            activeAttackMask ^= attackMasterId.ToMask();
+        }
     }
 
-    private bool TryGetAimWorldPosition(Mouse mouse, out float3 aimWorldPosition)
+    private static float2 ReadMovement(Keyboard keyboard)
+    {
+        if (keyboard == null)
+        {
+            return float2.zero;
+        }
+
+        var movement = new float2(
+            ReadAxis(keyboard.aKey.isPressed, keyboard.dKey.isPressed),
+            ReadAxis(keyboard.sKey.isPressed, keyboard.wKey.isPressed));
+        return math.normalizesafe(movement);
+    }
+
+    private static float ReadAxis(bool negative, bool positive)
+    {
+        return (positive ? 1f : 0f) - (negative ? 1f : 0f);
+    }
+
+    private bool TryGetAimWorldPosition(
+        Mouse mouse,
+        out float3 aimWorldPosition)
     {
         aimWorldPosition = float3.zero;
         if (mouse == null)

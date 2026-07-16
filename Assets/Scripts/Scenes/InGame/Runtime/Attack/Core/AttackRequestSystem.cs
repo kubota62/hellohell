@@ -1,41 +1,45 @@
-using Unity.Burst;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 
 /// <summary>
-/// Attack/Core の共通入口。
-/// Player と Enemy の攻撃意思を読み、攻撃マスタを解決して、攻撃種別ごとの実行リクエストへ変換する。
-/// Projectile / Aura / MeleeArc などの実処理は Attack/Variants 以下の専用Systemへ渡す。
+/// PlayerとEnemyの攻撃意思を、攻撃方式ごとのリクエストへ変換する。
 /// </summary>
 [UpdateBefore(typeof(ProjectileSpawnSystem))]
 public partial struct AttackRequestSystem : ISystem
 {
-    [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
         state.RequireForUpdate<Config>();
         state.RequireForUpdate<PlayerInput>();
     }
 
-    [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        var deltaTime = SystemAPI.Time.DeltaTime;
         var hasAttackMasters = SystemAPI.TryGetSingletonBuffer<AttackMasterElement>(
             out var attackMasters,
             true);
         var ecb = new EntityCommandBuffer(Unity.Collections.Allocator.Temp);
+        var deltaTime = SystemAPI.Time.DeltaTime;
 
-        // 入力やAI判断を攻撃リクエストへ変換する。ここでは弾、範囲判定、エフェクトを直接生成しない。
-        RequestPlayerAttack(ref state, ecb, hasAttackMasters, attackMasters, deltaTime);
-        RequestEnemyAttack(ref state, ecb, hasAttackMasters, attackMasters, deltaTime);
+        RequestPlayerAttacks(
+            ref state,
+            ecb,
+            hasAttackMasters,
+            attackMasters,
+            deltaTime);
+        RequestEnemyAttacks(
+            ref state,
+            ecb,
+            hasAttackMasters,
+            attackMasters,
+            deltaTime);
 
         ecb.Playback(state.EntityManager);
         ecb.Dispose();
     }
 
-    private void RequestPlayerAttack(
+    private void RequestPlayerAttacks(
         ref SystemState state,
         EntityCommandBuffer ecb,
         bool hasAttackMasters,
@@ -43,257 +47,194 @@ public partial struct AttackRequestSystem : ISystem
         float deltaTime)
     {
         var input = SystemAPI.GetSingleton<PlayerInput>();
+        var entityManager = state.EntityManager;
 
-        foreach (var (_, cooldowns, actorEntity) in
-                 SystemAPI.Query<RefRO<ActorBody>, DynamicBuffer<PlayerAttackCooldown>>()
-                     .WithAll<Player>()
+        foreach (var (_, actorEntity) in
+                 SystemAPI.Query<RefRO<ActorBody>>()
+                     .WithAll<Player, PlayerAttackSlot>()
                      .WithEntityAccess())
         {
-            RequestPlayerAttackSlot(
-                ref state,
-                actorEntity,
-                cooldowns,
-                AttackMasterId.BasicMeleeArc,
-                input.ActiveAttackMask,
-                input.IsFire,
-                ecb,
-                hasAttackMasters,
-                attackMasters,
-                deltaTime);
-            RequestPlayerAttackSlot(
-                ref state,
-                actorEntity,
-                cooldowns,
-                AttackMasterId.RapidBolt,
-                input.ActiveAttackMask,
-                input.IsFire,
-                ecb,
-                hasAttackMasters,
-                attackMasters,
-                deltaTime);
-            RequestPlayerAttackSlot(
-                ref state,
-                actorEntity,
-                cooldowns,
-                AttackMasterId.PiercingLance,
-                input.ActiveAttackMask,
-                input.IsFire,
-                ecb,
-                hasAttackMasters,
-                attackMasters,
-                deltaTime);
-            RequestPlayerAttackSlot(
-                ref state,
-                actorEntity,
-                cooldowns,
-                AttackMasterId.ExplosiveOrb,
-                input.ActiveAttackMask,
-                input.IsFire,
-                ecb,
-                hasAttackMasters,
-                attackMasters,
-                deltaTime);
-        }
-    }
-
-    private void RequestPlayerAttackSlot(
-        ref SystemState state,
-        Entity actorEntity,
-        DynamicBuffer<PlayerAttackCooldown> cooldowns,
-        AttackMasterId attackMasterId,
-        uint activeAttackMask,
-        bool wantsAttack,
-        EntityCommandBuffer ecb,
-        bool hasAttackMasters,
-        DynamicBuffer<AttackMasterElement> attackMasters,
-        float deltaTime)
-    {
-        var cooldownIndex = FindPlayerAttackCooldown(cooldowns, attackMasterId);
-        if (cooldownIndex < 0)
-        {
-            cooldowns.Add(new PlayerAttackCooldown
+            var attackSlots = entityManager.GetBuffer<PlayerAttackSlot>(actorEntity);
+            for (var i = 0; i < attackSlots.Length; i++)
             {
-                AttackMasterId = attackMasterId,
-                Remaining = 0f,
-            });
-            cooldownIndex = cooldowns.Length - 1;
+                var slot = attackSlots[i];
+                slot.Remaining = TickCooldown(slot.Remaining, deltaTime);
+
+                if (!input.IsFire ||
+                    !input.ActiveAttackMask.Contains(slot.AttackMasterId) ||
+                    slot.Remaining > 0f)
+                {
+                    attackSlots[i] = slot;
+                    continue;
+                }
+
+                var definition = ResolveDefinition(
+                    hasAttackMasters,
+                    attackMasters,
+                    slot.AttackMasterId);
+                ApplyPlayerSkillStats(entityManager, actorEntity, ref definition);
+
+                if (CreateAttackRequest(
+                        entityManager,
+                        actorEntity,
+                        definition,
+                        false,
+                        float3.zero,
+                        ecb))
+                {
+                    slot.Remaining = math.max(0.01f, definition.Cooldown);
+                }
+
+                attackSlots[i] = slot;
+            }
         }
-
-        var cooldown = cooldowns[cooldownIndex];
-        cooldown.Remaining = math.max(0f, cooldown.Remaining - deltaTime);
-
-        var isEnabled = (activeAttackMask & AttackMask(attackMasterId)) != 0u;
-        if (!isEnabled || !wantsAttack || cooldown.Remaining > 0f)
-        {
-            cooldowns[cooldownIndex] = cooldown;
-            return;
-        }
-
-        var definition = hasAttackMasters
-            ? AttackMasterCatalog.Get(attackMasters, attackMasterId)
-            : AttackMasterCatalog.Get(attackMasterId);
-        ApplyPlayerSkillStats(ref state, actorEntity, ref definition);
-
-        if (CreateResolvedAttackRequest(
-                ref state,
-                actorEntity,
-                definition,
-                false,
-                float3.zero,
-                ecb))
-        {
-            cooldown.Remaining = math.max(0.01f, definition.Cooldown);
-        }
-
-        cooldowns[cooldownIndex] = cooldown;
     }
 
-    private void RequestEnemyAttack(
+    private void RequestEnemyAttacks(
         ref SystemState state,
         EntityCommandBuffer ecb,
         bool hasAttackMasters,
         DynamicBuffer<AttackMasterElement> attackMasters,
         float deltaTime)
     {
+        var entityManager = state.EntityManager;
         var hasPlayer = SystemAPI.TryGetSingletonEntity<Player>(out var playerEntity) &&
             SystemAPI.HasComponent<LocalTransform>(playerEntity);
         var playerPosition = hasPlayer
             ? SystemAPI.GetComponent<LocalTransform>(playerEntity).Position
             : float3.zero;
 
-        foreach (var (_, cooldown, transform, attackRange, actorEntity) in
-                 SystemAPI.Query<RefRO<ActorBody>, RefRW<AttackCooldown>, RefRO<LocalTransform>, RefRO<EnemyAttackRange>>()
+        foreach (var (cooldown, transform, attackRange, actorEntity) in
+                 SystemAPI.Query<RefRW<AttackCooldown>, RefRO<LocalTransform>, RefRO<EnemyAttackRange>>()
                      .WithAll<Enemy>()
                      .WithEntityAccess())
         {
-            var attackMasterId = ResolveAttackMasterId(ref state, actorEntity);
+            cooldown.ValueRW.Remaining = TickCooldown(
+                cooldown.ValueRO.Remaining,
+                deltaTime);
+
+            if (!hasPlayer || cooldown.ValueRO.Remaining > 0f)
+            {
+                continue;
+            }
+
+            var distanceToPlayer = math.distance(
+                transform.ValueRO.Position,
+                playerPosition);
+            if (distanceToPlayer < attackRange.ValueRO.Min ||
+                distanceToPlayer > attackRange.ValueRO.Max)
+            {
+                continue;
+            }
+
+            var attackMasterId = ResolveActorAttack(entityManager, actorEntity);
             if (attackMasterId == AttackMasterId.None)
             {
                 continue;
             }
 
-            // 敵は定義された距離帯にPlayerがいると発射意思ありとして扱う。
-            var distanceToPlayer = math.distance(transform.ValueRO.Position, playerPosition);
-            var canFire = hasPlayer &&
-                distanceToPlayer >= attackRange.ValueRO.Min &&
-                distanceToPlayer <= attackRange.ValueRO.Max;
-
-            TryCreateAttackRequest(
-                ref state,
-                actorEntity,
-                cooldown,
-                attackMasterId,
-                canFire,
-                true,
-                playerPosition - transform.ValueRO.Position,
-                ecb,
+            var definition = ResolveDefinition(
                 hasAttackMasters,
                 attackMasters,
-                deltaTime);
+                attackMasterId);
+            if (CreateAttackRequest(
+                    entityManager,
+                    actorEntity,
+                    definition,
+                    true,
+                    playerPosition - transform.ValueRO.Position,
+                    ecb))
+            {
+                cooldown.ValueRW.Remaining = math.max(0.01f, definition.Cooldown);
+            }
         }
     }
 
-    private void TryCreateAttackRequest(
-        ref SystemState state,
-        Entity actorEntity,
-        RefRW<AttackCooldown> cooldown,
-        AttackMasterId attackMasterId,
-        bool wantsAttack,
-        bool useDirectionOverride,
-        float3 directionOverride,
-        EntityCommandBuffer ecb,
+    private static AttackMasterData ResolveDefinition(
         bool hasAttackMasters,
         DynamicBuffer<AttackMasterElement> attackMasters,
-        float deltaTime)
+        AttackMasterId attackMasterId)
     {
-        // 攻撃IDからマスタ値を解決し、クールダウンが空いていればVariants向けのリクエストを発行する。
-        var definition = hasAttackMasters
+        return hasAttackMasters
             ? AttackMasterCatalog.Get(attackMasters, attackMasterId)
             : AttackMasterCatalog.Get(attackMasterId);
-        ApplyPlayerSkillStats(ref state, actorEntity, ref definition);
+    }
 
-        cooldown.ValueRW.Remaining = math.max(0f, cooldown.ValueRO.Remaining - deltaTime);
-        if (!wantsAttack || cooldown.ValueRO.Remaining > 0f)
+    private static void ApplyPlayerSkillStats(
+        EntityManager entityManager,
+        Entity actorEntity,
+        ref AttackMasterData definition)
+    {
+        if (!entityManager.HasComponent<PlayerSkillStats>(actorEntity))
         {
             return;
         }
 
-        if (CreateResolvedAttackRequest(
-                ref state,
-                actorEntity,
-                definition,
-                useDirectionOverride,
-                directionOverride,
-                ecb))
-        {
-            cooldown.ValueRW.Remaining = math.max(0.01f, definition.Cooldown);
-        }
+        var stats = entityManager.GetComponentData<PlayerSkillStats>(actorEntity);
+        definition.Damage = math.max(
+            1,
+            (int)math.round(
+                definition.Damage *
+                PlayerAutoSkillSystem.GetDamageMultiplier(stats)));
+        definition.Cooldown *= PlayerAutoSkillSystem.GetCooldownMultiplier(stats);
     }
 
-    private bool CreateResolvedAttackRequest(
-        ref SystemState state,
+    private static bool CreateAttackRequest(
+        EntityManager entityManager,
         Entity actorEntity,
         AttackMasterData definition,
         bool useDirectionOverride,
         float3 directionOverride,
         EntityCommandBuffer ecb)
     {
-        var actorBody = SystemAPI.GetComponent<ActorBody>(actorEntity);
-        var actorTransform = SystemAPI.GetComponent<LocalTransform>(actorEntity);
-        var canonLtw = SystemAPI.GetComponent<LocalToWorld>(actorBody.Canon);
-        var attackDirection = useDirectionOverride
+        var actorBody = entityManager.GetComponentData<ActorBody>(actorEntity);
+        var actorTransform = entityManager.GetComponentData<LocalTransform>(actorEntity);
+        var canonTransform = entityManager.GetComponentData<LocalToWorld>(actorBody.Canon);
+        var direction = useDirectionOverride
             ? FlattenDirection(directionOverride)
-            : GetAttackDirection(canonLtw);
-        var team = TeamId.Neutral;
-        if (SystemAPI.HasComponent<Team>(actorEntity))
-        {
-            team = SystemAPI.GetComponent<Team>(actorEntity).Value;
-        }
+            : FlattenDirection(canonTransform.Up);
+        var team = entityManager.HasComponent<Team>(actorEntity)
+            ? entityManager.GetComponentData<Team>(actorEntity).Value
+            : TeamId.Neutral;
 
         switch (definition.Kind)
         {
-            case AttackKind.Aura:
-                CreateAuraRequest(actorEntity, team, canonLtw.Position, definition, ecb);
-                break;
-
             case AttackKind.Projectile:
-                CreateProjectileRequest(actorEntity, team, canonLtw.Position, attackDirection, definition, ecb);
-                break;
+                CreateProjectileRequest(
+                    actorEntity,
+                    team,
+                    canonTransform.Position,
+                    direction,
+                    definition,
+                    ecb);
+                return true;
+
+            case AttackKind.Aura:
+                CreateAuraRequest(
+                    actorEntity,
+                    team,
+                    canonTransform.Position,
+                    definition,
+                    ecb);
+                return true;
 
             case AttackKind.MeleeArc:
                 CreateMeleeArcRequest(
                     actorEntity,
                     team,
                     actorTransform.Position,
-                    attackDirection,
+                    direction,
                     definition,
                     ecb);
-                break;
+                return true;
 
             case AttackKind.Beam:
             default:
                 return false;
         }
-
-        return true;
     }
 
-    private static void ApplyPlayerSkillStats(
-        ref SystemState state,
-        Entity actorEntity,
-        ref AttackMasterData definition)
-    {
-        if (!state.EntityManager.HasComponent<PlayerSkillStats>(actorEntity))
-        {
-            return;
-        }
-
-        var stats = state.EntityManager.GetComponentData<PlayerSkillStats>(actorEntity);
-        definition.Damage = math.max(1, (int)math.round(definition.Damage * PlayerAutoSkillSystem.GetDamageMultiplier(stats)));
-        definition.Cooldown *= PlayerAutoSkillSystem.GetCooldownMultiplier(stats);
-    }
-
-    private void CreateProjectileRequest(
+    private static void CreateProjectileRequest(
         Entity actorEntity,
         TeamId team,
         float3 position,
@@ -322,7 +263,7 @@ public partial struct AttackRequestSystem : ISystem
         });
     }
 
-    private void CreateAuraRequest(
+    private static void CreateAuraRequest(
         Entity actorEntity,
         TeamId team,
         float3 position,
@@ -341,10 +282,10 @@ public partial struct AttackRequestSystem : ISystem
         });
     }
 
-    private void CreateMeleeArcRequest(
+    private static void CreateMeleeArcRequest(
         Entity actorEntity,
         TeamId team,
-        float3 actorPosition,
+        float3 position,
         float3 direction,
         AttackMasterData definition,
         EntityCommandBuffer ecb)
@@ -355,7 +296,7 @@ public partial struct AttackRequestSystem : ISystem
             AttackMasterId = definition.Id,
             Owner = actorEntity,
             Team = team,
-            Position = actorPosition,
+            Position = position,
             Direction = direction,
             Radius = definition.AreaRadius,
             AngleDegrees = definition.ArcAngleDegrees,
@@ -364,39 +305,18 @@ public partial struct AttackRequestSystem : ISystem
         });
     }
 
-    private AttackMasterId ResolveAttackMasterId(ref SystemState state, Entity actorEntity)
+    private static AttackMasterId ResolveActorAttack(
+        EntityManager entityManager,
+        Entity actorEntity)
     {
-        if (!SystemAPI.HasComponent<AttackLoadout>(actorEntity))
-        {
-            return AttackMasterId.BasicProjectile;
-        }
-
-        return SystemAPI.GetComponent<AttackLoadout>(actorEntity).PrimaryAttack;
+        return entityManager.HasComponent<AttackLoadout>(actorEntity)
+            ? entityManager.GetComponentData<AttackLoadout>(actorEntity).PrimaryAttack
+            : AttackMasterId.BasicProjectile;
     }
 
-    private static float3 GetAttackDirection(LocalToWorld canonLtw)
+    private static float TickCooldown(float remaining, float deltaTime)
     {
-        return FlattenDirection(canonLtw.Up);
-    }
-
-    private static int FindPlayerAttackCooldown(
-        DynamicBuffer<PlayerAttackCooldown> cooldowns,
-        AttackMasterId attackMasterId)
-    {
-        for (var i = 0; i < cooldowns.Length; i++)
-        {
-            if (cooldowns[i].AttackMasterId == attackMasterId)
-            {
-                return i;
-            }
-        }
-
-        return -1;
-    }
-
-    private static uint AttackMask(AttackMasterId attackMasterId)
-    {
-        return 1u << (int)attackMasterId;
+        return math.max(0f, remaining - deltaTime);
     }
 
     private static float3 FlattenDirection(float3 direction)

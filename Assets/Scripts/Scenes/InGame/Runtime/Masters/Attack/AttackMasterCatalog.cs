@@ -1,8 +1,7 @@
 using Unity.Entities;
 
 /// <summary>
-/// 攻撃マスタへアクセスする仮の窓口。
-/// Baker が作った定義バッファがあればそちらを優先し、未配置でも最低限の既定値で動く。
+/// 攻撃マスターの検索と、アセット未登録時の標準値を提供する。
 /// </summary>
 public static class AttackMasterCatalog
 {
@@ -10,153 +9,83 @@ public static class AttackMasterCatalog
     {
         switch (id)
         {
-            case AttackMasterId.ExplosiveOrb:
-                return new AttackMasterData
-                {
-                    Id = AttackMasterId.ExplosiveOrb,
-                    Kind = AttackKind.Projectile,
-                    Cooldown = 1.8f,
-                    Damage = 58,
-                    HitRadius = 0.65f,
-                    AreaRadius = 0f,
-                    ProjectileSpeed = 6.5f,
-                    Lifetime = 5.5f,
-                    Scale = 0.72f,
-                    ProjectileModifiers = ProjectileModifierFlags.AreaOfEffect,
-                    PierceCount = 0,
-                    ChainCount = 0,
-                    ChainRange = 0f,
-                    ImpactAreaRadius = 3.2f,
-                    ArcAngleDegrees = 0f,
-                    VisualDuration = 0f,
-                };
-
-            case AttackMasterId.PiercingLance:
-                return new AttackMasterData
-                {
-                    Id = AttackMasterId.PiercingLance,
-                    Kind = AttackKind.Projectile,
-                    Cooldown = 0.72f,
-                    Damage = 32,
-                    HitRadius = 0.3f,
-                    AreaRadius = 0f,
-                    ProjectileSpeed = 19f,
-                    Lifetime = 4f,
-                    Scale = 0.34f,
-                    ProjectileModifiers = ProjectileModifierFlags.Piercing,
-                    PierceCount = 6,
-                    ChainCount = 0,
-                    ChainRange = 0f,
-                    ImpactAreaRadius = 0f,
-                    ArcAngleDegrees = 0f,
-                    VisualDuration = 0f,
-                };
-
-            case AttackMasterId.RapidBolt:
-                return new AttackMasterData
-                {
-                    Id = AttackMasterId.RapidBolt,
-                    Kind = AttackKind.Projectile,
-                    Cooldown = 0.38f,
-                    Damage = 22,
-                    HitRadius = 0.28f,
-                    AreaRadius = 0f,
-                    ProjectileSpeed = 20f,
-                    Lifetime = 3.5f,
-                    Scale = 0.32f,
-                    ProjectileModifiers = ProjectileModifierFlags.None,
-                    PierceCount = 0,
-                    ChainCount = 0,
-                    ChainRange = 0f,
-                    ImpactAreaRadius = 0f,
-                    ArcAngleDegrees = 0f,
-                    VisualDuration = 0f,
-                };
-
             case AttackMasterId.BasicAura:
-                return new AttackMasterData
-                {
-                    Id = AttackMasterId.BasicAura,
-                    Kind = AttackKind.Aura,
-                    Cooldown = 1.5f,
-                    Damage = 20,
-                    HitRadius = 0f,
-                    AreaRadius = 3f,
-                    ProjectileSpeed = 0f,
-                    Lifetime = 0f,
-                    Scale = 1f,
-                    ProjectileModifiers = ProjectileModifierFlags.None,
-                    PierceCount = 0,
-                    ChainCount = 0,
-                    ChainRange = 0f,
-                    ImpactAreaRadius = 0f,
-                    ArcAngleDegrees = 360f,
-                    VisualDuration = 0.12f,
-                };
+                return CreateArea(
+                    id,
+                    AttackKind.Aura,
+                    cooldown: 1.5f,
+                    damage: 20,
+                    radius: 3f,
+                    angleDegrees: 360f,
+                    visualDuration: 0.12f);
 
             case AttackMasterId.BasicMeleeArc:
-                return new AttackMasterData
-                {
-                    Id = AttackMasterId.BasicMeleeArc,
-                    Kind = AttackKind.MeleeArc,
-                    Cooldown = 0.45f,
-                    Damage = 28,
-                    HitRadius = 0f,
-                    AreaRadius = 5.5f,
-                    ProjectileSpeed = 0f,
-                    Lifetime = 0f,
-                    Scale = 1f,
-                    ProjectileModifiers = ProjectileModifierFlags.None,
-                    PierceCount = 0,
-                    ChainCount = 0,
-                    ChainRange = 0f,
-                    ImpactAreaRadius = 0f,
-                    ArcAngleDegrees = 100f,
-                    VisualDuration = 0.14f,
-                };
+                return CreateArea(
+                    id,
+                    AttackKind.MeleeArc,
+                    cooldown: 0.45f,
+                    damage: 28,
+                    radius: 5.5f,
+                    angleDegrees: 100f,
+                    visualDuration: 0.14f);
 
             case AttackMasterId.BasicChainProjectile:
-                return new AttackMasterData
-                {
-                    Id = AttackMasterId.BasicChainProjectile,
-                    Kind = AttackKind.Projectile,
-                    Cooldown = 0.9f,
-                    Damage = 22,
-                    HitRadius = 0.5f,
-                    AreaRadius = 0f,
-                    ProjectileSpeed = 12f,
-                    Lifetime = 4f,
-                    Scale = 0.45f,
-                    ProjectileModifiers = ProjectileModifierFlags.Chaining,
-                    PierceCount = 0,
-                    ChainCount = 3,
-                    ChainRange = 7f,
-                    ImpactAreaRadius = 0f,
-                    ArcAngleDegrees = 0f,
-                    VisualDuration = 0f,
-                };
+                return CreateProjectile(
+                    id,
+                    cooldown: 0.9f,
+                    damage: 22,
+                    hitRadius: 0.5f,
+                    speed: 12f,
+                    lifetime: 4f,
+                    scale: 0.45f,
+                    modifiers: ProjectileModifierFlags.Chaining,
+                    chainCount: 3,
+                    chainRange: 7f);
+
+            case AttackMasterId.RapidBolt:
+                return CreateProjectile(
+                    id,
+                    cooldown: 0.38f,
+                    damage: 22,
+                    hitRadius: 0.28f,
+                    speed: 20f,
+                    lifetime: 3.5f,
+                    scale: 0.32f);
+
+            case AttackMasterId.PiercingLance:
+                return CreateProjectile(
+                    id,
+                    cooldown: 0.72f,
+                    damage: 32,
+                    hitRadius: 0.3f,
+                    speed: 19f,
+                    lifetime: 4f,
+                    scale: 0.34f,
+                    modifiers: ProjectileModifierFlags.Piercing,
+                    pierceCount: 6);
+
+            case AttackMasterId.ExplosiveOrb:
+                return CreateProjectile(
+                    id,
+                    cooldown: 1.8f,
+                    damage: 58,
+                    hitRadius: 0.65f,
+                    speed: 6.5f,
+                    lifetime: 5.5f,
+                    scale: 0.72f,
+                    modifiers: ProjectileModifierFlags.AreaOfEffect,
+                    impactAreaRadius: 3.2f);
 
             case AttackMasterId.BasicProjectile:
             default:
-                return new AttackMasterData
-                {
-                    Id = AttackMasterId.BasicProjectile,
-                    Kind = AttackKind.Projectile,
-                    Cooldown = 1f,
-                    Damage = 34,
-                    HitRadius = 0.5f,
-                    AreaRadius = 0f,
-                    ProjectileSpeed = 10f,
-                    Lifetime = 5f,
-                    Scale = 0.5f,
-                    ProjectileModifiers = ProjectileModifierFlags.None,
-                    PierceCount = 0,
-                    ChainCount = 0,
-                    ChainRange = 0f,
-                    ImpactAreaRadius = 0f,
-                    ArcAngleDegrees = 0f,
-                    VisualDuration = 0f,
-                };
+                return CreateProjectile(
+                    AttackMasterId.BasicProjectile,
+                    cooldown: 1f,
+                    damage: 34,
+                    hitRadius: 0.5f,
+                    speed: 10f,
+                    lifetime: 5f,
+                    scale: 0.5f);
         }
     }
 
@@ -173,5 +102,59 @@ public static class AttackMasterCatalog
         }
 
         return Get(id);
+    }
+
+    private static AttackMasterData CreateProjectile(
+        AttackMasterId id,
+        float cooldown,
+        int damage,
+        float hitRadius,
+        float speed,
+        float lifetime,
+        float scale,
+        ProjectileModifierFlags modifiers = ProjectileModifierFlags.None,
+        int pierceCount = 0,
+        int chainCount = 0,
+        float chainRange = 0f,
+        float impactAreaRadius = 0f)
+    {
+        return new AttackMasterData
+        {
+            Id = id,
+            Kind = AttackKind.Projectile,
+            Cooldown = cooldown,
+            Damage = damage,
+            HitRadius = hitRadius,
+            ProjectileSpeed = speed,
+            Lifetime = lifetime,
+            Scale = scale,
+            ProjectileModifiers = modifiers,
+            PierceCount = pierceCount,
+            ChainCount = chainCount,
+            ChainRange = chainRange,
+            ImpactAreaRadius = impactAreaRadius,
+        };
+    }
+
+    private static AttackMasterData CreateArea(
+        AttackMasterId id,
+        AttackKind kind,
+        float cooldown,
+        int damage,
+        float radius,
+        float angleDegrees,
+        float visualDuration)
+    {
+        return new AttackMasterData
+        {
+            Id = id,
+            Kind = kind,
+            Cooldown = cooldown,
+            Damage = damage,
+            AreaRadius = radius,
+            Scale = 1f,
+            ArcAngleDegrees = angleDegrees,
+            VisualDuration = visualDuration,
+        };
     }
 }

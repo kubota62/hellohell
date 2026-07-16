@@ -175,7 +175,7 @@ public partial struct ProjectileHitJob : IJobEntity
         float3 impactPosition)
     {
         // チェーン弾は命中地点から次の未命中ターゲットへ向きを付け替え、同じProjectileを使い続ける。
-        if (!HasModifier(modifierState.Modifiers, ProjectileModifierFlags.Chaining) ||
+        if (!modifierState.Modifiers.Has(ProjectileModifierFlags.Chaining) ||
             modifierState.ChainRemaining <= 0 ||
             modifierState.ChainRange <= 0f)
         {
@@ -265,7 +265,7 @@ public partial struct ProjectileHitJob : IJobEntity
         float3 impactPosition)
     {
         // 範囲弾は命中地点周辺へ追加のDamageEventを積む。直接ヒット済みの対象は再度当てない。
-        if (!HasModifier(modifierState.Modifiers, ProjectileModifierFlags.AreaOfEffect))
+        if (!modifierState.Modifiers.Has(ProjectileModifierFlags.AreaOfEffect))
         {
             return;
         }
@@ -351,8 +351,4 @@ public partial struct ProjectileHitJob : IJobEntity
         return false;
     }
 
-    private static bool HasModifier(ProjectileModifierFlags value, ProjectileModifierFlags flag)
-    {
-        return (value & flag) != 0;
-    }
 }
