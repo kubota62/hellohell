@@ -44,6 +44,9 @@ public class MasterCatalogAuthoring : MonoBehaviour
             EnsureAttackMaster(attackBuffer, AttackMasterId.BasicAura);
             EnsureAttackMaster(attackBuffer, AttackMasterId.BasicMeleeArc);
             EnsureAttackMaster(attackBuffer, AttackMasterId.BasicChainProjectile);
+            EnsureAttackMaster(attackBuffer, AttackMasterId.RapidBolt);
+            EnsureAttackMaster(attackBuffer, AttackMasterId.PiercingLance);
+            EnsureAttackMaster(attackBuffer, AttackMasterId.ExplosiveOrb);
 
             // 敵マスタはスポーン時に身体・移動・攻撃・報酬へ分解して適用する。
             var enemyBuffer = AddBuffer<EnemyMasterElement>(entity);
@@ -60,6 +63,9 @@ public class MasterCatalogAuthoring : MonoBehaviour
             EnsureEnemyMaster(enemyBuffer, EnemyMasterCatalog.RandomEnemy);
             EnsureEnemyMaster(enemyBuffer, EnemyMasterCatalog.ChainEnemy);
             EnsureEnemyMaster(enemyBuffer, EnemyMasterCatalog.KiteEnemy);
+            EnsureEnemyMaster(enemyBuffer, EnemyMasterCatalog.SkeletonDrifterEnemy);
+            EnsureEnemyMaster(enemyBuffer, EnemyMasterCatalog.RatRunnerEnemy);
+            EnsureEnemyMaster(enemyBuffer, EnemyMasterCatalog.GraveSlimeEnemy);
 
             // スポーン間隔や出現距離はゲーム全体の進行値なので、専用のマスタとして扱う。
             var spawnBuffer = AddBuffer<SpawnMasterElement>(entity);

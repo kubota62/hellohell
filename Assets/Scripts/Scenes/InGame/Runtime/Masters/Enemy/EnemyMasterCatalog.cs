@@ -11,10 +11,13 @@ public static class EnemyMasterCatalog
     public const int RandomEnemy = 2;
     public const int ChainEnemy = 3;
     public const int KiteEnemy = 4;
+    public const int SkeletonDrifterEnemy = 5;
+    public const int RatRunnerEnemy = 6;
+    public const int GraveSlimeEnemy = 7;
 
     public static int PickSpawnType(int spawnIndex)
     {
-        switch (spawnIndex % 4)
+        switch (spawnIndex % 7)
         {
             case 1:
                 return RandomEnemy;
@@ -24,6 +27,15 @@ public static class EnemyMasterCatalog
 
             case 3:
                 return KiteEnemy;
+
+            case 4:
+                return SkeletonDrifterEnemy;
+
+            case 5:
+                return RatRunnerEnemy;
+
+            case 6:
+                return GraveSlimeEnemy;
 
             case 0:
             default:
@@ -79,20 +91,71 @@ public static class EnemyMasterCatalog
     {
         switch (typeId)
         {
+            case GraveSlimeEnemy:
+                return Create(
+                    GraveSlimeEnemy,
+                    EnemyMovementKind.Heavy,
+                    maxHealth: 160,
+                    hitRadius: 2.1f,
+                    bodyScale: 1.25f,
+                    moveSpeed: 0.72f,
+                    primaryAttack: AttackMasterId.BasicAura,
+                    minAttackRange: 0f,
+                    maxAttackRange: 3.1f,
+                    color: new float4(0.35f, 0.42f, 0.32f, 1f),
+                    experience: 3,
+                    score: 28,
+                    spawnWeight: 3,
+                    minPlayerLevel: 5);
+
+            case RatRunnerEnemy:
+                return Create(
+                    RatRunnerEnemy,
+                    EnemyMovementKind.Runner,
+                    maxHealth: 28,
+                    hitRadius: 0.9f,
+                    bodyScale: 0.55f,
+                    moveSpeed: 2.05f,
+                    primaryAttack: AttackMasterId.BasicAura,
+                    minAttackRange: 0f,
+                    maxAttackRange: 1.8f,
+                    color: new float4(0.48f, 0.22f, 0.16f, 1f),
+                    experience: 1,
+                    score: 12,
+                    spawnWeight: 5,
+                    minPlayerLevel: 3);
+
+            case SkeletonDrifterEnemy:
+                return Create(
+                    SkeletonDrifterEnemy,
+                    EnemyMovementKind.Drift,
+                    maxHealth: 60,
+                    hitRadius: 1.25f,
+                    bodyScale: 0.78f,
+                    moveSpeed: 1.15f,
+                    primaryAttack: AttackMasterId.BasicAura,
+                    minAttackRange: 0f,
+                    maxAttackRange: 2.4f,
+                    color: new float4(0.72f, 0.7f, 0.62f, 1f),
+                    experience: 1,
+                    score: 14,
+                    spawnWeight: 8,
+                    minPlayerLevel: 2);
+
             case KiteEnemy:
                 return Create(
                     KiteEnemy,
-                    EnemyMovementKind.Kite,
-                    maxHealth: 80,
+                    EnemyMovementKind.Forward,
+                    maxHealth: 150,
                     hitRadius: 1.8f,
-                    bodyScale: 0.9f,
-                    moveSpeed: 3.2f,
-                    primaryAttack: AttackMasterId.BasicChainProjectile,
-                    minAttackRange: 8f,
-                    maxAttackRange: 24f,
-                    color: new float4(0.1f, 0.35f, 1f, 1f),
-                    experience: 2,
-                    score: 18,
+                    bodyScale: 1.15f,
+                    moveSpeed: 0.8f,
+                    primaryAttack: AttackMasterId.BasicAura,
+                    minAttackRange: 0f,
+                    maxAttackRange: 2.9f,
+                    color: new float4(0.3f, 0.32f, 0.38f, 1f),
+                    experience: 3,
+                    score: 26,
                     spawnWeight: 2,
                     minPlayerLevel: 7);
 
@@ -103,11 +166,11 @@ public static class EnemyMasterCatalog
                     maxHealth: 120,
                     hitRadius: 2f,
                     bodyScale: 1.15f,
-                    moveSpeed: 2.1f,
-                    primaryAttack: AttackMasterId.BasicChainProjectile,
-                    minAttackRange: 5f,
-                    maxAttackRange: 22f,
-                    color: new float4(0.1f, 0.85f, 1f, 1f),
+                    moveSpeed: 0.95f,
+                    primaryAttack: AttackMasterId.BasicAura,
+                    minAttackRange: 0f,
+                    maxAttackRange: 2.8f,
+                    color: new float4(0.48f, 0.5f, 0.52f, 1f),
                     experience: 2,
                     score: 20,
                     spawnWeight: 2,
@@ -116,15 +179,15 @@ public static class EnemyMasterCatalog
             case RandomEnemy:
                 return Create(
                     RandomEnemy,
-                    EnemyMovementKind.Random,
-                    maxHealth: 100,
-                    hitRadius: 2f,
-                    bodyScale: 1f,
-                    moveSpeed: 2.4f,
-                    primaryAttack: AttackMasterId.BasicProjectile,
-                    minAttackRange: 5f,
-                    maxAttackRange: 24f,
-                    color: new float4(1f, 1f, 0f, 1f),
+                    EnemyMovementKind.Forward,
+                    maxHealth: 80,
+                    hitRadius: 1.7f,
+                    bodyScale: 0.9f,
+                    moveSpeed: 0.85f,
+                    primaryAttack: AttackMasterId.BasicAura,
+                    minAttackRange: 0f,
+                    maxAttackRange: 2.6f,
+                    color: new float4(0.4f, 0.48f, 0.36f, 1f),
                     experience: 1,
                     score: 12,
                     spawnWeight: 3,

@@ -13,4 +13,5 @@ public struct PlayerInput : IComponentData
     public bool AutoAttackEnabled;
     public float2 Movement;
     public float3 AimWorldPosition;
+    public AttackMasterId SelectedAttack;
 }

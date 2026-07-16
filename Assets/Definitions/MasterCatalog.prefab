@@ -49,11 +49,17 @@ MonoBehaviour:
   - {fileID: 11400000, guid: c7e9d6dfce37452d8cbaf5777a7fcf91, type: 2}
   - {fileID: 11400000, guid: 43713fcd8ccd7ac44b720a0ecfdfdc5b, type: 2}
   - {fileID: 11400000, guid: c84944c00607d00439173f469c29165f, type: 2}
+  - {fileID: 11400000, guid: 912a07e687f54f2c8d5ee93dad8af291, type: 2}
+  - {fileID: 11400000, guid: aa1ee8e6375c4165905211db7b8b8417, type: 2}
+  - {fileID: 11400000, guid: bb32000cdebc4c44a46fd5e24a80229e, type: 2}
   EnemyMasters:
   - {fileID: 11400000, guid: 44c12fef620c49a9964278be92eb4f94, type: 2}
   - {fileID: 11400000, guid: 2ec325ef8d1544d49871dd21a5dc41bb, type: 2}
   - {fileID: 11400000, guid: ad75eb772935c964eb4768fb78f31655, type: 2}
   - {fileID: 11400000, guid: 41c95ed0f5427ca4981bbe0f43d04e83, type: 2}
+  - {fileID: 11400000, guid: cc526970e64b44968bfd2981c18d700d, type: 2}
+  - {fileID: 11400000, guid: dd8d88ac2e6d46b1b43f62b67f82d21b, type: 2}
+  - {fileID: 11400000, guid: ee3fd0ad70ea470c9a73851f1b092802, type: 2}
   SpawnMasters:
   - {fileID: 11400000, guid: a552fdd75d22c6341b4e58c9d76bc9c5, type: 2}
   PlayerMasters:

@@ -207,6 +207,18 @@ public partial struct ActorSpawnSystem : ISystem
 
         switch (movement.Kind)
         {
+            case EnemyMovementKind.Heavy:
+                entityManager.AddComponent<EnemyMovementHeavy>(actorEntity);
+                break;
+
+            case EnemyMovementKind.Runner:
+                entityManager.AddComponent<EnemyMovementRunner>(actorEntity);
+                break;
+
+            case EnemyMovementKind.Drift:
+                entityManager.AddComponent<EnemyMovementDrift>(actorEntity);
+                break;
+
             case EnemyMovementKind.Kite:
                 entityManager.AddComponent<EnemyMovementKite>(actorEntity);
                 break;

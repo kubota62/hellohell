@@ -14,6 +14,7 @@ public class PlayerInputManager : MonoBehaviour
     private Entity entity;
     private Camera mainCamera;
     private bool autoAttackEnabled;
+    private AttackMasterId selectedAttack = AttackMasterId.BasicMeleeArc;
 
     private void Start()
     {
@@ -36,6 +37,14 @@ public class PlayerInputManager : MonoBehaviour
             autoAttackEnabled = !autoAttackEnabled;
         }
 
+        if (keyboard != null)
+        {
+            if (keyboard.digit1Key.wasPressedThisFrame) selectedAttack = AttackMasterId.BasicMeleeArc;
+            if (keyboard.digit2Key.wasPressedThisFrame) selectedAttack = AttackMasterId.RapidBolt;
+            if (keyboard.digit3Key.wasPressedThisFrame) selectedAttack = AttackMasterId.PiercingLance;
+            if (keyboard.digit4Key.wasPressedThisFrame) selectedAttack = AttackMasterId.ExplosiveOrb;
+        }
+
         var movement = new float2(
             keyboard == null ? 0f : (keyboard.dKey.isPressed ? 1f : 0f) - (keyboard.aKey.isPressed ? 1f : 0f),
             keyboard == null ? 0f : (keyboard.wKey.isPressed ? 1f : 0f) - (keyboard.sKey.isPressed ? 1f : 0f)
@@ -53,6 +62,7 @@ public class PlayerInputManager : MonoBehaviour
             AutoAttackEnabled = autoAttackEnabled,
             Movement = movement,
             AimWorldPosition = aimWorldPosition,
+            SelectedAttack = selectedAttack,
         });
     }
 

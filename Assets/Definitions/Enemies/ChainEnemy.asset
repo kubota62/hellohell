@@ -17,11 +17,11 @@ MonoBehaviour:
   HitRadius: 2
   BodyScale: 1.15
   Movement: 1
-  MoveSpeed: 2.1
-  PrimaryAttack: 4
-  MinAttackRange: 5
-  MaxAttackRange: 22
-  Color: {r: 0.1, g: 0.85, b: 1, a: 1}
+  MoveSpeed: 0.95
+  PrimaryAttack: 2
+  MinAttackRange: 0
+  MaxAttackRange: 2.8
+  Color: {r: 0.48, g: 0.5, b: 0.52, a: 1}
   Experience: 2
   Score: 20
   SpawnWeight: 2

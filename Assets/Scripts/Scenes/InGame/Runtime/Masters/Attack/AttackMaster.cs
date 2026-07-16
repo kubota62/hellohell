@@ -10,6 +10,9 @@ public enum AttackMasterId
     BasicAura = 2,
     BasicMeleeArc = 3,
     BasicChainProjectile = 4,
+    RapidBolt = 5,
+    PiercingLance = 6,
+    ExplosiveOrb = 7,
 }
 
 /// <summary>

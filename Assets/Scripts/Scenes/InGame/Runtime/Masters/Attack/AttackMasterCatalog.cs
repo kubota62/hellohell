@@ -10,6 +10,69 @@ public static class AttackMasterCatalog
     {
         switch (id)
         {
+            case AttackMasterId.ExplosiveOrb:
+                return new AttackMasterData
+                {
+                    Id = AttackMasterId.ExplosiveOrb,
+                    Kind = AttackKind.Projectile,
+                    Cooldown = 1.8f,
+                    Damage = 58,
+                    HitRadius = 0.65f,
+                    AreaRadius = 0f,
+                    ProjectileSpeed = 6.5f,
+                    Lifetime = 5.5f,
+                    Scale = 0.72f,
+                    ProjectileModifiers = ProjectileModifierFlags.AreaOfEffect,
+                    PierceCount = 0,
+                    ChainCount = 0,
+                    ChainRange = 0f,
+                    ImpactAreaRadius = 3.2f,
+                    ArcAngleDegrees = 0f,
+                    VisualDuration = 0f,
+                };
+
+            case AttackMasterId.PiercingLance:
+                return new AttackMasterData
+                {
+                    Id = AttackMasterId.PiercingLance,
+                    Kind = AttackKind.Projectile,
+                    Cooldown = 0.72f,
+                    Damage = 32,
+                    HitRadius = 0.3f,
+                    AreaRadius = 0f,
+                    ProjectileSpeed = 19f,
+                    Lifetime = 4f,
+                    Scale = 0.34f,
+                    ProjectileModifiers = ProjectileModifierFlags.Piercing,
+                    PierceCount = 6,
+                    ChainCount = 0,
+                    ChainRange = 0f,
+                    ImpactAreaRadius = 0f,
+                    ArcAngleDegrees = 0f,
+                    VisualDuration = 0f,
+                };
+
+            case AttackMasterId.RapidBolt:
+                return new AttackMasterData
+                {
+                    Id = AttackMasterId.RapidBolt,
+                    Kind = AttackKind.Projectile,
+                    Cooldown = 0.38f,
+                    Damage = 22,
+                    HitRadius = 0.28f,
+                    AreaRadius = 0f,
+                    ProjectileSpeed = 20f,
+                    Lifetime = 3.5f,
+                    Scale = 0.32f,
+                    ProjectileModifiers = ProjectileModifierFlags.None,
+                    PierceCount = 0,
+                    ChainCount = 0,
+                    ChainRange = 0f,
+                    ImpactAreaRadius = 0f,
+                    ArcAngleDegrees = 0f,
+                    VisualDuration = 0f,
+                };
+
             case AttackMasterId.BasicAura:
                 return new AttackMasterData
                 {

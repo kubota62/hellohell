@@ -11,6 +11,9 @@ public enum EnemyMovementKind : byte
     Forward = 1,
     Random = 2,
     Kite = 3,
+    Drift = 4,
+    Runner = 5,
+    Heavy = 6,
 }
 
 /// <summary>

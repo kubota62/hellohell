@@ -10,19 +10,19 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 42f7117437f74b0f8f615ed3d9c34c9f, type: 3}
-  m_Name: KiteEnemy
+  m_Name: SkeletonDrifterEnemy
   m_EditorClassIdentifier: Assembly-CSharp::EnemyMasterAsset
-  TypeId: 4
-  MaxHealth: 150
-  HitRadius: 1.8
-  BodyScale: 1.15
-  Movement: 1
-  MoveSpeed: 0.8
+  TypeId: 5
+  MaxHealth: 60
+  HitRadius: 1.25
+  BodyScale: 0.78
+  Movement: 4
+  MoveSpeed: 1.15
   PrimaryAttack: 2
   MinAttackRange: 0
-  MaxAttackRange: 2.9
-  Color: {r: 0.3, g: 0.32, b: 0.38, a: 1}
-  Experience: 3
-  Score: 26
-  SpawnWeight: 2
-  MinPlayerLevel: 7
+  MaxAttackRange: 2.4
+  Color: {r: 0.72, g: 0.7, b: 0.62, a: 1}
+  Experience: 1
+  Score: 14
+  SpawnWeight: 8
+  MinPlayerLevel: 2

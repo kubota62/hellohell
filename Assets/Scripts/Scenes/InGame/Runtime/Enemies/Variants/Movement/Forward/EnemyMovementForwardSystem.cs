@@ -97,3 +97,154 @@ public partial struct EnemyMovementForwardJob : IJobEntity
         }
     }
 }
+
+public struct EnemyMovementDrift : IComponentData
+{
+}
+
+public struct EnemyMovementRunner : IComponentData
+{
+}
+
+public struct EnemyMovementHeavy : IComponentData
+{
+}
+
+[BurstCompile]
+[UpdateBefore(typeof(EnemyMoveIntentApplySystem))]
+public partial struct EnemyMovementDriftSystem : ISystem
+{
+    [BurstCompile]
+    public void OnCreate(ref SystemState state)
+    {
+        state.RequireForUpdate<Player>();
+    }
+
+    [BurstCompile]
+    public void OnUpdate(ref SystemState state)
+    {
+        var playerPosition = SystemAPI.GetComponent<LocalTransform>(
+            SystemAPI.GetSingletonEntity<Player>()).Position;
+        state.Dependency = new EnemyMovementDriftJob
+        {
+            PlayerPosition = playerPosition,
+            ElapsedTime = (float)SystemAPI.Time.ElapsedTime,
+        }.ScheduleParallel(state.Dependency);
+    }
+}
+
+[BurstCompile]
+[WithAll(typeof(Enemy), typeof(EnemyMovementDrift))]
+public partial struct EnemyMovementDriftJob : IJobEntity
+{
+    public float3 PlayerPosition;
+    public float ElapsedTime;
+
+    private void Execute(
+        Entity entity,
+        in LocalTransform transform,
+        in EnemyMoveSpeed moveSpeed,
+        ref MoveIntent moveIntent)
+    {
+        var forward = PlayerPosition - transform.Position;
+        forward.y = 0f;
+        forward = math.normalizesafe(forward);
+        var tangent = new float3(-forward.z, 0f, forward.x);
+        var wave = math.sin(ElapsedTime * 1.3f + entity.Index * 1.7f);
+
+        moveIntent.Direction = math.normalizesafe(forward + tangent * wave * 0.16f, forward);
+        moveIntent.Magnitude = moveSpeed.Value;
+    }
+}
+
+[BurstCompile]
+[UpdateBefore(typeof(EnemyMoveIntentApplySystem))]
+public partial struct EnemyMovementRunnerSystem : ISystem
+{
+    [BurstCompile]
+    public void OnCreate(ref SystemState state)
+    {
+        state.RequireForUpdate<Player>();
+    }
+
+    [BurstCompile]
+    public void OnUpdate(ref SystemState state)
+    {
+        var playerPosition = SystemAPI.GetComponent<LocalTransform>(
+            SystemAPI.GetSingletonEntity<Player>()).Position;
+        state.Dependency = new EnemyMovementRunnerJob
+        {
+            PlayerPosition = playerPosition,
+            ElapsedTime = (float)SystemAPI.Time.ElapsedTime,
+        }.ScheduleParallel(state.Dependency);
+    }
+}
+
+[BurstCompile]
+[WithAll(typeof(Enemy), typeof(EnemyMovementRunner))]
+public partial struct EnemyMovementRunnerJob : IJobEntity
+{
+    public float3 PlayerPosition;
+    public float ElapsedTime;
+
+    private void Execute(
+        Entity entity,
+        in LocalTransform transform,
+        in EnemyMoveSpeed moveSpeed,
+        ref MoveIntent moveIntent)
+    {
+        var forward = PlayerPosition - transform.Position;
+        forward.y = 0f;
+        forward = math.normalizesafe(forward);
+        var tangent = new float3(-forward.z, 0f, forward.x);
+        var scurry = math.sin(ElapsedTime * 4f + entity.Index * 2.1f);
+
+        moveIntent.Direction = math.normalizesafe(forward + tangent * scurry * 0.08f, forward);
+        moveIntent.Magnitude = moveSpeed.Value;
+    }
+}
+
+[BurstCompile]
+[UpdateBefore(typeof(EnemyMoveIntentApplySystem))]
+public partial struct EnemyMovementHeavySystem : ISystem
+{
+    [BurstCompile]
+    public void OnCreate(ref SystemState state)
+    {
+        state.RequireForUpdate<Player>();
+    }
+
+    [BurstCompile]
+    public void OnUpdate(ref SystemState state)
+    {
+        var playerPosition = SystemAPI.GetComponent<LocalTransform>(
+            SystemAPI.GetSingletonEntity<Player>()).Position;
+        state.Dependency = new EnemyMovementHeavyJob
+        {
+            PlayerPosition = playerPosition,
+        }.ScheduleParallel(state.Dependency);
+    }
+}
+
+[BurstCompile]
+[WithAll(typeof(Enemy), typeof(EnemyMovementHeavy))]
+public partial struct EnemyMovementHeavyJob : IJobEntity
+{
+    public float3 PlayerPosition;
+
+    private void Execute(
+        Entity entity,
+        in LocalTransform transform,
+        in EnemyMoveSpeed moveSpeed,
+        ref MoveIntent moveIntent)
+    {
+        var forward = PlayerPosition - transform.Position;
+        forward.y = 0f;
+        forward = math.normalizesafe(forward);
+        var tangent = new float3(-forward.z, 0f, forward.x);
+        var laneOffset = ((entity.Index % 5) - 2) * 0.025f;
+
+        moveIntent.Direction = math.normalizesafe(forward + tangent * laneOffset, forward);
+        moveIntent.Magnitude = moveSpeed.Value;
+    }
+}

@@ -49,12 +49,17 @@ public partial struct AttackRequestSystem : ISystem
                      .WithAll<Player>()
                      .WithEntityAccess())
         {
+            var selectedAttack = input.SelectedAttack == AttackMasterId.None
+                ? ResolveAttackMasterId(ref state, actorEntity)
+                : input.SelectedAttack;
             TryCreateAttackRequest(
                 ref state,
                 actorEntity,
                 cooldown,
-                ResolveAttackMasterId(ref state, actorEntity),
+                selectedAttack,
                 input.IsFire,
+                false,
+                float3.zero,
                 ecb,
                 hasAttackMasters,
                 attackMasters,
@@ -98,6 +103,8 @@ public partial struct AttackRequestSystem : ISystem
                 cooldown,
                 attackMasterId,
                 canFire,
+                true,
+                playerPosition - transform.ValueRO.Position,
                 ecb,
                 hasAttackMasters,
                 attackMasters,
@@ -111,6 +118,8 @@ public partial struct AttackRequestSystem : ISystem
         RefRW<AttackCooldown> cooldown,
         AttackMasterId attackMasterId,
         bool wantsAttack,
+        bool useDirectionOverride,
+        float3 directionOverride,
         EntityCommandBuffer ecb,
         bool hasAttackMasters,
         DynamicBuffer<AttackMasterElement> attackMasters,
@@ -131,6 +140,9 @@ public partial struct AttackRequestSystem : ISystem
         var actorBody = SystemAPI.GetComponent<ActorBody>(actorEntity);
         var actorTransform = SystemAPI.GetComponent<LocalTransform>(actorEntity);
         var canonLtw = SystemAPI.GetComponent<LocalToWorld>(actorBody.Canon);
+        var attackDirection = useDirectionOverride
+            ? FlattenDirection(directionOverride)
+            : GetAttackDirection(canonLtw);
         var team = TeamId.Neutral;
         if (SystemAPI.HasComponent<Team>(actorEntity))
         {
@@ -144,11 +156,17 @@ public partial struct AttackRequestSystem : ISystem
                 break;
 
             case AttackKind.Projectile:
-                CreateProjectileRequest(actorEntity, team, canonLtw, definition, ecb);
+                CreateProjectileRequest(actorEntity, team, canonLtw.Position, attackDirection, definition, ecb);
                 break;
 
             case AttackKind.MeleeArc:
-                CreateMeleeArcRequest(actorEntity, team, actorTransform.Position, canonLtw, definition, ecb);
+                CreateMeleeArcRequest(
+                    actorEntity,
+                    team,
+                    actorTransform.Position,
+                    attackDirection,
+                    definition,
+                    ecb);
                 break;
 
             case AttackKind.Beam:
@@ -177,7 +195,8 @@ public partial struct AttackRequestSystem : ISystem
     private void CreateProjectileRequest(
         Entity actorEntity,
         TeamId team,
-        LocalToWorld canonLtw,
+        float3 position,
+        float3 direction,
         AttackMasterData definition,
         EntityCommandBuffer ecb)
     {
@@ -187,8 +206,8 @@ public partial struct AttackRequestSystem : ISystem
             AttackMasterId = definition.Id,
             Owner = actorEntity,
             Team = team,
-            Position = canonLtw.Position,
-            Direction = GetAttackDirection(canonLtw),
+            Position = position,
+            Direction = direction,
             Speed = definition.ProjectileSpeed,
             Damage = definition.Damage,
             HitRadius = definition.HitRadius,
@@ -225,7 +244,7 @@ public partial struct AttackRequestSystem : ISystem
         Entity actorEntity,
         TeamId team,
         float3 actorPosition,
-        LocalToWorld canonLtw,
+        float3 direction,
         AttackMasterData definition,
         EntityCommandBuffer ecb)
     {
@@ -236,7 +255,7 @@ public partial struct AttackRequestSystem : ISystem
             Owner = actorEntity,
             Team = team,
             Position = actorPosition,
-            Direction = GetAttackDirection(canonLtw),
+            Direction = direction,
             Radius = definition.AreaRadius,
             AngleDegrees = definition.ArcAngleDegrees,
             Damage = definition.Damage,
@@ -256,7 +275,11 @@ public partial struct AttackRequestSystem : ISystem
 
     private static float3 GetAttackDirection(LocalToWorld canonLtw)
     {
-        var direction = canonLtw.Up;
+        return FlattenDirection(canonLtw.Up);
+    }
+
+    private static float3 FlattenDirection(float3 direction)
+    {
         direction.y = 0f;
         return math.normalizesafe(direction, new float3(0f, 0f, 1f));
     }
