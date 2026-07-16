@@ -44,27 +44,108 @@ public partial struct AttackRequestSystem : ISystem
     {
         var input = SystemAPI.GetSingleton<PlayerInput>();
 
-        foreach (var (_, cooldown, actorEntity) in
-                 SystemAPI.Query<RefRO<ActorBody>, RefRW<AttackCooldown>>()
+        foreach (var (_, cooldowns, actorEntity) in
+                 SystemAPI.Query<RefRO<ActorBody>, DynamicBuffer<PlayerAttackCooldown>>()
                      .WithAll<Player>()
                      .WithEntityAccess())
         {
-            var selectedAttack = input.SelectedAttack == AttackMasterId.None
-                ? ResolveAttackMasterId(ref state, actorEntity)
-                : input.SelectedAttack;
-            TryCreateAttackRequest(
+            RequestPlayerAttackSlot(
                 ref state,
                 actorEntity,
-                cooldown,
-                selectedAttack,
+                cooldowns,
+                AttackMasterId.BasicMeleeArc,
+                input.ActiveAttackMask,
                 input.IsFire,
-                false,
-                float3.zero,
+                ecb,
+                hasAttackMasters,
+                attackMasters,
+                deltaTime);
+            RequestPlayerAttackSlot(
+                ref state,
+                actorEntity,
+                cooldowns,
+                AttackMasterId.RapidBolt,
+                input.ActiveAttackMask,
+                input.IsFire,
+                ecb,
+                hasAttackMasters,
+                attackMasters,
+                deltaTime);
+            RequestPlayerAttackSlot(
+                ref state,
+                actorEntity,
+                cooldowns,
+                AttackMasterId.PiercingLance,
+                input.ActiveAttackMask,
+                input.IsFire,
+                ecb,
+                hasAttackMasters,
+                attackMasters,
+                deltaTime);
+            RequestPlayerAttackSlot(
+                ref state,
+                actorEntity,
+                cooldowns,
+                AttackMasterId.ExplosiveOrb,
+                input.ActiveAttackMask,
+                input.IsFire,
                 ecb,
                 hasAttackMasters,
                 attackMasters,
                 deltaTime);
         }
+    }
+
+    private void RequestPlayerAttackSlot(
+        ref SystemState state,
+        Entity actorEntity,
+        DynamicBuffer<PlayerAttackCooldown> cooldowns,
+        AttackMasterId attackMasterId,
+        uint activeAttackMask,
+        bool wantsAttack,
+        EntityCommandBuffer ecb,
+        bool hasAttackMasters,
+        DynamicBuffer<AttackMasterElement> attackMasters,
+        float deltaTime)
+    {
+        var cooldownIndex = FindPlayerAttackCooldown(cooldowns, attackMasterId);
+        if (cooldownIndex < 0)
+        {
+            cooldowns.Add(new PlayerAttackCooldown
+            {
+                AttackMasterId = attackMasterId,
+                Remaining = 0f,
+            });
+            cooldownIndex = cooldowns.Length - 1;
+        }
+
+        var cooldown = cooldowns[cooldownIndex];
+        cooldown.Remaining = math.max(0f, cooldown.Remaining - deltaTime);
+
+        var isEnabled = (activeAttackMask & AttackMask(attackMasterId)) != 0u;
+        if (!isEnabled || !wantsAttack || cooldown.Remaining > 0f)
+        {
+            cooldowns[cooldownIndex] = cooldown;
+            return;
+        }
+
+        var definition = hasAttackMasters
+            ? AttackMasterCatalog.Get(attackMasters, attackMasterId)
+            : AttackMasterCatalog.Get(attackMasterId);
+        ApplyPlayerSkillStats(ref state, actorEntity, ref definition);
+
+        if (CreateResolvedAttackRequest(
+                ref state,
+                actorEntity,
+                definition,
+                false,
+                float3.zero,
+                ecb))
+        {
+            cooldown.Remaining = math.max(0.01f, definition.Cooldown);
+        }
+
+        cooldowns[cooldownIndex] = cooldown;
     }
 
     private void RequestEnemyAttack(
@@ -137,6 +218,26 @@ public partial struct AttackRequestSystem : ISystem
             return;
         }
 
+        if (CreateResolvedAttackRequest(
+                ref state,
+                actorEntity,
+                definition,
+                useDirectionOverride,
+                directionOverride,
+                ecb))
+        {
+            cooldown.ValueRW.Remaining = math.max(0.01f, definition.Cooldown);
+        }
+    }
+
+    private bool CreateResolvedAttackRequest(
+        ref SystemState state,
+        Entity actorEntity,
+        AttackMasterData definition,
+        bool useDirectionOverride,
+        float3 directionOverride,
+        EntityCommandBuffer ecb)
+    {
         var actorBody = SystemAPI.GetComponent<ActorBody>(actorEntity);
         var actorTransform = SystemAPI.GetComponent<LocalTransform>(actorEntity);
         var canonLtw = SystemAPI.GetComponent<LocalToWorld>(actorBody.Canon);
@@ -171,10 +272,10 @@ public partial struct AttackRequestSystem : ISystem
 
             case AttackKind.Beam:
             default:
-                return;
+                return false;
         }
 
-        cooldown.ValueRW.Remaining = math.max(0.01f, definition.Cooldown);
+        return true;
     }
 
     private static void ApplyPlayerSkillStats(
@@ -276,6 +377,26 @@ public partial struct AttackRequestSystem : ISystem
     private static float3 GetAttackDirection(LocalToWorld canonLtw)
     {
         return FlattenDirection(canonLtw.Up);
+    }
+
+    private static int FindPlayerAttackCooldown(
+        DynamicBuffer<PlayerAttackCooldown> cooldowns,
+        AttackMasterId attackMasterId)
+    {
+        for (var i = 0; i < cooldowns.Length; i++)
+        {
+            if (cooldowns[i].AttackMasterId == attackMasterId)
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    private static uint AttackMask(AttackMasterId attackMasterId)
+    {
+        return 1u << (int)attackMasterId;
     }
 
     private static float3 FlattenDirection(float3 direction)

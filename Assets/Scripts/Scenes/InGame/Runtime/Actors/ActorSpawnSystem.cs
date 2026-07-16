@@ -158,9 +158,23 @@ public partial struct ActorSpawnSystem : ISystem
         entityManager.SetComponentData(actorEntity, new AttackCooldown());
         entityManager.AddComponentData(actorEntity, PlayerProgressSystem.CreateInitialProgress(progressMaster));
         entityManager.AddComponentData(actorEntity, new PlayerSkillStats());
+        var attackCooldowns = entityManager.AddBuffer<PlayerAttackCooldown>(actorEntity);
+        attackCooldowns.Add(CreatePlayerAttackCooldown(AttackMasterId.BasicMeleeArc));
+        attackCooldowns.Add(CreatePlayerAttackCooldown(AttackMasterId.RapidBolt));
+        attackCooldowns.Add(CreatePlayerAttackCooldown(AttackMasterId.PiercingLance));
+        attackCooldowns.Add(CreatePlayerAttackCooldown(AttackMasterId.ExplosiveOrb));
 
         var playerColor = new URPMaterialPropertyBaseColor { Value = new float4(1f, 1f, 1f, 1f) };
         SetOrAddColor(entityManager, actorEntity, playerColor);
+    }
+
+    private static PlayerAttackCooldown CreatePlayerAttackCooldown(AttackMasterId attackMasterId)
+    {
+        return new PlayerAttackCooldown
+        {
+            AttackMasterId = attackMasterId,
+            Remaining = 0f,
+        };
     }
 
     private static void AddEnemyComponents(

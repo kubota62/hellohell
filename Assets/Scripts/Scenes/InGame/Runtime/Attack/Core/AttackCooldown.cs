@@ -8,3 +8,12 @@ public struct AttackCooldown : IComponentData
 {
     public float Remaining;
 }
+
+/// <summary>
+/// Playerが複数攻撃を同時に扱うための、攻撃マスタごとの独立クールダウン。
+/// </summary>
+public struct PlayerAttackCooldown : IBufferElementData
+{
+    public AttackMasterId AttackMasterId;
+    public float Remaining;
+}

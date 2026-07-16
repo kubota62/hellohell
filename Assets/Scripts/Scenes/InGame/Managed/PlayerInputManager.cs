@@ -14,7 +14,11 @@ public class PlayerInputManager : MonoBehaviour
     private Entity entity;
     private Camera mainCamera;
     private bool autoAttackEnabled;
-    private AttackMasterId selectedAttack = AttackMasterId.BasicMeleeArc;
+    private uint activeAttackMask =
+        AttackMask(AttackMasterId.BasicMeleeArc) |
+        AttackMask(AttackMasterId.RapidBolt) |
+        AttackMask(AttackMasterId.PiercingLance) |
+        AttackMask(AttackMasterId.ExplosiveOrb);
 
     private void Start()
     {
@@ -39,10 +43,10 @@ public class PlayerInputManager : MonoBehaviour
 
         if (keyboard != null)
         {
-            if (keyboard.digit1Key.wasPressedThisFrame) selectedAttack = AttackMasterId.BasicMeleeArc;
-            if (keyboard.digit2Key.wasPressedThisFrame) selectedAttack = AttackMasterId.RapidBolt;
-            if (keyboard.digit3Key.wasPressedThisFrame) selectedAttack = AttackMasterId.PiercingLance;
-            if (keyboard.digit4Key.wasPressedThisFrame) selectedAttack = AttackMasterId.ExplosiveOrb;
+            if (keyboard.digit1Key.wasPressedThisFrame) ToggleAttack(AttackMasterId.BasicMeleeArc);
+            if (keyboard.digit2Key.wasPressedThisFrame) ToggleAttack(AttackMasterId.RapidBolt);
+            if (keyboard.digit3Key.wasPressedThisFrame) ToggleAttack(AttackMasterId.PiercingLance);
+            if (keyboard.digit4Key.wasPressedThisFrame) ToggleAttack(AttackMasterId.ExplosiveOrb);
         }
 
         var movement = new float2(
@@ -62,8 +66,18 @@ public class PlayerInputManager : MonoBehaviour
             AutoAttackEnabled = autoAttackEnabled,
             Movement = movement,
             AimWorldPosition = aimWorldPosition,
-            SelectedAttack = selectedAttack,
+            ActiveAttackMask = activeAttackMask,
         });
+    }
+
+    private void ToggleAttack(AttackMasterId attackMasterId)
+    {
+        activeAttackMask ^= AttackMask(attackMasterId);
+    }
+
+    private static uint AttackMask(AttackMasterId attackMasterId)
+    {
+        return 1u << (int)attackMasterId;
     }
 
     private bool TryGetAimWorldPosition(Mouse mouse, out float3 aimWorldPosition)
