@@ -22,3 +22,12 @@ public struct EnemyRewardEvent : IComponentData
     public int Experience;
     public int Score;
 }
+
+/// <summary>
+/// 敵の死亡地点に残り、プレイヤーが近づくと吸い寄せられる経験値ドロップ。
+/// </summary>
+public struct ExperiencePickup : IComponentData
+{
+    public int Experience;
+    public int Score;
+}

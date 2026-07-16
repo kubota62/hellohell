@@ -13,6 +13,7 @@ public class PlayerInputManager : MonoBehaviour
     EntityManager entityManager;
     private Entity entity;
     private Camera mainCamera;
+    private bool autoAttackEnabled;
 
     private void Start()
     {
@@ -30,6 +31,11 @@ public class PlayerInputManager : MonoBehaviour
         var keyboard = Keyboard.current;
         var mouse = Mouse.current;
 
+        if (keyboard != null && keyboard.tKey.wasPressedThisFrame)
+        {
+            autoAttackEnabled = !autoAttackEnabled;
+        }
+
         var movement = new float2(
             keyboard == null ? 0f : (keyboard.dKey.isPressed ? 1f : 0f) - (keyboard.aKey.isPressed ? 1f : 0f),
             keyboard == null ? 0f : (keyboard.wKey.isPressed ? 1f : 0f) - (keyboard.sKey.isPressed ? 1f : 0f)
@@ -44,6 +50,7 @@ public class PlayerInputManager : MonoBehaviour
         {
             IsFire = isFire,
             HasAimPosition = hasAimPosition,
+            AutoAttackEnabled = autoAttackEnabled,
             Movement = movement,
             AimWorldPosition = aimWorldPosition,
         });

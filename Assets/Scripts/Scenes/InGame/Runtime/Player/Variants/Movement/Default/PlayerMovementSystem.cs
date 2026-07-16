@@ -81,10 +81,68 @@ public partial struct PlayerMovementJob : IJobEntity
 }
 
 /// <summary>
+/// オート攻撃中は最寄りの生存Enemyを照準位置に設定し、攻撃入力を自動で有効にする。
+/// </summary>
+[UpdateAfter(typeof(PlayerMovementSystem))]
+[UpdateBefore(typeof(PlayerTurretAimSystem))]
+[UpdateBefore(typeof(AttackRequestSystem))]
+public partial struct PlayerAutoAimSystem : ISystem
+{
+    public void OnCreate(ref SystemState state)
+    {
+        state.RequireForUpdate<Player>();
+        state.RequireForUpdate<PlayerInput>();
+    }
+
+    public void OnUpdate(ref SystemState state)
+    {
+        var input = SystemAPI.GetSingletonRW<PlayerInput>();
+        if (!input.ValueRO.AutoAttackEnabled)
+        {
+            return;
+        }
+
+        var playerEntity = SystemAPI.GetSingletonEntity<Player>();
+        var playerPosition = SystemAPI.GetComponent<LocalTransform>(playerEntity).Position;
+        var nearestDistanceSq = float.MaxValue;
+        var targetPosition = float3.zero;
+        var foundTarget = false;
+
+        foreach (var (transform, health) in
+                 SystemAPI.Query<RefRO<LocalTransform>, RefRO<Health>>()
+                     .WithAll<Enemy, GameplayActive>())
+        {
+            if (health.ValueRO.Current <= 0)
+            {
+                continue;
+            }
+
+            var distanceSq = math.distancesq(playerPosition, transform.ValueRO.Position);
+            if (distanceSq >= nearestDistanceSq)
+            {
+                continue;
+            }
+
+            nearestDistanceSq = distanceSq;
+            targetPosition = transform.ValueRO.Position;
+            foundTarget = true;
+        }
+
+        input.ValueRW.IsFire = foundTarget;
+        input.ValueRW.HasAimPosition = foundTarget;
+        if (foundTarget)
+        {
+            input.ValueRW.AimWorldPosition = targetPosition;
+        }
+    }
+}
+
+/// <summary>
 /// プレイヤー本体の向きとは独立して、タレットをマウスのワールド位置へ向ける。
 /// ActorBodyAuthoring上でタレットは本体直下の子Transformとして設定する。
 /// </summary>
 [UpdateAfter(typeof(PlayerMovementSystem))]
+[UpdateAfter(typeof(PlayerAutoAimSystem))]
 [UpdateBefore(typeof(TransformSystemGroup))]
 public partial struct PlayerTurretAimSystem : ISystem
 {

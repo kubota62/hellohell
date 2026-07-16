@@ -1,5 +1,8 @@
 using Unity.Burst;
 using Unity.Entities;
+using Unity.Mathematics;
+using Unity.Rendering;
+using Unity.Transforms;
 
 /// <summary>
 /// Health が 0 以下になった ActorBody をゲーム世界から除去するシステム。
@@ -10,15 +13,22 @@ using Unity.Entities;
 public partial struct ActorDeathSystem : ISystem
 {
     [BurstCompile]
+    public void OnCreate(ref SystemState state)
+    {
+        state.RequireForUpdate<Config>();
+        state.RequireForUpdate<EndSimulationEntityCommandBufferSystem.Singleton>();
+    }
+
+    [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
         var ecb = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>()
             .CreateCommandBuffer(state.WorldUnmanaged);
         var rewardLookup = SystemAPI.GetComponentLookup<EnemyReward>(true);
-        var enemyTypeLookup = SystemAPI.GetComponentLookup<EnemyTypeId>(true);
+        var config = SystemAPI.GetSingleton<Config>();
 
-        foreach (var (health, entity) in
-                 SystemAPI.Query<RefRO<Health>>()
+        foreach (var (health, transform, entity) in
+                 SystemAPI.Query<RefRO<Health>, RefRO<LocalTransform>>()
                      .WithAll<ActorBody>()
                      .WithNone<Player>()
                      .WithEntityAccess())
@@ -31,16 +41,24 @@ public partial struct ActorDeathSystem : ISystem
             if (rewardLookup.HasComponent(entity))
             {
                 var reward = rewardLookup[entity];
-                var enemyTypeId = enemyTypeLookup.HasComponent(entity)
-                    ? enemyTypeLookup[entity].Value
-                    : 0;
-                var rewardEventEntity = ecb.CreateEntity();
-                ecb.AddComponent(rewardEventEntity, new EnemyRewardEvent
+                var pickupEntity = ecb.Instantiate(config.ProjectilePrefab);
+                ecb.SetComponent(pickupEntity, LocalTransform.FromPositionRotationScale(
+                    transform.ValueRO.Position + new float3(0f, 0.35f, 0f),
+                    quaternion.identity,
+                    0.45f));
+                ecb.SetComponent(pickupEntity, new URPMaterialPropertyBaseColor
                 {
-                    EnemyTypeId = enemyTypeId,
+                    Value = new float4(0.2f, 1f, 0.35f, 1f),
+                });
+                ecb.AddComponent(pickupEntity, new ExperiencePickup
+                {
                     Experience = reward.Experience,
                     Score = reward.Score,
                 });
+                ecb.RemoveComponent<ProjectileMotion>(pickupEntity);
+                ecb.RemoveComponent<Projectile>(pickupEntity);
+                ecb.RemoveComponent<Lifetime>(pickupEntity);
+                ecb.RemoveComponent<GameplayActive>(pickupEntity);
             }
 
             ecb.DestroyEntity(entity);
