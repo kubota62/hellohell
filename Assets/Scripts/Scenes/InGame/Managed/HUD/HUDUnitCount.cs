@@ -39,7 +39,7 @@ public class HUDUnitCount : MonoBehaviour
         bool isGameOver,
         bool autoAttackEnabled,
         PlayerSkillStats skillStats,
-        string skillNotification)
+        string statusNotification)
     {
         var totalSeconds = Mathf.Max(0, Mathf.FloorToInt(elapsedSeconds));
         var minutes = totalSeconds / 60;
@@ -52,9 +52,9 @@ public class HUDUnitCount : MonoBehaviour
             $"TIME {minutes:00}:{seconds:00}   THREAT {threatLevel}" +
             (isGameOver ? "\nDEFEATED   PRESS R TO RETRY" : string.Empty);
         bulletText.text =
-            (string.IsNullOrEmpty(skillNotification)
+            (string.IsNullOrEmpty(statusNotification)
                 ? string.Empty
-                : $"{skillNotification}\n") +
+                : $"{statusNotification}\n") +
             $"ENEMIES {Mathf.Max(0, unitNum - 1)}   ELITES {Mathf.Max(0, eliteNum)}   " +
             $"SHOTS {bulletNum}   ATTACK {attackMode}\n" +
             $"BUILD  DMG L{skillStats.DamageLevel} x{1f + skillStats.DamageMultiplierAdd:0.00}   " +
