@@ -21,6 +21,12 @@ public partial struct EnemyMovementSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
+        if (SystemAPI.TryGetSingleton<RunState>(out var runState) &&
+            runState.IsGameOver != 0)
+        {
+            return;
+        }
+
         var playerEntity = SystemAPI.GetSingletonEntity<Player>();
         var playerPosition = SystemAPI.GetComponent<LocalTransform>(playerEntity).Position;
 

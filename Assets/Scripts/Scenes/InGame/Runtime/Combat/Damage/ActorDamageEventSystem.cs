@@ -19,6 +19,12 @@ public partial struct ActorDamageEventSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
+        if (SystemAPI.TryGetSingleton<RunState>(out var runState) &&
+            runState.IsGameOver != 0)
+        {
+            return;
+        }
+
         var ecb = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
             .CreateCommandBuffer(state.WorldUnmanaged);
 

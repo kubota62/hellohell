@@ -20,8 +20,10 @@ public class HUDBridge : MonoBehaviour
     int health = 1;
     int maxHealth = 1;
     float elapsedSeconds;
+    float durationSeconds = 600f;
     int threatLevel = 1;
     bool isGameOver;
+    bool isVictory;
     bool autoAttackEnabled;
     PlayerSkillStats skillStats;
     string statusNotification;
@@ -98,8 +100,10 @@ public class HUDBridge : MonoBehaviour
         int nextHealth,
         int nextMaxHealth,
         float nextElapsedSeconds,
+        float nextDurationSeconds,
         int nextThreatLevel,
         bool nextIsGameOver,
+        bool nextIsVictory,
         bool nextAutoAttackEnabled,
         PlayerSkillStats nextSkillStats)
     {
@@ -110,6 +114,7 @@ public class HUDBridge : MonoBehaviour
         health = nextHealth;
         maxHealth = nextMaxHealth;
         elapsedSeconds = nextElapsedSeconds;
+        durationSeconds = nextDurationSeconds;
         if (nextThreatLevel > threatLevel)
         {
             statusNotification = $"THREAT RISING!  LEVEL {nextThreatLevel}";
@@ -118,6 +123,7 @@ public class HUDBridge : MonoBehaviour
 
         threatLevel = nextThreatLevel;
         isGameOver = nextIsGameOver;
+        isVictory = nextIsVictory;
         autoAttackEnabled = nextAutoAttackEnabled;
         skillStats = nextSkillStats;
         Refresh();
@@ -154,8 +160,10 @@ public class HUDBridge : MonoBehaviour
             health,
             maxHealth,
             elapsedSeconds,
+            durationSeconds,
             threatLevel,
             isGameOver,
+            isVictory,
             autoAttackEnabled,
             skillStats,
             statusNotification);

@@ -23,6 +23,12 @@ public partial struct PlayerMovementSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
+        if (SystemAPI.TryGetSingleton<RunState>(out var runState) &&
+            runState.IsGameOver != 0)
+        {
+            return;
+        }
+
         var input = SystemAPI.GetSingleton<PlayerInput>();
         if (math.lengthsq(input.Movement) < 0.0001f)
         {

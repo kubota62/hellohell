@@ -46,8 +46,10 @@ public class HUDUnitCount : MonoBehaviour
         int health,
         int maxHealth,
         float elapsedSeconds,
+        float durationSeconds,
         int threatLevel,
         bool isGameOver,
+        bool isVictory,
         bool autoAttackEnabled,
         PlayerSkillStats skillStats,
         string statusNotification)
@@ -55,6 +57,11 @@ public class HUDUnitCount : MonoBehaviour
         var totalSeconds = Mathf.Max(0, Mathf.FloorToInt(elapsedSeconds));
         var minutes = totalSeconds / 60;
         var seconds = totalSeconds % 60;
+        var remainingTotalSeconds = Mathf.Max(
+            0,
+            Mathf.CeilToInt(durationSeconds - elapsedSeconds));
+        var remainingMinutes = remainingTotalSeconds / 60;
+        var remainingSeconds = remainingTotalSeconds % 60;
         var attackMode = autoAttackEnabled ? "AUTO" : "MANUAL";
         UpdateChampionHealthBar(
             championNum,
@@ -64,8 +71,13 @@ public class HUDUnitCount : MonoBehaviour
         unitText.text =
             $"LV {level}   XP {experience}/{experienceToNextLevel}\n" +
             $"HP {Mathf.Max(0, health)}/{Mathf.Max(1, maxHealth)}   SCORE {score}\n" +
-            $"TIME {minutes:00}:{seconds:00}   THREAT {threatLevel}" +
-            (isGameOver ? "\nDEFEATED   PRESS R TO RETRY" : string.Empty);
+            $"TIME {minutes:00}:{seconds:00}   LEFT {remainingMinutes:00}:{remainingSeconds:00}   " +
+            $"THREAT {threatLevel}" +
+            (isGameOver
+                ? isVictory
+                    ? "\nVICTORY!   PRESS R TO REPLAY"
+                    : "\nDEFEATED   PRESS R TO RETRY"
+                : string.Empty);
         bulletText.text =
             (string.IsNullOrEmpty(statusNotification)
                 ? string.Empty
