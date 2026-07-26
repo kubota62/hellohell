@@ -2,6 +2,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Unity Input Systemの状態を、ECSのPlayerInput Singletonへ同期する。
@@ -11,9 +12,11 @@ public class PlayerInputManager : MonoBehaviour
     private World world;
     private EntityManager entityManager;
     private Entity inputEntity;
+    private EntityQuery runStateQuery;
     private Camera mainCamera;
     private bool autoAttackEnabled;
     private bool hasInputEntity;
+    private bool hasRunStateQuery;
     private uint activeAttackMask = AttackMasterIdUtility.CreatePlayerDefaultMask();
 
     private void Start()
@@ -27,12 +30,23 @@ public class PlayerInputManager : MonoBehaviour
 
         entityManager = world.EntityManager;
         inputEntity = entityManager.CreateEntity(typeof(PlayerInput));
+        runStateQuery = entityManager.CreateEntityQuery(
+            ComponentType.ReadOnly<RunState>());
+        hasRunStateQuery = true;
         hasInputEntity = true;
         mainCamera = Camera.main;
     }
 
     private void OnDestroy()
     {
+        if (world != null &&
+            world.IsCreated &&
+            hasRunStateQuery)
+        {
+            runStateQuery.Dispose();
+            hasRunStateQuery = false;
+        }
+
         if (hasInputEntity &&
             world != null &&
             world.IsCreated &&
@@ -52,6 +66,30 @@ public class PlayerInputManager : MonoBehaviour
 
         var keyboard = Keyboard.current;
         var mouse = Mouse.current;
+        if (IsGameOver())
+        {
+            entityManager.SetComponentData(inputEntity, new PlayerInput
+            {
+                AutoAttackEnabled = autoAttackEnabled,
+                ActiveAttackMask = activeAttackMask,
+            });
+
+            if (keyboard != null && keyboard.rKey.wasPressedThisFrame)
+            {
+                enabled = false;
+                var activeScene = SceneManager.GetActiveScene();
+                if (activeScene.buildIndex >= 0)
+                {
+                    SceneManager.LoadScene(activeScene.buildIndex);
+                }
+                else
+                {
+                    SceneManager.LoadScene(activeScene.name);
+                }
+            }
+
+            return;
+        }
 
         UpdateAttackToggles(keyboard);
         var movement = ReadMovement(keyboard);
@@ -68,6 +106,12 @@ public class PlayerInputManager : MonoBehaviour
             AimWorldPosition = aimWorldPosition,
             ActiveAttackMask = activeAttackMask,
         });
+    }
+
+    private bool IsGameOver()
+    {
+        return !runStateQuery.IsEmptyIgnoreFilter &&
+            runStateQuery.GetSingleton<RunState>().IsGameOver != 0;
     }
 
     private void UpdateAttackToggles(Keyboard keyboard)
