@@ -14,6 +14,12 @@ public partial struct EnemyMoveIntentApplySystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
+        if (SystemAPI.TryGetSingleton<RunState>(out var runState) &&
+            runState.IsGameOver != 0)
+        {
+            return;
+        }
+
         var job = new EnemyMoveIntentApplyJob
         {
             DeltaTime = SystemAPI.Time.DeltaTime

@@ -12,6 +12,7 @@ public partial struct ActorSpawnSystem : ISystem
 {
     private const int MaximumActiveEnemies = 350;
     private const float ChampionSpawnInterval = 90f;
+    private const float RunDurationSeconds = 600f;
 
     private Random random;
     private int spawnedActorCount;
@@ -32,6 +33,7 @@ public partial struct ActorSpawnSystem : ISystem
         var runStateEntity = state.EntityManager.CreateEntity();
         state.EntityManager.AddComponentData(runStateEntity, new RunState
         {
+            DurationSeconds = RunDurationSeconds,
             ThreatLevel = 1,
         });
 
@@ -50,6 +52,15 @@ public partial struct ActorSpawnSystem : ISystem
         runState.ElapsedSeconds += SystemAPI.Time.DeltaTime;
         runState.ThreatLevel = 1 +
             (int)math.floor(runState.ElapsedSeconds / 30f);
+
+        if (runState.ElapsedSeconds >= runState.DurationSeconds)
+        {
+            runState.ElapsedSeconds = runState.DurationSeconds;
+            runState.IsVictory = 1;
+            runState.IsGameOver = 1;
+            SystemAPI.SetSingleton(runState);
+            return;
+        }
 
         if (spawnedActorCount == 0)
         {

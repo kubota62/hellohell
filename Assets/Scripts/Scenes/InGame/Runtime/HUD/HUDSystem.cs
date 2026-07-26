@@ -69,8 +69,10 @@ public partial struct HUDSystem : ISystem
                 health.Current,
                 health.Max,
                 runState.ElapsedSeconds,
+                runState.DurationSeconds,
                 runState.ThreatLevel,
                 runState.IsGameOver != 0,
+                runState.IsVictory != 0,
                 autoAttackEnabled,
                 skillStats);
         }

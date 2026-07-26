@@ -21,6 +21,12 @@ public partial struct ProjectileMovementSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
+        if (SystemAPI.TryGetSingleton<RunState>(out var runState) &&
+            runState.IsGameOver != 0)
+        {
+            return;
+        }
+
         var projectileJob = new ProjectileMovementJob
         {
             DeltaTime = SystemAPI.Time.DeltaTime
