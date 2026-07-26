@@ -96,6 +96,14 @@ public partial struct PlayerAutoSkillSystem : ISystem
                     skill.MaxLevel,
                     skill.EffectPerLevel);
 
+            case PlayerSkillKind.Regeneration:
+                return AddSkillLevel(
+                    ref stats.RegenerationLevel,
+                    ref stats.HealthRegenerationPerSecond,
+                    addLevel,
+                    skill.MaxLevel,
+                    skill.EffectPerLevel);
+
             case PlayerSkillKind.Damage:
             default:
                 return AddSkillLevel(
@@ -157,6 +165,9 @@ public partial struct PlayerAutoSkillSystem : ISystem
             case PlayerSkillKind.Area:
                 return stats.AreaLevel;
 
+            case PlayerSkillKind.Regeneration:
+                return stats.RegenerationLevel;
+
             case PlayerSkillKind.Damage:
             default:
                 return stats.DamageLevel;
@@ -182,5 +193,51 @@ public partial struct PlayerAutoSkillSystem : ISystem
     public static float GetAreaMultiplier(in PlayerSkillStats stats)
     {
         return 1f + stats.AreaMultiplierAdd;
+    }
+}
+
+/// <summary>
+/// レベルアップで得た生命再生をプレイヤーのHealthへ反映する。
+/// 小数回復量を蓄積し、1以上になった時点で整数HPへ変換する。
+/// </summary>
+[BurstCompile]
+[UpdateAfter(typeof(PlayerAutoSkillSystem))]
+public partial struct PlayerHealthRegenerationSystem : ISystem
+{
+    private float accumulatedHealing;
+
+    [BurstCompile]
+    public void OnUpdate(ref SystemState state)
+    {
+        foreach (var (health, stats) in
+                 SystemAPI.Query<RefRW<Health>, RefRO<PlayerSkillStats>>()
+                     .WithAll<Player>())
+        {
+            if (health.ValueRO.Current >= health.ValueRO.Max)
+            {
+                accumulatedHealing = 0f;
+                continue;
+            }
+
+            var regeneration = math.max(
+                0f,
+                stats.ValueRO.HealthRegenerationPerSecond);
+            if (regeneration <= 0f)
+            {
+                continue;
+            }
+
+            accumulatedHealing += regeneration * SystemAPI.Time.DeltaTime;
+            var healing = (int)math.floor(accumulatedHealing);
+            if (healing <= 0)
+            {
+                continue;
+            }
+
+            var value = health.ValueRO;
+            value.Current = math.min(value.Max, value.Current + healing);
+            health.ValueRW = value;
+            accumulatedHealing -= healing;
+        }
     }
 }

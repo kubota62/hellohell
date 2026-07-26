@@ -35,6 +35,14 @@ public static class PlayerSkillMasterCatalog
                     effectPerLevel: 0.08f,
                     weight: 1);
 
+            case PlayerSkillMasterId.RegenerationBoost:
+                return Create(
+                    PlayerSkillMasterId.RegenerationBoost,
+                    PlayerSkillKind.Regeneration,
+                    maxLevel: 10,
+                    effectPerLevel: 0.4f,
+                    weight: 1);
+
             case PlayerSkillMasterId.DamageBoost:
             default:
                 return Create(
@@ -105,10 +113,10 @@ public static class PlayerSkillMasterCatalog
 
     public static PlayerSkillMasterData GetByFallbackOrder(int pickIndex, PlayerSkillStats stats)
     {
-        var startIndex = (pickIndex < 0 ? 0 : pickIndex) % 4;
-        for (var i = 0; i < 4; i++)
+        var startIndex = (pickIndex < 0 ? 0 : pickIndex) % 5;
+        for (var i = 0; i < 5; i++)
         {
-            var id = GetFallbackId((startIndex + i) % 4);
+            var id = GetFallbackId((startIndex + i) % 5);
             var master = Get(id);
             if (CanApply(master, stats))
             {
@@ -131,6 +139,9 @@ public static class PlayerSkillMasterCatalog
 
             case 3:
                 return PlayerSkillMasterId.AreaBoost;
+
+            case 4:
+                return PlayerSkillMasterId.RegenerationBoost;
 
             case 0:
             default:
@@ -160,6 +171,9 @@ public static class PlayerSkillMasterCatalog
 
             case PlayerSkillKind.Area:
                 return stats.AreaLevel;
+
+            case PlayerSkillKind.Regeneration:
+                return stats.RegenerationLevel;
 
             case PlayerSkillKind.Damage:
             default:
