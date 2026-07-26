@@ -13,6 +13,11 @@ public class HUDBridge : MonoBehaviour
     int experience;
     int experienceToNextLevel = 1;
     int score;
+    int health = 1;
+    int maxHealth = 1;
+    float elapsedSeconds;
+    int threatLevel = 1;
+    bool autoAttackEnabled;
 
     void Awake()
     {
@@ -31,17 +36,42 @@ public class HUDBridge : MonoBehaviour
         Refresh();
     }
 
-    public void SetPlayerProgress(int nextLevel, int nextExperience, int nextExperienceToNextLevel, int nextScore)
+    public void SetPlayerProgress(
+        int nextLevel,
+        int nextExperience,
+        int nextExperienceToNextLevel,
+        int nextScore,
+        int nextHealth,
+        int nextMaxHealth,
+        float nextElapsedSeconds,
+        int nextThreatLevel,
+        bool nextAutoAttackEnabled)
     {
         level = nextLevel;
         experience = nextExperience;
         experienceToNextLevel = nextExperienceToNextLevel;
         score = nextScore;
+        health = nextHealth;
+        maxHealth = nextMaxHealth;
+        elapsedSeconds = nextElapsedSeconds;
+        threatLevel = nextThreatLevel;
+        autoAttackEnabled = nextAutoAttackEnabled;
         Refresh();
     }
 
     void Refresh()
     {
-        unitCount.SetCount(actorCount, projectileCount, level, experience, experienceToNextLevel, score);
+        unitCount.SetCount(
+            actorCount,
+            projectileCount,
+            level,
+            experience,
+            experienceToNextLevel,
+            score,
+            health,
+            maxHealth,
+            elapsedSeconds,
+            threatLevel,
+            autoAttackEnabled);
     }
 }

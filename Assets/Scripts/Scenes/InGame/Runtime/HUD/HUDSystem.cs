@@ -31,11 +31,30 @@ public partial struct HUDSystem : ISystem
 
         if (SystemAPI.TryGetSingleton<PlayerProgress>(out var progress))
         {
+            var health = new Health { Max = 1, Current = 1 };
+            if (SystemAPI.TryGetSingletonEntity<Player>(out var playerEntity) &&
+                SystemAPI.HasComponent<Health>(playerEntity))
+            {
+                health = SystemAPI.GetComponent<Health>(playerEntity);
+            }
+
+            var runState = SystemAPI.TryGetSingleton<RunState>(out var currentRun)
+                ? currentRun
+                : new RunState { ThreatLevel = 1 };
+            var autoAttackEnabled =
+                SystemAPI.TryGetSingleton<PlayerInput>(out var input) &&
+                input.AutoAttackEnabled;
+
             hudBridge.SetPlayerProgress(
                 progress.Level,
                 progress.Experience,
                 progress.ExperienceToNextLevel,
-                progress.Score);
+                progress.Score,
+                health.Current,
+                health.Max,
+                runState.ElapsedSeconds,
+                runState.ThreatLevel,
+                autoAttackEnabled);
         }
     }
 }
