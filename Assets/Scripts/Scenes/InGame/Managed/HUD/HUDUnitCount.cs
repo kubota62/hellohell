@@ -16,6 +16,8 @@ public class HUDUnitCount : MonoBehaviour
     GameObject championHealthRoot;
     RectTransform championHealthFill;
     TMP_Text championHealthLabel;
+    GameObject runResultRoot;
+    TMP_Text runResultLabel;
 
     void Awake()
     {
@@ -30,6 +32,7 @@ public class HUDUnitCount : MonoBehaviour
             new Vector2(1400f, 140f),
             22f);
         CreateChampionHealthBar();
+        CreateRunResultOverlay();
     }
 
     public void SetCount(
@@ -67,6 +70,14 @@ public class HUDUnitCount : MonoBehaviour
             championNum,
             championCurrentHealth,
             championMaxHealth);
+        UpdateRunResultOverlay(
+            isGameOver,
+            isVictory,
+            minutes,
+            seconds,
+            level,
+            score,
+            threatLevel);
 
         unitText.text =
             $"LV {level}   XP {experience}/{experienceToNextLevel}\n" +
@@ -90,6 +101,85 @@ public class HUDUnitCount : MonoBehaviour
             $"AREA L{skillStats.AreaLevel} x{1f + skillStats.AreaMultiplierAdd:0.00}\n" +
             $"MOVE L{skillStats.MoveSpeedLevel} x{1f + skillStats.MoveSpeedMultiplierAdd:0.00}   " +
             $"REGEN L{skillStats.RegenerationLevel} {skillStats.HealthRegenerationPerSecond:0.0}/s";
+    }
+
+    void CreateRunResultOverlay()
+    {
+        runResultRoot = new GameObject(
+            "Run Result Overlay",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(Image));
+        runResultRoot.layer = gameObject.layer;
+        runResultRoot.transform.SetParent(transform, false);
+
+        var rootRect = runResultRoot.GetComponent<RectTransform>();
+        rootRect.anchorMin = new Vector2(0.5f, 0.5f);
+        rootRect.anchorMax = new Vector2(0.5f, 0.5f);
+        rootRect.pivot = new Vector2(0.5f, 0.5f);
+        rootRect.anchoredPosition = Vector2.zero;
+        rootRect.sizeDelta = new Vector2(680f, 280f);
+
+        var background = runResultRoot.GetComponent<Image>();
+        background.color = new Color(0.025f, 0.02f, 0.035f, 0.92f);
+        background.raycastTarget = false;
+
+        var labelObject = new GameObject(
+            "Result",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(TextMeshProUGUI));
+        labelObject.layer = gameObject.layer;
+        labelObject.transform.SetParent(runResultRoot.transform, false);
+
+        var labelRect = labelObject.GetComponent<RectTransform>();
+        labelRect.anchorMin = Vector2.zero;
+        labelRect.anchorMax = Vector2.one;
+        labelRect.offsetMin = new Vector2(28f, 24f);
+        labelRect.offsetMax = new Vector2(-28f, -24f);
+
+        runResultLabel = labelObject.GetComponent<TextMeshProUGUI>();
+        if (unitText != null)
+        {
+            runResultLabel.font = unitText.font;
+        }
+        runResultLabel.alignment = TextAlignmentOptions.Center;
+        runResultLabel.fontStyle = FontStyles.Bold;
+        runResultLabel.fontSize = 30f;
+        runResultLabel.color = Color.white;
+        runResultLabel.textWrappingMode = TextWrappingModes.NoWrap;
+        runResultLabel.raycastTarget = false;
+
+        runResultRoot.SetActive(false);
+    }
+
+    void UpdateRunResultOverlay(
+        bool isGameOver,
+        bool isVictory,
+        int minutes,
+        int seconds,
+        int level,
+        int score,
+        int threatLevel)
+    {
+        if (runResultRoot == null)
+        {
+            return;
+        }
+
+        runResultRoot.SetActive(isGameOver);
+        if (!isGameOver)
+        {
+            return;
+        }
+
+        var title = isVictory ? "VICTORY" : "DEFEATED";
+        var titleColor = isVictory ? "#FFD75A" : "#FF6767";
+        runResultLabel.text =
+            $"<color={titleColor}><size=52>{title}</size></color>\n" +
+            $"SURVIVED  {minutes:00}:{seconds:00}    LEVEL  {level}\n" +
+            $"SCORE  {score}    THREAT  {threatLevel}\n" +
+            "<size=24>PRESS R TO PLAY AGAIN</size>";
     }
 
     void CreateChampionHealthBar()
