@@ -9,6 +9,7 @@ public class HUDBridge : MonoBehaviour
 
     int actorCount;
     int projectileCount;
+    int eliteCount;
     int level = 1;
     int experience;
     int experienceToNextLevel = 1;
@@ -33,6 +34,12 @@ public class HUDBridge : MonoBehaviour
     public void SetProjectileCount(int count)
     {
         projectileCount = count;
+        Refresh();
+    }
+
+    public void SetEliteCount(int count)
+    {
+        eliteCount = count;
         Refresh();
     }
 
@@ -64,6 +71,7 @@ public class HUDBridge : MonoBehaviour
         unitCount.SetCount(
             actorCount,
             projectileCount,
+            eliteCount,
             level,
             experience,
             experienceToNextLevel,

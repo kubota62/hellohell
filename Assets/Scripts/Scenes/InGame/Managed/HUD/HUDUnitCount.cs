@@ -19,6 +19,7 @@ public class HUDUnitCount : MonoBehaviour
     public void SetCount(
         int unitNum,
         int bulletNum,
+        int eliteNum,
         int level,
         int experience,
         int experienceToNextLevel,
@@ -39,7 +40,8 @@ public class HUDUnitCount : MonoBehaviour
             $"HP {Mathf.Max(0, health)}/{Mathf.Max(1, maxHealth)}   SCORE {score}\n" +
             $"TIME {minutes:00}:{seconds:00}   THREAT {threatLevel}";
         bulletText.text =
-            $"ENEMIES {Mathf.Max(0, unitNum - 1)}   SHOTS {bulletNum}   ATTACK {attackMode}";
+            $"ENEMIES {Mathf.Max(0, unitNum - 1)}   ELITES {Mathf.Max(0, eliteNum)}   " +
+            $"SHOTS {bulletNum}   ATTACK {attackMode}";
     }
 
     static void ConfigureText(TMP_Text text)

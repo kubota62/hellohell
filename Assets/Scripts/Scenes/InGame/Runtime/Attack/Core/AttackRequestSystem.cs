@@ -137,6 +137,7 @@ public partial struct AttackRequestSystem : ISystem
                 hasAttackMasters,
                 attackMasters,
                 attackMasterId);
+            ApplyEnemyModifiers(entityManager, actorEntity, ref definition);
             if (CreateAttackRequest(
                     entityManager,
                     actorEntity,
@@ -182,6 +183,24 @@ public partial struct AttackRequestSystem : ISystem
         definition.AreaRadius *= areaMultiplier;
         definition.ImpactAreaRadius *= areaMultiplier;
         definition.Scale *= areaMultiplier;
+    }
+
+    private static void ApplyEnemyModifiers(
+        EntityManager entityManager,
+        Entity actorEntity,
+        ref AttackMasterData definition)
+    {
+        if (!entityManager.HasComponent<EliteEnemy>(actorEntity))
+        {
+            return;
+        }
+
+        definition.Damage = math.max(1, definition.Damage * 2);
+        definition.Cooldown = math.max(0.05f, definition.Cooldown * 0.8f);
+        definition.HitRadius *= 1.2f;
+        definition.AreaRadius *= 1.2f;
+        definition.ImpactAreaRadius *= 1.2f;
+        definition.Scale *= 1.2f;
     }
 
     private static bool CreateAttackRequest(

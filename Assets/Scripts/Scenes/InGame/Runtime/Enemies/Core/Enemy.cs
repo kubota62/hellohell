@@ -8,3 +8,10 @@ using Unity.Entities;
 public struct Enemy : IComponentData
 {
 }
+
+/// <summary>
+/// 通常敵より高い能力と報酬を持つ、ラン中の節目となる強敵。
+/// </summary>
+public struct EliteEnemy : IComponentData
+{
+}
