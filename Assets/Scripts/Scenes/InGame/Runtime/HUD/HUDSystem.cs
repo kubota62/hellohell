@@ -13,13 +13,18 @@ public partial struct HUDSystem : ISystem
     EntityQuery actorCountQuery;
     EntityQuery projectileCountQuery;
     EntityQuery eliteCountQuery;
+    EntityQuery championCountQuery;
 
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
         actorCountQuery = SystemAPI.QueryBuilder().WithAll<ActorBody>().Build();
         projectileCountQuery = SystemAPI.QueryBuilder().WithAll<Projectile, GameplayActive>().Build();
-        eliteCountQuery = SystemAPI.QueryBuilder().WithAll<EliteEnemy, GameplayActive>().Build();
+        eliteCountQuery = SystemAPI.QueryBuilder()
+            .WithAll<EliteEnemy, GameplayActive>()
+            .WithNone<ChampionEnemy>()
+            .Build();
+        championCountQuery = SystemAPI.QueryBuilder().WithAll<ChampionEnemy, GameplayActive>().Build();
     }
 
     public void OnUpdate(ref SystemState state)
@@ -69,6 +74,8 @@ public partial struct HUDSystem : ISystem
                 autoAttackEnabled,
                 skillStats);
         }
+
+        hudBridge.SetChampionCount(championCountQuery.CalculateEntityCount());
     }
 
     private void ConsumeSkillAppliedEvents(

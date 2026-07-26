@@ -11,9 +11,11 @@ using Random = Unity.Mathematics.Random;
 public partial struct ActorSpawnSystem : ISystem
 {
     private const int MaximumActiveEnemies = 350;
+    private const float ChampionSpawnInterval = 90f;
 
     private Random random;
     private int spawnedActorCount;
+    private int championWavesSpawned;
     private float enemySpawnTimer;
     private EntityQuery activeEnemyQuery;
 
@@ -21,6 +23,7 @@ public partial struct ActorSpawnSystem : ISystem
     {
         random = new Random(123);
         spawnedActorCount = 0;
+        championWavesSpawned = 0;
         enemySpawnTimer = 0f;
         activeEnemyQuery = SystemAPI.QueryBuilder()
             .WithAll<Enemy, GameplayActive>()
@@ -64,6 +67,28 @@ public partial struct ActorSpawnSystem : ISystem
 
         var spawnMaster = ResolveSpawnMaster(ref state);
         enemySpawnTimer += SystemAPI.Time.DeltaTime;
+        var availableSlots = MaximumActiveEnemies -
+            activeEnemyQuery.CalculateEntityCount();
+        var championWave = (int)math.floor(
+            runState.ElapsedSeconds / ChampionSpawnInterval);
+        if (championWave > championWavesSpawned && availableSlots > 0)
+        {
+            SpawnActor(
+                ref state,
+                false,
+                GetEnemySpawnPosition(ref state, spawnMaster),
+                runState.ElapsedSeconds,
+                runState.ThreatLevel,
+                isElite: true,
+                isChampion: true);
+            spawnedActorCount++;
+            runState.EnemiesSpawned++;
+            championWavesSpawned = championWave;
+            enemySpawnTimer = 0f;
+            SystemAPI.SetSingleton(runState);
+            return;
+        }
+
         var spawnInterval = math.max(
             0.12f,
             spawnMaster.SpawnInterval /
@@ -74,8 +99,6 @@ public partial struct ActorSpawnSystem : ISystem
             return;
         }
 
-        var availableSlots = MaximumActiveEnemies -
-            activeEnemyQuery.CalculateEntityCount();
         if (availableSlots <= 0)
         {
             enemySpawnTimer = 0f;
@@ -112,7 +135,8 @@ public partial struct ActorSpawnSystem : ISystem
         float3 position,
         float elapsedSeconds,
         int threatLevel,
-        bool isElite = false)
+        bool isElite = false,
+        bool isChampion = false)
     {
         var entityManager = state.EntityManager;
         var config = SystemAPI.GetSingleton<Config>();
@@ -139,7 +163,8 @@ public partial struct ActorSpawnSystem : ISystem
                 actorEntity,
                 ResolveEnemyMaster(ref state, threatLevel),
                 elapsedSeconds,
-                isElite);
+                isElite,
+                isChampion);
         }
 
         ApplyActorColorToChildren(entityManager, actorEntity);
@@ -220,16 +245,18 @@ public partial struct ActorSpawnSystem : ISystem
         Entity actorEntity,
         EnemyMasterData definition,
         float elapsedSeconds,
-        bool isElite)
+        bool isElite,
+        bool isChampion)
     {
+        isElite |= isChampion;
         var minAttackRange = math.max(0f, definition.Combat.MinAttackRange);
         var healthMultiplier =
             (1f + math.min(4f, elapsedSeconds / 150f)) *
-            (isElite ? 4f : 1f);
+            (isChampion ? 10f : isElite ? 4f : 1f);
         var speedMultiplier =
             (1f + math.min(0.55f, elapsedSeconds / 900f)) *
-            (isElite ? 0.9f : 1f);
-        var rewardMultiplier = isElite ? 5 : 1;
+            (isChampion ? 0.8f : isElite ? 0.9f : 1f);
+        var rewardMultiplier = isChampion ? 15 : isElite ? 5 : 1;
         var scaledHealth = (int)math.ceil(
             math.max(1, definition.Stats.MaxHealth) * healthMultiplier);
 
@@ -237,6 +264,10 @@ public partial struct ActorSpawnSystem : ISystem
         if (isElite)
         {
             EnsureTag<EliteEnemy>(entityManager, actorEntity);
+        }
+        if (isChampion)
+        {
+            EnsureTag<ChampionEnemy>(entityManager, actorEntity);
         }
         SetOrAddComponent(
             entityManager,
@@ -256,7 +287,7 @@ public partial struct ActorSpawnSystem : ISystem
             new Hitbox
             {
                 Radius = definition.Stats.HitRadius *
-                    (isElite ? 1.35f : 1f),
+                    (isChampion ? 1.75f : isElite ? 1.35f : 1f),
             });
         SetOrAddComponent(
             entityManager,
@@ -306,7 +337,9 @@ public partial struct ActorSpawnSystem : ISystem
             actorEntity,
             new URPMaterialPropertyBaseColor
             {
-                Value = isElite
+                Value = isChampion
+                    ? new float4(0.72f, 0.08f, 1f, 1f)
+                    : isElite
                     ? new float4(1f, 0.22f, 0.04f, 1f)
                     : definition.Visual.Color,
             });
@@ -314,7 +347,8 @@ public partial struct ActorSpawnSystem : ISystem
         var transform = entityManager.GetComponentData<LocalTransform>(actorEntity);
         transform.Scale = math.max(
             0.01f,
-            definition.Stats.BodyScale * (isElite ? 1.45f : 1f));
+            definition.Stats.BodyScale *
+            (isChampion ? 2.1f : isElite ? 1.45f : 1f));
         entityManager.SetComponentData(actorEntity, transform);
     }
 

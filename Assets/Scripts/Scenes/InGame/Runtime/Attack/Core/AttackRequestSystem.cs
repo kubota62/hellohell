@@ -191,6 +191,17 @@ public partial struct AttackRequestSystem : ISystem
         Entity actorEntity,
         ref AttackMasterData definition)
     {
+        if (entityManager.HasComponent<ChampionEnemy>(actorEntity))
+        {
+            definition.Damage = math.max(1, definition.Damage * 3);
+            definition.Cooldown = math.max(0.05f, definition.Cooldown * 0.65f);
+            definition.HitRadius *= 1.5f;
+            definition.AreaRadius *= 1.5f;
+            definition.ImpactAreaRadius *= 1.5f;
+            definition.Scale *= 1.5f;
+            return;
+        }
+
         if (!entityManager.HasComponent<EliteEnemy>(actorEntity))
         {
             return;

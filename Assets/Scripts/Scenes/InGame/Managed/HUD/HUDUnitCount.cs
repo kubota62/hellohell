@@ -28,6 +28,7 @@ public class HUDUnitCount : MonoBehaviour
         int unitNum,
         int bulletNum,
         int eliteNum,
+        int championNum,
         int level,
         int experience,
         int experienceToNextLevel,
@@ -56,6 +57,7 @@ public class HUDUnitCount : MonoBehaviour
                 ? string.Empty
                 : $"{statusNotification}\n") +
             $"ENEMIES {Mathf.Max(0, unitNum - 1)}   ELITES {Mathf.Max(0, eliteNum)}   " +
+            $"CHAMPIONS {Mathf.Max(0, championNum)}   " +
             $"SHOTS {bulletNum}   ATTACK {attackMode}\n" +
             $"BUILD  DMG L{skillStats.DamageLevel} x{1f + skillStats.DamageMultiplierAdd:0.00}   " +
             $"HASTE L{skillStats.AttackSpeedLevel} +{skillStats.CooldownMultiplierReduction * 100f:0}%   " +
