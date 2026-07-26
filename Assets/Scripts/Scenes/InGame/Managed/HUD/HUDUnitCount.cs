@@ -12,8 +12,16 @@ public class HUDUnitCount : MonoBehaviour
 
     void Awake()
     {
-        ConfigureText(unitText);
-        ConfigureText(bulletText);
+        ConfigureText(
+            unitText,
+            new Vector2(24f, 24f),
+            new Vector2(1000f, 160f),
+            28f);
+        ConfigureText(
+            bulletText,
+            new Vector2(24f, 194f),
+            new Vector2(1400f, 110f),
+            22f);
     }
 
     public void SetCount(
@@ -29,7 +37,8 @@ public class HUDUnitCount : MonoBehaviour
         float elapsedSeconds,
         int threatLevel,
         bool isGameOver,
-        bool autoAttackEnabled)
+        bool autoAttackEnabled,
+        PlayerSkillStats skillStats)
     {
         var totalSeconds = Mathf.Max(0, Mathf.FloorToInt(elapsedSeconds));
         var minutes = totalSeconds / 60;
@@ -43,18 +52,37 @@ public class HUDUnitCount : MonoBehaviour
             (isGameOver ? "\nDEFEATED   PRESS R TO RETRY" : string.Empty);
         bulletText.text =
             $"ENEMIES {Mathf.Max(0, unitNum - 1)}   ELITES {Mathf.Max(0, eliteNum)}   " +
-            $"SHOTS {bulletNum}   ATTACK {attackMode}";
+            $"SHOTS {bulletNum}   ATTACK {attackMode}\n" +
+            $"BUILD  DMG L{skillStats.DamageLevel} x{1f + skillStats.DamageMultiplierAdd:0.00}   " +
+            $"HASTE L{skillStats.AttackSpeedLevel} +{skillStats.CooldownMultiplierReduction * 100f:0}%   " +
+            $"AREA L{skillStats.AreaLevel} x{1f + skillStats.AreaMultiplierAdd:0.00}\n" +
+            $"MOVE L{skillStats.MoveSpeedLevel} x{1f + skillStats.MoveSpeedMultiplierAdd:0.00}   " +
+            $"REGEN L{skillStats.RegenerationLevel} {skillStats.HealthRegenerationPerSecond:0.0}/s";
     }
 
-    static void ConfigureText(TMP_Text text)
+    static void ConfigureText(
+        TMP_Text text,
+        Vector2 anchoredPosition,
+        Vector2 size,
+        float fontSize)
     {
         if (text == null)
         {
             return;
         }
 
+        var rectTransform = text.rectTransform;
+        rectTransform.anchorMin = Vector2.zero;
+        rectTransform.anchorMax = Vector2.zero;
+        rectTransform.pivot = Vector2.zero;
+        rectTransform.anchoredPosition = anchoredPosition;
+        rectTransform.sizeDelta = size;
+
+        text.alignment = TextAlignmentOptions.BottomLeft;
+        text.fontSize = fontSize;
         text.textWrappingMode = TextWrappingModes.NoWrap;
         text.overflowMode = TextOverflowModes.Overflow;
         text.lineSpacing = 0f;
+        text.raycastTarget = false;
     }
 }
