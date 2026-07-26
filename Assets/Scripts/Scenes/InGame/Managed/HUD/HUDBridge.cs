@@ -21,10 +21,35 @@ public class HUDBridge : MonoBehaviour
     bool isGameOver;
     bool autoAttackEnabled;
     PlayerSkillStats skillStats;
+    string skillNotification;
+    float skillNotificationRemaining;
 
     void Awake()
     {
         Instance = this;
+    }
+
+    void Update()
+    {
+        if (skillNotificationRemaining <= 0f)
+        {
+            return;
+        }
+
+        skillNotificationRemaining -= Time.deltaTime;
+        if (skillNotificationRemaining <= 0f)
+        {
+            skillNotification = string.Empty;
+            Refresh();
+        }
+    }
+
+    void OnDestroy()
+    {
+        if (Instance == this)
+        {
+            Instance = null;
+        }
     }
 
     public void SetActorCount(int count)
@@ -72,6 +97,13 @@ public class HUDBridge : MonoBehaviour
         Refresh();
     }
 
+    public void ShowSkillApplied(PlayerSkillKind kind, int newLevel)
+    {
+        skillNotification = $"LEVEL UP!  {GetSkillName(kind)} -> L{newLevel}";
+        skillNotificationRemaining = 2.5f;
+        Refresh();
+    }
+
     void Refresh()
     {
         unitCount.SetCount(
@@ -88,6 +120,29 @@ public class HUDBridge : MonoBehaviour
             threatLevel,
             isGameOver,
             autoAttackEnabled,
-            skillStats);
+            skillStats,
+            skillNotification);
+    }
+
+    static string GetSkillName(PlayerSkillKind kind)
+    {
+        switch (kind)
+        {
+            case PlayerSkillKind.AttackSpeed:
+                return "HASTE";
+
+            case PlayerSkillKind.MoveSpeed:
+                return "MOVE";
+
+            case PlayerSkillKind.Area:
+                return "AREA";
+
+            case PlayerSkillKind.Regeneration:
+                return "REGEN";
+
+            case PlayerSkillKind.Damage:
+            default:
+                return "DAMAGE";
+        }
     }
 }

@@ -1,4 +1,5 @@
 using Unity.Burst;
+using Unity.Collections;
 using Unity.Entities;
 
 /// <summary>
@@ -6,6 +7,7 @@ using Unity.Entities;
 /// inactive なプール待機弾は Projectile 数に含めない。
 /// </summary>
 [BurstCompile]
+[UpdateAfter(typeof(PlayerAutoSkillSystem))]
 public partial struct HUDSystem : ISystem
 {
     EntityQuery actorCountQuery;
@@ -31,6 +33,7 @@ public partial struct HUDSystem : ISystem
         hudBridge.SetActorCount(actorCountQuery.CalculateEntityCount());
         hudBridge.SetProjectileCount(projectileCountQuery.CalculateEntityCount());
         hudBridge.SetEliteCount(eliteCountQuery.CalculateEntityCount());
+        ConsumeSkillAppliedEvents(ref state, hudBridge);
 
         if (SystemAPI.TryGetSingleton<PlayerProgress>(out var progress))
         {
@@ -66,5 +69,24 @@ public partial struct HUDSystem : ISystem
                 autoAttackEnabled,
                 skillStats);
         }
+    }
+
+    private void ConsumeSkillAppliedEvents(
+        ref SystemState state,
+        HUDBridge hudBridge)
+    {
+        var ecb = new EntityCommandBuffer(Allocator.Temp);
+        foreach (var (skillEvent, eventEntity) in
+                 SystemAPI.Query<RefRO<PlayerSkillAppliedEvent>>()
+                     .WithEntityAccess())
+        {
+            hudBridge.ShowSkillApplied(
+                skillEvent.ValueRO.Kind,
+                skillEvent.ValueRO.NewSkillLevel);
+            ecb.DestroyEntity(eventEntity);
+        }
+
+        ecb.Playback(state.EntityManager);
+        ecb.Dispose();
     }
 }
