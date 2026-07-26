@@ -33,6 +33,12 @@ public partial struct ProjectileSpawnSystem : ISystem
 
     public void OnUpdate(ref SystemState state)
     {
+        if (SystemAPI.TryGetSingleton<RunState>(out var runState) &&
+            (runState.IsGameOver != 0 || runState.IsChoosingUpgrade != 0))
+        {
+            return;
+        }
+
         var config = SystemAPI.GetSingleton<Config>();
         var entityManager = state.EntityManager;
         var requestEntities = requestQuery.ToEntityArray(Allocator.Temp);

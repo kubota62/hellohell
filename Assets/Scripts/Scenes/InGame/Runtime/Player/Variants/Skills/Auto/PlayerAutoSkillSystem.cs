@@ -19,6 +19,23 @@ public partial struct PlayerAutoSkillSystem : ISystem
             true);
         var ecb = new EntityCommandBuffer(Unity.Collections.Allocator.Temp);
 
+        if (TryApplySelection(
+                ref state,
+                hasSkillMasters,
+                skillMasters,
+                ecb))
+        {
+            ecb.Playback(state.EntityManager);
+            ecb.Dispose();
+            return;
+        }
+
+        if (SystemAPI.HasSingleton<PlayerUpgradeChoice>())
+        {
+            ecb.Dispose();
+            return;
+        }
+
         foreach (var (levelUpEvent, eventEntity) in
                  SystemAPI.Query<RefRO<PlayerLevelUpEvent>>()
                      .WithEntityAccess())
@@ -26,45 +43,186 @@ public partial struct PlayerAutoSkillSystem : ISystem
             if (SystemAPI.HasComponent<PlayerSkillStats>(levelUpEvent.ValueRO.Player))
             {
                 var stats = SystemAPI.GetComponent<PlayerSkillStats>(levelUpEvent.ValueRO.Player);
-                ApplyAutoSkills(
-                    ref stats,
+                var choice = CreateUpgradeChoice(
+                    stats,
                     levelUpEvent.ValueRO.NewLevel,
                     levelUpEvent.ValueRO.LevelsGained,
                     hasSkillMasters,
                     skillMasters,
-                    levelUpEvent.ValueRO.Player,
-                    ecb);
-                ecb.SetComponent(levelUpEvent.ValueRO.Player, stats);
+                    levelUpEvent.ValueRO.Player);
+                var choiceEntity = ecb.CreateEntity();
+                ecb.AddComponent(choiceEntity, choice);
+                SetUpgradePause(true);
             }
 
             ecb.DestroyEntity(eventEntity);
+            break;
         }
 
         ecb.Playback(state.EntityManager);
         ecb.Dispose();
     }
 
-    static void ApplyAutoSkills(
-        ref PlayerSkillStats stats,
-        int newLevel,
-        int levelsGained,
+    bool TryApplySelection(
+        ref SystemState state,
         bool hasSkillMasters,
         DynamicBuffer<PlayerSkillMasterElement> skillMasters,
-        Entity playerEntity,
         EntityCommandBuffer ecb)
     {
-        for (var i = 0; i < levelsGained; i++)
+        if (!SystemAPI.TryGetSingletonEntity<PlayerUpgradeChoice>(out var choiceEntity) ||
+            !SystemAPI.TryGetSingleton<PlayerUpgradeChoice>(out var choice))
         {
-            var gainedLevel = newLevel - levelsGained + 1 + i;
-            var skill = hasSkillMasters
-                ? PlayerSkillMasterCatalog.PickAutoSkill(skillMasters, gainedLevel - 1, stats)
-                : PlayerSkillMasterCatalog.GetByFallbackOrder(gainedLevel - 1, stats);
-            var appliedLevel = ApplySkill(ref stats, skill);
-            if (appliedLevel > 0)
+            return false;
+        }
+
+        foreach (var (selection, selectionEntity) in
+                 SystemAPI.Query<RefRO<PlayerUpgradeSelection>>()
+                     .WithEntityAccess())
+        {
+            if (SystemAPI.HasComponent<PlayerSkillStats>(choice.Player))
             {
-                CreateSkillAppliedEvent(playerEntity, skill, appliedLevel, GetCurrentSkillLevel(stats, skill.Kind), ecb);
+                var stats = SystemAPI.GetComponent<PlayerSkillStats>(choice.Player);
+                var skill = ResolveSelectedSkill(choice, selection.ValueRO.ChoiceIndex);
+                var appliedLevel = ApplySkill(ref stats, skill);
+                if (appliedLevel > 0)
+                {
+                    CreateSkillAppliedEvent(
+                        choice.Player,
+                        skill,
+                        appliedLevel,
+                        GetCurrentSkillLevel(stats, skill.Kind),
+                        ecb);
+                }
+
+                ecb.SetComponent(choice.Player, stats);
+                choice.PendingLevels--;
+                if (choice.PendingLevels > 0)
+                {
+                    ecb.SetComponent(
+                        choiceEntity,
+                        CreateUpgradeChoice(
+                            stats,
+                            choice.NewLevel,
+                            choice.PendingLevels,
+                            hasSkillMasters,
+                            skillMasters,
+                            choice.Player));
+                }
+                else
+                {
+                    ecb.DestroyEntity(choiceEntity);
+                    SetUpgradePause(false);
+                }
+            }
+            else
+            {
+                ecb.DestroyEntity(choiceEntity);
+                SetUpgradePause(false);
+            }
+
+            ecb.DestroyEntity(selectionEntity);
+            return true;
+        }
+
+        return false;
+    }
+
+    static PlayerUpgradeChoice CreateUpgradeChoice(
+        PlayerSkillStats stats,
+        int newLevel,
+        int pendingLevels,
+        bool hasSkillMasters,
+        DynamicBuffer<PlayerSkillMasterElement> skillMasters,
+        Entity playerEntity)
+    {
+        var first = PickDistinctSkill(
+            stats,
+            newLevel + pendingLevels * 11,
+            default,
+            default,
+            hasSkillMasters,
+            skillMasters);
+        var second = PickDistinctSkill(
+            stats,
+            newLevel + pendingLevels * 23,
+            first.Id,
+            default,
+            hasSkillMasters,
+            skillMasters);
+        var third = PickDistinctSkill(
+            stats,
+            newLevel + pendingLevels * 37,
+            first.Id,
+            second.Id,
+            hasSkillMasters,
+            skillMasters);
+
+        return new PlayerUpgradeChoice
+        {
+            Player = playerEntity,
+            First = first,
+            Second = second,
+            Third = third,
+            NewLevel = newLevel,
+            PendingLevels = math.max(1, pendingLevels),
+        };
+    }
+
+    static PlayerSkillMasterData PickDistinctSkill(
+        PlayerSkillStats stats,
+        int seed,
+        PlayerSkillMasterId excludedFirst,
+        PlayerSkillMasterId excludedSecond,
+        bool hasSkillMasters,
+        DynamicBuffer<PlayerSkillMasterElement> skillMasters)
+    {
+        for (var attempt = 0; attempt < 24; attempt++)
+        {
+            var skill = hasSkillMasters
+                ? PlayerSkillMasterCatalog.PickAutoSkill(
+                    skillMasters,
+                    seed + attempt * 17,
+                    stats)
+                : PlayerSkillMasterCatalog.GetByFallbackOrder(
+                    seed + attempt,
+                    stats);
+            if (skill.Id != excludedFirst && skill.Id != excludedSecond)
+            {
+                return skill;
             }
         }
+
+        return hasSkillMasters
+            ? PlayerSkillMasterCatalog.PickAutoSkill(skillMasters, seed, stats)
+            : PlayerSkillMasterCatalog.GetByFallbackOrder(seed, stats);
+    }
+
+    static PlayerSkillMasterData ResolveSelectedSkill(
+        PlayerUpgradeChoice choice,
+        int choiceIndex)
+    {
+        switch (math.clamp(choiceIndex, 0, 2))
+        {
+            case 1:
+                return choice.Second;
+
+            case 2:
+                return choice.Third;
+
+            default:
+                return choice.First;
+        }
+    }
+
+    void SetUpgradePause(bool isPaused)
+    {
+        if (!SystemAPI.TryGetSingleton<RunState>(out var runState))
+        {
+            return;
+        }
+
+        runState.IsChoosingUpgrade = isPaused ? (byte)1 : (byte)0;
+        SystemAPI.SetSingleton(runState);
     }
 
     static int ApplySkill(ref PlayerSkillStats stats, PlayerSkillMasterData skill)
@@ -209,6 +367,12 @@ public partial struct PlayerHealthRegenerationSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
+        if (SystemAPI.TryGetSingleton<RunState>(out var runState) &&
+            (runState.IsGameOver != 0 || runState.IsChoosingUpgrade != 0))
+        {
+            return;
+        }
+
         foreach (var (health, stats) in
                  SystemAPI.Query<RefRW<Health>, RefRO<PlayerSkillStats>>()
                      .WithAll<Player>())
