@@ -9,6 +9,7 @@ public enum PlayerSkillMasterId
     DamageBoost = 1,
     AttackSpeedBoost = 2,
     MoveSpeedBoost = 3,
+    AreaBoost = 4,
 }
 
 /// <summary>
@@ -20,6 +21,7 @@ public enum PlayerSkillKind : byte
     Damage = 1,
     AttackSpeed = 2,
     MoveSpeed = 3,
+    Area = 4,
 }
 
 /// <summary>

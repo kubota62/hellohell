@@ -27,6 +27,14 @@ public static class PlayerSkillMasterCatalog
                     effectPerLevel: 0.1f,
                     weight: 1);
 
+            case PlayerSkillMasterId.AreaBoost:
+                return Create(
+                    PlayerSkillMasterId.AreaBoost,
+                    PlayerSkillKind.Area,
+                    maxLevel: 10,
+                    effectPerLevel: 0.08f,
+                    weight: 1);
+
             case PlayerSkillMasterId.DamageBoost:
             default:
                 return Create(
@@ -97,10 +105,10 @@ public static class PlayerSkillMasterCatalog
 
     public static PlayerSkillMasterData GetByFallbackOrder(int pickIndex, PlayerSkillStats stats)
     {
-        var startIndex = (pickIndex < 0 ? 0 : pickIndex) % 3;
-        for (var i = 0; i < 3; i++)
+        var startIndex = (pickIndex < 0 ? 0 : pickIndex) % 4;
+        for (var i = 0; i < 4; i++)
         {
-            var id = GetFallbackId((startIndex + i) % 3);
+            var id = GetFallbackId((startIndex + i) % 4);
             var master = Get(id);
             if (CanApply(master, stats))
             {
@@ -120,6 +128,9 @@ public static class PlayerSkillMasterCatalog
 
             case 2:
                 return PlayerSkillMasterId.MoveSpeedBoost;
+
+            case 3:
+                return PlayerSkillMasterId.AreaBoost;
 
             case 0:
             default:
@@ -146,6 +157,9 @@ public static class PlayerSkillMasterCatalog
 
             case PlayerSkillKind.MoveSpeed:
                 return stats.MoveSpeedLevel;
+
+            case PlayerSkillKind.Area:
+                return stats.AreaLevel;
 
             case PlayerSkillKind.Damage:
             default:

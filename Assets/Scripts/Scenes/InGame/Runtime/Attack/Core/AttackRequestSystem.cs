@@ -177,6 +177,11 @@ public partial struct AttackRequestSystem : ISystem
                 definition.Damage *
                 PlayerAutoSkillSystem.GetDamageMultiplier(stats)));
         definition.Cooldown *= PlayerAutoSkillSystem.GetCooldownMultiplier(stats);
+        var areaMultiplier = PlayerAutoSkillSystem.GetAreaMultiplier(stats);
+        definition.HitRadius *= areaMultiplier;
+        definition.AreaRadius *= areaMultiplier;
+        definition.ImpactAreaRadius *= areaMultiplier;
+        definition.Scale *= areaMultiplier;
     }
 
     private static bool CreateAttackRequest(

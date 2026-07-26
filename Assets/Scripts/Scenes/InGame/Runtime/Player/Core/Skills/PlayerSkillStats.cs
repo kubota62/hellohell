@@ -11,7 +11,9 @@ public struct PlayerSkillStats : IComponentData
     public int DamageLevel;
     public int AttackSpeedLevel;
     public int MoveSpeedLevel;
+    public int AreaLevel;
     public float DamageMultiplierAdd;
     public float CooldownMultiplierReduction;
     public float MoveSpeedMultiplierAdd;
+    public float AreaMultiplierAdd;
 }
