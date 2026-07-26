@@ -12,8 +12,10 @@ public struct PlayerSkillStats : IComponentData
     public int AttackSpeedLevel;
     public int MoveSpeedLevel;
     public int AreaLevel;
+    public int RegenerationLevel;
     public float DamageMultiplierAdd;
     public float CooldownMultiplierReduction;
     public float MoveSpeedMultiplierAdd;
     public float AreaMultiplierAdd;
+    public float HealthRegenerationPerSecond;
 }

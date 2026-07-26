@@ -10,6 +10,7 @@ public enum PlayerSkillMasterId
     AttackSpeedBoost = 2,
     MoveSpeedBoost = 3,
     AreaBoost = 4,
+    RegenerationBoost = 5,
 }
 
 /// <summary>
@@ -22,6 +23,7 @@ public enum PlayerSkillKind : byte
     AttackSpeed = 2,
     MoveSpeed = 3,
     Area = 4,
+    Regeneration = 5,
 }
 
 /// <summary>
