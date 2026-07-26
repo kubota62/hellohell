@@ -22,10 +22,24 @@ public class HUDUnitCount : MonoBehaviour
         int level,
         int experience,
         int experienceToNextLevel,
-        int score)
+        int score,
+        int health,
+        int maxHealth,
+        float elapsedSeconds,
+        int threatLevel,
+        bool autoAttackEnabled)
     {
-        unitText.text = $"A:{unitNum} P:{bulletNum} Lv:{level} XP:{experience}/{experienceToNextLevel} S:{score}";
-        bulletText.text = string.Empty;
+        var totalSeconds = Mathf.Max(0, Mathf.FloorToInt(elapsedSeconds));
+        var minutes = totalSeconds / 60;
+        var seconds = totalSeconds % 60;
+        var attackMode = autoAttackEnabled ? "AUTO" : "MANUAL";
+
+        unitText.text =
+            $"LV {level}   XP {experience}/{experienceToNextLevel}\n" +
+            $"HP {Mathf.Max(0, health)}/{Mathf.Max(1, maxHealth)}   SCORE {score}\n" +
+            $"TIME {minutes:00}:{seconds:00}   THREAT {threatLevel}";
+        bulletText.text =
+            $"ENEMIES {Mathf.Max(0, unitNum - 1)}   SHOTS {bulletNum}   ATTACK {attackMode}";
     }
 
     static void ConfigureText(TMP_Text text)

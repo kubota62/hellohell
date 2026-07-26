@@ -8,6 +8,7 @@ using UnityEngine.InputSystem;
 /// </summary>
 public class PlayerInputManager : MonoBehaviour
 {
+    private World world;
     private EntityManager entityManager;
     private Entity inputEntity;
     private Camera mainCamera;
@@ -17,7 +18,14 @@ public class PlayerInputManager : MonoBehaviour
 
     private void Start()
     {
-        entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+        world = World.DefaultGameObjectInjectionWorld;
+        if (world == null || !world.IsCreated)
+        {
+            enabled = false;
+            return;
+        }
+
+        entityManager = world.EntityManager;
         inputEntity = entityManager.CreateEntity(typeof(PlayerInput));
         hasInputEntity = true;
         mainCamera = Camera.main;
@@ -26,6 +34,8 @@ public class PlayerInputManager : MonoBehaviour
     private void OnDestroy()
     {
         if (hasInputEntity &&
+            world != null &&
+            world.IsCreated &&
             entityManager.Exists(inputEntity))
         {
             entityManager.DestroyEntity(inputEntity);
@@ -35,6 +45,11 @@ public class PlayerInputManager : MonoBehaviour
 
     private void Update()
     {
+        if (!hasInputEntity || world == null || !world.IsCreated)
+        {
+            return;
+        }
+
         var keyboard = Keyboard.current;
         var mouse = Mouse.current;
 

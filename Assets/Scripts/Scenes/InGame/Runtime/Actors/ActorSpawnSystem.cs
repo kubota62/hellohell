@@ -10,23 +10,48 @@ using Random = Unity.Mathematics.Random;
 [UpdateBefore(typeof(TransformSystemGroup))]
 public partial struct ActorSpawnSystem : ISystem
 {
+    private const int MaximumActiveEnemies = 350;
+
     private Random random;
     private int spawnedActorCount;
     private float enemySpawnTimer;
+    private EntityQuery activeEnemyQuery;
 
     public void OnCreate(ref SystemState state)
     {
         random = new Random(123);
         spawnedActorCount = 0;
         enemySpawnTimer = 0f;
+        activeEnemyQuery = SystemAPI.QueryBuilder()
+            .WithAll<Enemy, GameplayActive>()
+            .Build();
+
+        var runStateEntity = state.EntityManager.CreateEntity();
+        state.EntityManager.AddComponentData(runStateEntity, new RunState
+        {
+            ThreatLevel = 1,
+        });
+
         state.RequireForUpdate<Config>();
+        state.RequireForUpdate<RunState>();
     }
 
     public void OnUpdate(ref SystemState state)
     {
+        var runState = SystemAPI.GetSingleton<RunState>();
+        runState.ElapsedSeconds += SystemAPI.Time.DeltaTime;
+        runState.ThreatLevel = 1 +
+            (int)math.floor(runState.ElapsedSeconds / 30f);
+
         if (spawnedActorCount == 0)
         {
-            SpawnActor(ref state, true, float3.zero);
+            SystemAPI.SetSingleton(runState);
+            SpawnActor(
+                ref state,
+                true,
+                float3.zero,
+                runState.ElapsedSeconds,
+                runState.ThreatLevel);
             spawnedActorCount = 1;
             enemySpawnTimer = -ResolveSpawnMaster(ref state).InitialEnemySpawnDelay;
             return;
@@ -34,23 +59,50 @@ public partial struct ActorSpawnSystem : ISystem
 
         var spawnMaster = ResolveSpawnMaster(ref state);
         enemySpawnTimer += SystemAPI.Time.DeltaTime;
-        if (enemySpawnTimer <= spawnMaster.SpawnInterval)
+        var spawnInterval = math.max(
+            0.12f,
+            spawnMaster.SpawnInterval /
+            (1f + runState.ElapsedSeconds / 120f));
+        if (enemySpawnTimer <= spawnInterval)
         {
+            SystemAPI.SetSingleton(runState);
             return;
         }
 
-        SpawnActor(
-            ref state,
-            false,
-            GetEnemySpawnPosition(ref state, spawnMaster));
-        spawnedActorCount++;
+        var availableSlots = MaximumActiveEnemies -
+            activeEnemyQuery.CalculateEntityCount();
+        if (availableSlots <= 0)
+        {
+            enemySpawnTimer = 0f;
+            SystemAPI.SetSingleton(runState);
+            return;
+        }
+
+        var batchSize = math.min(
+            availableSlots,
+            math.min(4, 1 + (runState.ThreatLevel - 1) / 3));
+        for (var i = 0; i < batchSize; i++)
+        {
+            SpawnActor(
+                ref state,
+                false,
+                GetEnemySpawnPosition(ref state, spawnMaster),
+                runState.ElapsedSeconds,
+                runState.ThreatLevel);
+            spawnedActorCount++;
+            runState.EnemiesSpawned++;
+        }
+
         enemySpawnTimer = 0f;
+        SystemAPI.SetSingleton(runState);
     }
 
     private void SpawnActor(
         ref SystemState state,
         bool isPlayer,
-        float3 position)
+        float3 position,
+        float elapsedSeconds,
+        int threatLevel)
     {
         var entityManager = state.EntityManager;
         var config = SystemAPI.GetSingleton<Config>();
@@ -75,18 +127,22 @@ public partial struct ActorSpawnSystem : ISystem
             ConfigureEnemy(
                 entityManager,
                 actorEntity,
-                ResolveEnemyMaster(ref state));
+                ResolveEnemyMaster(ref state, threatLevel),
+                elapsedSeconds);
         }
 
         ApplyActorColorToChildren(entityManager, actorEntity);
     }
 
-    private EnemyMasterData ResolveEnemyMaster(ref SystemState state)
+    private EnemyMasterData ResolveEnemyMaster(
+        ref SystemState state,
+        int threatLevel)
     {
         var enemySpawnIndex = spawnedActorCount - 1;
         var playerLevel = SystemAPI.TryGetSingleton<PlayerProgress>(out var progress)
             ? progress.Level
             : 1;
+        var unlockLevel = math.max(playerLevel, threatLevel);
 
         if (SystemAPI.TryGetSingletonBuffer<EnemyMasterElement>(
                 out var enemyMasters,
@@ -95,7 +151,7 @@ public partial struct ActorSpawnSystem : ISystem
             return EnemyMasterCatalog.PickSpawnMaster(
                 enemyMasters,
                 enemySpawnIndex,
-                playerLevel);
+                unlockLevel);
         }
 
         return EnemyMasterCatalog.Get(
@@ -151,9 +207,14 @@ public partial struct ActorSpawnSystem : ISystem
     private static void ConfigureEnemy(
         EntityManager entityManager,
         Entity actorEntity,
-        EnemyMasterData definition)
+        EnemyMasterData definition,
+        float elapsedSeconds)
     {
         var minAttackRange = math.max(0f, definition.Combat.MinAttackRange);
+        var healthMultiplier = 1f + math.min(4f, elapsedSeconds / 150f);
+        var speedMultiplier = 1f + math.min(0.55f, elapsedSeconds / 900f);
+        var scaledHealth = (int)math.ceil(
+            math.max(1, definition.Stats.MaxHealth) * healthMultiplier);
 
         EnsureTag<Enemy>(entityManager, actorEntity);
         SetOrAddComponent(
@@ -167,7 +228,7 @@ public partial struct ActorSpawnSystem : ISystem
         SetOrAddComponent(
             entityManager,
             actorEntity,
-            Health.FromMax(definition.Stats.MaxHealth));
+            Health.FromMax(scaledHealth));
         SetOrAddComponent(
             entityManager,
             actorEntity,
@@ -177,7 +238,9 @@ public partial struct ActorSpawnSystem : ISystem
             actorEntity,
             new EnemyMoveSpeed
             {
-                Value = math.max(0.01f, definition.Movement.MoveSpeed),
+                Value = math.max(
+                    0.01f,
+                    definition.Movement.MoveSpeed * speedMultiplier),
             });
         SetOrAddComponent(
             entityManager,
