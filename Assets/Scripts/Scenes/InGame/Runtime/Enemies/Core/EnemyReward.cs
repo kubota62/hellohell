@@ -31,3 +31,19 @@ public struct ExperiencePickup : IComponentData
     public int Experience;
     public int Score;
 }
+
+/// <summary>
+/// Champion撃破時に生成される、通常より大きく目立つ報酬オーブ。
+/// </summary>
+public struct ChampionRewardPickup : IComponentData
+{
+}
+
+/// <summary>
+/// Champion撃破をHUDなどのフィードバック層へ通知する一時イベント。
+/// </summary>
+public struct ChampionDefeatedEvent : IComponentData
+{
+    public int Experience;
+    public int Score;
+}

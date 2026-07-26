@@ -38,7 +38,7 @@ public partial struct HUDSystem : ISystem
         hudBridge.SetActorCount(actorCountQuery.CalculateEntityCount());
         hudBridge.SetProjectileCount(projectileCountQuery.CalculateEntityCount());
         hudBridge.SetEliteCount(eliteCountQuery.CalculateEntityCount());
-        ConsumeSkillAppliedEvents(ref state, hudBridge);
+        ConsumeFeedbackEvents(ref state, hudBridge);
 
         if (SystemAPI.TryGetSingleton<PlayerProgress>(out var progress))
         {
@@ -91,7 +91,7 @@ public partial struct HUDSystem : ISystem
             championMaxHealth);
     }
 
-    private void ConsumeSkillAppliedEvents(
+    private void ConsumeFeedbackEvents(
         ref SystemState state,
         HUDBridge hudBridge)
     {
@@ -103,6 +103,16 @@ public partial struct HUDSystem : ISystem
             hudBridge.ShowSkillApplied(
                 skillEvent.ValueRO.Kind,
                 skillEvent.ValueRO.NewSkillLevel);
+            ecb.DestroyEntity(eventEntity);
+        }
+
+        foreach (var (defeatedEvent, eventEntity) in
+                 SystemAPI.Query<RefRO<ChampionDefeatedEvent>>()
+                     .WithEntityAccess())
+        {
+            hudBridge.ShowChampionDefeated(
+                defeatedEvent.ValueRO.Experience,
+                defeatedEvent.ValueRO.Score);
             ecb.DestroyEntity(eventEntity);
         }
 
