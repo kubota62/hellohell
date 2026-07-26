@@ -21,8 +21,8 @@ public class HUDBridge : MonoBehaviour
     bool isGameOver;
     bool autoAttackEnabled;
     PlayerSkillStats skillStats;
-    string skillNotification;
-    float skillNotificationRemaining;
+    string statusNotification;
+    float notificationRemaining;
 
     void Awake()
     {
@@ -31,15 +31,15 @@ public class HUDBridge : MonoBehaviour
 
     void Update()
     {
-        if (skillNotificationRemaining <= 0f)
+        if (notificationRemaining <= 0f)
         {
             return;
         }
 
-        skillNotificationRemaining -= Time.deltaTime;
-        if (skillNotificationRemaining <= 0f)
+        notificationRemaining -= Time.deltaTime;
+        if (notificationRemaining <= 0f)
         {
-            skillNotification = string.Empty;
+            statusNotification = string.Empty;
             Refresh();
         }
     }
@@ -90,6 +90,12 @@ public class HUDBridge : MonoBehaviour
         health = nextHealth;
         maxHealth = nextMaxHealth;
         elapsedSeconds = nextElapsedSeconds;
+        if (nextThreatLevel > threatLevel)
+        {
+            statusNotification = $"THREAT RISING!  LEVEL {nextThreatLevel}";
+            notificationRemaining = 3f;
+        }
+
         threatLevel = nextThreatLevel;
         isGameOver = nextIsGameOver;
         autoAttackEnabled = nextAutoAttackEnabled;
@@ -99,8 +105,8 @@ public class HUDBridge : MonoBehaviour
 
     public void ShowSkillApplied(PlayerSkillKind kind, int newLevel)
     {
-        skillNotification = $"LEVEL UP!  {GetSkillName(kind)} -> L{newLevel}";
-        skillNotificationRemaining = 2.5f;
+        statusNotification = $"LEVEL UP!  {GetSkillName(kind)} -> L{newLevel}";
+        notificationRemaining = 2.5f;
         Refresh();
     }
 
@@ -121,7 +127,7 @@ public class HUDBridge : MonoBehaviour
             isGameOver,
             autoAttackEnabled,
             skillStats,
-            skillNotification);
+            statusNotification);
     }
 
     static string GetSkillName(PlayerSkillKind kind)
