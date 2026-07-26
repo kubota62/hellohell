@@ -10,6 +10,7 @@ public class HUDBridge : MonoBehaviour
     int actorCount;
     int projectileCount;
     int eliteCount;
+    int championCount;
     int level = 1;
     int experience;
     int experienceToNextLevel = 1;
@@ -70,6 +71,18 @@ public class HUDBridge : MonoBehaviour
         Refresh();
     }
 
+    public void SetChampionCount(int count)
+    {
+        if (count > championCount)
+        {
+            statusNotification = "CHAMPION APPROACHES!";
+            notificationRemaining = 4f;
+        }
+
+        championCount = count;
+        Refresh();
+    }
+
     public void SetPlayerProgress(
         int nextLevel,
         int nextExperience,
@@ -116,6 +129,7 @@ public class HUDBridge : MonoBehaviour
             actorCount,
             projectileCount,
             eliteCount,
+            championCount,
             level,
             experience,
             experienceToNextLevel,
