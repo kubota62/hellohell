@@ -10,7 +10,9 @@ using Unity.Transforms;
 [UpdateBefore(typeof(PlayerProgressSystem))]
 public partial struct ExperiencePickupSystem : ISystem
 {
-    private const float AttractionRadius = 2.75f;
+    private const float BaseAttractionRadius = 2.75f;
+    private const float AttractionRadiusPerLevel = 0.18f;
+    private const float MaximumAttractionRadius = 7.5f;
     private const float CollectRadius = 1.2f;
     private const float MinimumMoveSpeed = 5f;
     private const float MaximumMoveSpeed = 14f;
@@ -31,6 +33,13 @@ public partial struct ExperiencePickupSystem : ISystem
 
         var playerPosition = SystemAPI.GetComponent<LocalTransform>(playerEntity).Position;
         playerPosition.y = 0.35f;
+        var playerLevel = SystemAPI.HasComponent<PlayerProgress>(playerEntity)
+            ? math.max(1, SystemAPI.GetComponent<PlayerProgress>(playerEntity).Level)
+            : 1;
+        var attractionRadius = math.min(
+            MaximumAttractionRadius,
+            BaseAttractionRadius + (playerLevel - 1) * AttractionRadiusPerLevel);
+        var attractionRadiusSq = attractionRadius * attractionRadius;
         var deltaTime = SystemAPI.Time.DeltaTime;
         var ecb = new EntityCommandBuffer(Allocator.Temp);
 
@@ -40,7 +49,7 @@ public partial struct ExperiencePickupSystem : ISystem
         {
             var toPlayer = playerPosition - transform.ValueRO.Position;
             var distanceSq = math.lengthsq(toPlayer);
-            if (distanceSq > AttractionRadius * AttractionRadius)
+            if (distanceSq > attractionRadiusSq)
             {
                 continue;
             }
@@ -59,7 +68,7 @@ public partial struct ExperiencePickupSystem : ISystem
             }
 
             var distance = math.sqrt(distanceSq);
-            var attraction = 1f - math.saturate(distance / AttractionRadius);
+            var attraction = 1f - math.saturate(distance / attractionRadius);
             var speed = math.lerp(MinimumMoveSpeed, MaximumMoveSpeed, attraction);
             transform.ValueRW.Position += math.normalizesafe(toPlayer) * speed * deltaTime;
             transform.ValueRW.Rotation = math.mul(
@@ -91,20 +100,25 @@ public partial struct PlayerProgressSystem : ISystem
     {
         var totalExperience = 0;
         var totalScore = 0;
+        var ecb = new EntityCommandBuffer(Allocator.Temp);
 
-        foreach (var reward in SystemAPI.Query<RefRO<EnemyRewardEvent>>())
+        foreach (var (reward, eventEntity) in
+                 SystemAPI.Query<RefRO<EnemyRewardEvent>>()
+                     .WithEntityAccess())
         {
             totalExperience += reward.ValueRO.Experience;
             totalScore += reward.ValueRO.Score;
+            ecb.DestroyEntity(eventEntity);
         }
 
         if (totalExperience <= 0 && totalScore <= 0)
         {
+            ecb.Playback(state.EntityManager);
+            ecb.Dispose();
             return;
         }
 
         var progressMaster = ResolveProgressMaster(ref state);
-        var ecb = new EntityCommandBuffer(Unity.Collections.Allocator.Temp);
         foreach (var (progress, playerEntity) in
                  SystemAPI.Query<RefRW<PlayerProgress>>()
                      .WithAll<Player>()
