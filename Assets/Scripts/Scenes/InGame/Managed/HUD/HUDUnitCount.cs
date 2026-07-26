@@ -40,7 +40,7 @@ public class HUDUnitCount : MonoBehaviour
             $"LV {level}   XP {experience}/{experienceToNextLevel}\n" +
             $"HP {Mathf.Max(0, health)}/{Mathf.Max(1, maxHealth)}   SCORE {score}\n" +
             $"TIME {minutes:00}:{seconds:00}   THREAT {threatLevel}" +
-            (isGameOver ? "\nDEFEATED" : string.Empty);
+            (isGameOver ? "\nDEFEATED   PRESS R TO RETRY" : string.Empty);
         bulletText.text =
             $"ENEMIES {Mathf.Max(0, unitNum - 1)}   ELITES {Mathf.Max(0, eliteNum)}   " +
             $"SHOTS {bulletNum}   ATTACK {attackMode}";
