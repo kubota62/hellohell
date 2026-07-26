@@ -75,7 +75,20 @@ public partial struct HUDSystem : ISystem
                 skillStats);
         }
 
-        hudBridge.SetChampionCount(championCountQuery.CalculateEntityCount());
+        var championCurrentHealth = 0;
+        var championMaxHealth = 0;
+        foreach (var championHealth in
+                 SystemAPI.Query<RefRO<Health>>()
+                     .WithAll<ChampionEnemy, GameplayActive>())
+        {
+            championCurrentHealth += championHealth.ValueRO.Current;
+            championMaxHealth += championHealth.ValueRO.Max;
+        }
+
+        hudBridge.SetChampionState(
+            championCountQuery.CalculateEntityCount(),
+            championCurrentHealth,
+            championMaxHealth);
     }
 
     private void ConsumeSkillAppliedEvents(
