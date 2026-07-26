@@ -32,6 +32,7 @@ public partial struct ActorDeathSystem : ISystem
         var ecb = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>()
             .CreateCommandBuffer(state.WorldUnmanaged);
         var rewardLookup = SystemAPI.GetComponentLookup<EnemyReward>(true);
+        var championLookup = SystemAPI.GetComponentLookup<ChampionEnemy>(true);
         var config = SystemAPI.GetSingleton<Config>();
         var experiencePickupCount = experiencePickupQuery.CalculateEntityCount();
 
@@ -49,18 +50,25 @@ public partial struct ActorDeathSystem : ISystem
             if (rewardLookup.HasComponent(entity))
             {
                 var reward = rewardLookup[entity];
+                var isChampion = championLookup.HasComponent(entity);
                 if (experiencePickupCount < MaximumExperiencePickups)
                 {
                     CreateExperiencePickup(
                         ecb,
                         config.ProjectilePrefab,
                         transform.ValueRO.Position,
-                        reward);
+                        reward,
+                        isChampion);
                     experiencePickupCount++;
                 }
                 else
                 {
                     CreateRewardEvent(ecb, reward);
+                }
+
+                if (isChampion)
+                {
+                    CreateChampionDefeatedEvent(ecb, reward);
                 }
             }
 
@@ -72,22 +80,29 @@ public partial struct ActorDeathSystem : ISystem
         EntityCommandBuffer ecb,
         Entity projectilePrefab,
         float3 position,
-        EnemyReward reward)
+        EnemyReward reward,
+        bool isChampion)
     {
         var pickupEntity = ecb.Instantiate(projectilePrefab);
         ecb.SetComponent(pickupEntity, LocalTransform.FromPositionRotationScale(
             position + new float3(0f, 0.35f, 0f),
             quaternion.identity,
-            0.45f));
+            isChampion ? 0.85f : 0.45f));
         ecb.SetComponent(pickupEntity, new URPMaterialPropertyBaseColor
         {
-            Value = new float4(0.2f, 1f, 0.35f, 1f),
+            Value = isChampion
+                ? new float4(1f, 0.68f, 0.08f, 1f)
+                : new float4(0.2f, 1f, 0.35f, 1f),
         });
         ecb.AddComponent(pickupEntity, new ExperiencePickup
         {
             Experience = reward.Experience,
             Score = reward.Score,
         });
+        if (isChampion)
+        {
+            ecb.AddComponent<ChampionRewardPickup>(pickupEntity);
+        }
         ecb.RemoveComponent<ProjectileMotion>(pickupEntity);
         ecb.RemoveComponent<Projectile>(pickupEntity);
         ecb.RemoveComponent<Lifetime>(pickupEntity);
@@ -102,6 +117,18 @@ public partial struct ActorDeathSystem : ISystem
         ecb.AddComponent(rewardEntity, new EnemyRewardEvent
         {
             EnemyTypeId = 0,
+            Experience = reward.Experience,
+            Score = reward.Score,
+        });
+    }
+
+    private static void CreateChampionDefeatedEvent(
+        EntityCommandBuffer ecb,
+        EnemyReward reward)
+    {
+        var eventEntity = ecb.CreateEntity();
+        ecb.AddComponent(eventEntity, new ChampionDefeatedEvent
+        {
             Experience = reward.Experience,
             Score = reward.Score,
         });

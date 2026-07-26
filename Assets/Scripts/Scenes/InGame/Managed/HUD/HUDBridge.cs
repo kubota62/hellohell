@@ -130,6 +130,14 @@ public class HUDBridge : MonoBehaviour
         Refresh();
     }
 
+    public void ShowChampionDefeated(int experience, int scoreReward)
+    {
+        statusNotification =
+            $"CHAMPION DEFEATED!  +{experience} XP  +{scoreReward} SCORE";
+        notificationRemaining = 4f;
+        Refresh();
+    }
+
     void Refresh()
     {
         unitCount.SetCount(
