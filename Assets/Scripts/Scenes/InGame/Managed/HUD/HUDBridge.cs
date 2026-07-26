@@ -11,6 +11,8 @@ public class HUDBridge : MonoBehaviour
     int projectileCount;
     int eliteCount;
     int championCount;
+    int championCurrentHealth;
+    int championMaxHealth;
     int level = 1;
     int experience;
     int experienceToNextLevel = 1;
@@ -71,7 +73,10 @@ public class HUDBridge : MonoBehaviour
         Refresh();
     }
 
-    public void SetChampionCount(int count)
+    public void SetChampionState(
+        int count,
+        int currentHealth,
+        int maximumHealth)
     {
         if (count > championCount)
         {
@@ -80,6 +85,8 @@ public class HUDBridge : MonoBehaviour
         }
 
         championCount = count;
+        championCurrentHealth = currentHealth;
+        championMaxHealth = maximumHealth;
         Refresh();
     }
 
@@ -130,6 +137,8 @@ public class HUDBridge : MonoBehaviour
             projectileCount,
             eliteCount,
             championCount,
+            championCurrentHealth,
+            championMaxHealth,
             level,
             experience,
             experienceToNextLevel,
