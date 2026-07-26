@@ -88,6 +88,14 @@ public partial struct PlayerAutoSkillSystem : ISystem
                     skill.MaxLevel,
                     skill.EffectPerLevel);
 
+            case PlayerSkillKind.Area:
+                return AddSkillLevel(
+                    ref stats.AreaLevel,
+                    ref stats.AreaMultiplierAdd,
+                    addLevel,
+                    skill.MaxLevel,
+                    skill.EffectPerLevel);
+
             case PlayerSkillKind.Damage:
             default:
                 return AddSkillLevel(
@@ -146,6 +154,9 @@ public partial struct PlayerAutoSkillSystem : ISystem
             case PlayerSkillKind.AttackSpeed:
                 return stats.AttackSpeedLevel;
 
+            case PlayerSkillKind.Area:
+                return stats.AreaLevel;
+
             case PlayerSkillKind.Damage:
             default:
                 return stats.DamageLevel;
@@ -166,5 +177,10 @@ public partial struct PlayerAutoSkillSystem : ISystem
     public static float GetMoveSpeedMultiplier(in PlayerSkillStats stats)
     {
         return 1f + stats.MoveSpeedMultiplierAdd;
+    }
+
+    public static float GetAreaMultiplier(in PlayerSkillStats stats)
+    {
+        return 1f + stats.AreaMultiplierAdd;
     }
 }
