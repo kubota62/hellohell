@@ -64,6 +64,7 @@ public partial struct PlayerMovementSystem : ISystem
 /// </summary>
 [BurstCompile]
 [WithAll(typeof(Player))]
+[WithNone(typeof(PlayerDefeated))]
 public partial struct PlayerMovementJob : IJobEntity
 {
     public float3 Direction;
@@ -95,6 +96,13 @@ public partial struct PlayerAutoAimSystem : ISystem
     public void OnUpdate(ref SystemState state)
     {
         var input = SystemAPI.GetSingletonRW<PlayerInput>();
+        if (SystemAPI.HasSingleton<PlayerDefeated>())
+        {
+            input.ValueRW.IsFire = false;
+            input.ValueRW.HasAimPosition = false;
+            return;
+        }
+
         if (!input.ValueRO.AutoAttackEnabled)
         {
             return;
@@ -153,6 +161,11 @@ public partial struct PlayerTurretAimSystem : ISystem
     public void OnUpdate(ref SystemState state)
     {
         var input = SystemAPI.GetSingleton<PlayerInput>();
+        if (SystemAPI.HasSingleton<PlayerDefeated>())
+        {
+            return;
+        }
+
         if (!input.HasAimPosition)
         {
             return;

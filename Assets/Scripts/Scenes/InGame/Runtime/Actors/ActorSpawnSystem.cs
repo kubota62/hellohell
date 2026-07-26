@@ -39,6 +39,11 @@ public partial struct ActorSpawnSystem : ISystem
     public void OnUpdate(ref SystemState state)
     {
         var runState = SystemAPI.GetSingleton<RunState>();
+        if (runState.IsGameOver != 0)
+        {
+            return;
+        }
+
         runState.ElapsedSeconds += SystemAPI.Time.DeltaTime;
         runState.ThreatLevel = 1 +
             (int)math.floor(runState.ElapsedSeconds / 30f);
