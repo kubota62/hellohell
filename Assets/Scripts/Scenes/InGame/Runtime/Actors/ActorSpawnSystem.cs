@@ -83,12 +83,16 @@ public partial struct ActorSpawnSystem : ISystem
             math.min(4, 1 + (runState.ThreatLevel - 1) / 3));
         for (var i = 0; i < batchSize; i++)
         {
+            var nextEnemyOrdinal = runState.EnemiesSpawned + 1;
+            var isElite = runState.ThreatLevel >= 2 &&
+                nextEnemyOrdinal % 25 == 0;
             SpawnActor(
                 ref state,
                 false,
                 GetEnemySpawnPosition(ref state, spawnMaster),
                 runState.ElapsedSeconds,
-                runState.ThreatLevel);
+                runState.ThreatLevel,
+                isElite);
             spawnedActorCount++;
             runState.EnemiesSpawned++;
         }
@@ -102,7 +106,8 @@ public partial struct ActorSpawnSystem : ISystem
         bool isPlayer,
         float3 position,
         float elapsedSeconds,
-        int threatLevel)
+        int threatLevel,
+        bool isElite = false)
     {
         var entityManager = state.EntityManager;
         var config = SystemAPI.GetSingleton<Config>();
@@ -128,7 +133,8 @@ public partial struct ActorSpawnSystem : ISystem
                 entityManager,
                 actorEntity,
                 ResolveEnemyMaster(ref state, threatLevel),
-                elapsedSeconds);
+                elapsedSeconds,
+                isElite);
         }
 
         ApplyActorColorToChildren(entityManager, actorEntity);
@@ -208,15 +214,25 @@ public partial struct ActorSpawnSystem : ISystem
         EntityManager entityManager,
         Entity actorEntity,
         EnemyMasterData definition,
-        float elapsedSeconds)
+        float elapsedSeconds,
+        bool isElite)
     {
         var minAttackRange = math.max(0f, definition.Combat.MinAttackRange);
-        var healthMultiplier = 1f + math.min(4f, elapsedSeconds / 150f);
-        var speedMultiplier = 1f + math.min(0.55f, elapsedSeconds / 900f);
+        var healthMultiplier =
+            (1f + math.min(4f, elapsedSeconds / 150f)) *
+            (isElite ? 4f : 1f);
+        var speedMultiplier =
+            (1f + math.min(0.55f, elapsedSeconds / 900f)) *
+            (isElite ? 0.9f : 1f);
+        var rewardMultiplier = isElite ? 5 : 1;
         var scaledHealth = (int)math.ceil(
             math.max(1, definition.Stats.MaxHealth) * healthMultiplier);
 
         EnsureTag<Enemy>(entityManager, actorEntity);
+        if (isElite)
+        {
+            EnsureTag<EliteEnemy>(entityManager, actorEntity);
+        }
         SetOrAddComponent(
             entityManager,
             actorEntity,
@@ -232,7 +248,11 @@ public partial struct ActorSpawnSystem : ISystem
         SetOrAddComponent(
             entityManager,
             actorEntity,
-            new Hitbox { Radius = definition.Stats.HitRadius });
+            new Hitbox
+            {
+                Radius = definition.Stats.HitRadius *
+                    (isElite ? 1.35f : 1f),
+            });
         SetOrAddComponent(
             entityManager,
             actorEntity,
@@ -269,19 +289,27 @@ public partial struct ActorSpawnSystem : ISystem
             actorEntity,
             new EnemyReward
             {
-                Experience = math.max(0, definition.Reward.Experience),
-                Score = math.max(0, definition.Reward.Score),
+                Experience = math.max(
+                    0,
+                    definition.Reward.Experience * rewardMultiplier),
+                Score = math.max(
+                    0,
+                    definition.Reward.Score * rewardMultiplier),
             });
         SetOrAddComponent(
             entityManager,
             actorEntity,
             new URPMaterialPropertyBaseColor
             {
-                Value = definition.Visual.Color,
+                Value = isElite
+                    ? new float4(1f, 0.22f, 0.04f, 1f)
+                    : definition.Visual.Color,
             });
 
         var transform = entityManager.GetComponentData<LocalTransform>(actorEntity);
-        transform.Scale = math.max(0.01f, definition.Stats.BodyScale);
+        transform.Scale = math.max(
+            0.01f,
+            definition.Stats.BodyScale * (isElite ? 1.45f : 1f));
         entityManager.SetComponentData(actorEntity, transform);
     }
 

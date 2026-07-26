@@ -10,12 +10,14 @@ public partial struct HUDSystem : ISystem
 {
     EntityQuery actorCountQuery;
     EntityQuery projectileCountQuery;
+    EntityQuery eliteCountQuery;
 
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
         actorCountQuery = SystemAPI.QueryBuilder().WithAll<ActorBody>().Build();
         projectileCountQuery = SystemAPI.QueryBuilder().WithAll<Projectile, GameplayActive>().Build();
+        eliteCountQuery = SystemAPI.QueryBuilder().WithAll<EliteEnemy, GameplayActive>().Build();
     }
 
     public void OnUpdate(ref SystemState state)
@@ -28,6 +30,7 @@ public partial struct HUDSystem : ISystem
 
         hudBridge.SetActorCount(actorCountQuery.CalculateEntityCount());
         hudBridge.SetProjectileCount(projectileCountQuery.CalculateEntityCount());
+        hudBridge.SetEliteCount(eliteCountQuery.CalculateEntityCount());
 
         if (SystemAPI.TryGetSingleton<PlayerProgress>(out var progress))
         {
