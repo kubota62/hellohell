@@ -18,6 +18,8 @@ public class HUDUnitCount : MonoBehaviour
     TMP_Text championHealthLabel;
     GameObject runResultRoot;
     TMP_Text runResultLabel;
+    GameObject upgradeChoiceRoot;
+    TMP_Text upgradeChoiceLabel;
 
     void Awake()
     {
@@ -33,6 +35,7 @@ public class HUDUnitCount : MonoBehaviour
             22f);
         CreateChampionHealthBar();
         CreateRunResultOverlay();
+        CreateUpgradeChoiceOverlay();
     }
 
     public void SetCount(
@@ -55,6 +58,8 @@ public class HUDUnitCount : MonoBehaviour
         bool isVictory,
         bool autoAttackEnabled,
         PlayerSkillStats skillStats,
+        bool hasUpgradeChoice,
+        PlayerUpgradeChoice upgradeChoice,
         string statusNotification)
     {
         var totalSeconds = Mathf.Max(0, Mathf.FloorToInt(elapsedSeconds));
@@ -78,6 +83,10 @@ public class HUDUnitCount : MonoBehaviour
             level,
             score,
             threatLevel);
+        UpdateUpgradeChoiceOverlay(
+            hasUpgradeChoice,
+            upgradeChoice,
+            skillStats);
 
         unitText.text =
             $"LV {level}   XP {experience}/{experienceToNextLevel}\n" +
@@ -101,6 +110,154 @@ public class HUDUnitCount : MonoBehaviour
             $"AREA L{skillStats.AreaLevel} x{1f + skillStats.AreaMultiplierAdd:0.00}\n" +
             $"MOVE L{skillStats.MoveSpeedLevel} x{1f + skillStats.MoveSpeedMultiplierAdd:0.00}   " +
             $"REGEN L{skillStats.RegenerationLevel} {skillStats.HealthRegenerationPerSecond:0.0}/s";
+    }
+
+    void CreateUpgradeChoiceOverlay()
+    {
+        upgradeChoiceRoot = new GameObject(
+            "Upgrade Choice Overlay",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(Image));
+        upgradeChoiceRoot.layer = gameObject.layer;
+        upgradeChoiceRoot.transform.SetParent(transform, false);
+
+        var rootRect = upgradeChoiceRoot.GetComponent<RectTransform>();
+        rootRect.anchorMin = new Vector2(0.5f, 0.5f);
+        rootRect.anchorMax = new Vector2(0.5f, 0.5f);
+        rootRect.pivot = new Vector2(0.5f, 0.5f);
+        rootRect.anchoredPosition = Vector2.zero;
+        rootRect.sizeDelta = new Vector2(920f, 500f);
+
+        var background = upgradeChoiceRoot.GetComponent<Image>();
+        background.color = new Color(0.025f, 0.02f, 0.035f, 0.95f);
+        background.raycastTarget = false;
+
+        var labelObject = new GameObject(
+            "Choices",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(TextMeshProUGUI));
+        labelObject.layer = gameObject.layer;
+        labelObject.transform.SetParent(upgradeChoiceRoot.transform, false);
+
+        var labelRect = labelObject.GetComponent<RectTransform>();
+        labelRect.anchorMin = Vector2.zero;
+        labelRect.anchorMax = Vector2.one;
+        labelRect.offsetMin = new Vector2(48f, 34f);
+        labelRect.offsetMax = new Vector2(-48f, -34f);
+
+        upgradeChoiceLabel = labelObject.GetComponent<TextMeshProUGUI>();
+        if (unitText != null)
+        {
+            upgradeChoiceLabel.font = unitText.font;
+        }
+        upgradeChoiceLabel.alignment = TextAlignmentOptions.Center;
+        upgradeChoiceLabel.fontStyle = FontStyles.Bold;
+        upgradeChoiceLabel.fontSize = 27f;
+        upgradeChoiceLabel.color = Color.white;
+        upgradeChoiceLabel.textWrappingMode = TextWrappingModes.NoWrap;
+        upgradeChoiceLabel.raycastTarget = false;
+
+        upgradeChoiceRoot.SetActive(false);
+    }
+
+    void UpdateUpgradeChoiceOverlay(
+        bool isActive,
+        PlayerUpgradeChoice choice,
+        PlayerSkillStats stats)
+    {
+        if (upgradeChoiceRoot == null)
+        {
+            return;
+        }
+
+        upgradeChoiceRoot.SetActive(isActive);
+        if (!isActive)
+        {
+            return;
+        }
+
+        var queuedLevels = choice.PendingLevels > 1
+            ? $"  <size=22>({choice.PendingLevels} PICKS)</size>"
+            : string.Empty;
+        upgradeChoiceLabel.text =
+            $"<color=#FFD75A><size=48>LEVEL UP!</size></color>{queuedLevels}\n" +
+            "<size=22>CHOOSE AN UPGRADE — PRESS 1, 2 OR 3</size>\n\n" +
+            FormatUpgradeOption(1, choice.First, stats) + "\n\n" +
+            FormatUpgradeOption(2, choice.Second, stats) + "\n\n" +
+            FormatUpgradeOption(3, choice.Third, stats);
+    }
+
+    static string FormatUpgradeOption(
+        int index,
+        PlayerSkillMasterData skill,
+        PlayerSkillStats stats)
+    {
+        var currentLevel = GetSkillLevel(skill.Kind, stats);
+        var nextLevel = Mathf.Min(
+            skill.MaxLevel > 0 ? skill.MaxLevel : int.MaxValue,
+            currentLevel + Mathf.Max(1, skill.AddLevel));
+        var effect = GetSkillEffectDescription(skill);
+        return
+            $"<color=#FFD75A>[{index}]</color>  " +
+            $"<size=34>{GetUpgradeName(skill.Kind)}</size>  " +
+            $"<color=#B7B7C8>L{currentLevel} → L{nextLevel}</color>\n" +
+            $"<size=22>{effect}</size>";
+    }
+
+    static int GetSkillLevel(PlayerSkillKind kind, PlayerSkillStats stats)
+    {
+        switch (kind)
+        {
+            case PlayerSkillKind.AttackSpeed:
+                return stats.AttackSpeedLevel;
+            case PlayerSkillKind.MoveSpeed:
+                return stats.MoveSpeedLevel;
+            case PlayerSkillKind.Area:
+                return stats.AreaLevel;
+            case PlayerSkillKind.Regeneration:
+                return stats.RegenerationLevel;
+            case PlayerSkillKind.Damage:
+            default:
+                return stats.DamageLevel;
+        }
+    }
+
+    static string GetUpgradeName(PlayerSkillKind kind)
+    {
+        switch (kind)
+        {
+            case PlayerSkillKind.AttackSpeed:
+                return "QUICK HANDS";
+            case PlayerSkillKind.MoveSpeed:
+                return "SWIFT FEET";
+            case PlayerSkillKind.Area:
+                return "REACH";
+            case PlayerSkillKind.Regeneration:
+                return "VITALITY";
+            case PlayerSkillKind.Damage:
+            default:
+                return "MIGHT";
+        }
+    }
+
+    static string GetSkillEffectDescription(PlayerSkillMasterData skill)
+    {
+        switch (skill.Kind)
+        {
+            case PlayerSkillKind.AttackSpeed:
+                return $"Attack cooldown -{skill.EffectPerLevel * 100f:0}%";
+            case PlayerSkillKind.MoveSpeed:
+                return $"Movement speed +{skill.EffectPerLevel * 100f:0}%";
+            case PlayerSkillKind.Area:
+                return $"Attack area +{skill.EffectPerLevel * 100f:0}%";
+            case PlayerSkillKind.Regeneration:
+                return $"Health regeneration +{skill.EffectPerLevel:0.0}/s";
+            case PlayerSkillKind.Damage:
+            default:
+                return $"Damage +{skill.EffectPerLevel * 100f:0}%";
+        }
     }
 
     void CreateRunResultOverlay()

@@ -18,6 +18,7 @@ public struct RunState : IComponentData
     public int EnemiesSpawned;
     public byte IsGameOver;
     public byte IsVictory;
+    public byte IsChoosingUpgrade;
 }
 
 /// <summary>

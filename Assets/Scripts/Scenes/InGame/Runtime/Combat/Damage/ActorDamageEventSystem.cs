@@ -20,7 +20,7 @@ public partial struct ActorDamageEventSystem : ISystem
     public void OnUpdate(ref SystemState state)
     {
         if (SystemAPI.TryGetSingleton<RunState>(out var runState) &&
-            runState.IsGameOver != 0)
+            (runState.IsGameOver != 0 || runState.IsChoosingUpgrade != 0))
         {
             return;
         }

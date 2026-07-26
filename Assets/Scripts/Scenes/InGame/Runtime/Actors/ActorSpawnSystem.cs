@@ -44,7 +44,7 @@ public partial struct ActorSpawnSystem : ISystem
     public void OnUpdate(ref SystemState state)
     {
         var runState = SystemAPI.GetSingleton<RunState>();
-        if (runState.IsGameOver != 0)
+        if (runState.IsGameOver != 0 || runState.IsChoosingUpgrade != 0)
         {
             return;
         }

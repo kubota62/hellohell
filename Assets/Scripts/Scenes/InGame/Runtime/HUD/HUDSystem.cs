@@ -75,6 +75,10 @@ public partial struct HUDSystem : ISystem
                 runState.IsVictory != 0,
                 autoAttackEnabled,
                 skillStats);
+
+            hudBridge.SetUpgradeChoice(
+                SystemAPI.TryGetSingleton<PlayerUpgradeChoice>(out var upgradeChoice),
+                upgradeChoice);
         }
 
         var championCurrentHealth = 0;

@@ -13,10 +13,14 @@ public class PlayerInputManager : MonoBehaviour
     private EntityManager entityManager;
     private Entity inputEntity;
     private EntityQuery runStateQuery;
+    private EntityQuery upgradeChoiceQuery;
+    private EntityQuery upgradeSelectionQuery;
     private Camera mainCamera;
     private bool autoAttackEnabled;
     private bool hasInputEntity;
     private bool hasRunStateQuery;
+    private bool hasUpgradeQueries;
+    private bool upgradePauseActive;
     private uint activeAttackMask = AttackMasterIdUtility.CreatePlayerDefaultMask();
 
     private void Start()
@@ -32,7 +36,12 @@ public class PlayerInputManager : MonoBehaviour
         inputEntity = entityManager.CreateEntity(typeof(PlayerInput));
         runStateQuery = entityManager.CreateEntityQuery(
             ComponentType.ReadOnly<RunState>());
+        upgradeChoiceQuery = entityManager.CreateEntityQuery(
+            ComponentType.ReadOnly<PlayerUpgradeChoice>());
+        upgradeSelectionQuery = entityManager.CreateEntityQuery(
+            ComponentType.ReadOnly<PlayerUpgradeSelection>());
         hasRunStateQuery = true;
+        hasUpgradeQueries = true;
         hasInputEntity = true;
         mainCamera = Camera.main;
     }
@@ -45,6 +54,21 @@ public class PlayerInputManager : MonoBehaviour
         {
             runStateQuery.Dispose();
             hasRunStateQuery = false;
+        }
+
+        if (world != null &&
+            world.IsCreated &&
+            hasUpgradeQueries)
+        {
+            upgradeChoiceQuery.Dispose();
+            upgradeSelectionQuery.Dispose();
+            hasUpgradeQueries = false;
+        }
+
+        if (upgradePauseActive)
+        {
+            Time.timeScale = 1f;
+            upgradePauseActive = false;
         }
 
         if (hasInputEntity &&
@@ -68,6 +92,7 @@ public class PlayerInputManager : MonoBehaviour
         var mouse = Mouse.current;
         if (IsGameOver())
         {
+            ResumeAfterUpgradeChoice();
             entityManager.SetComponentData(inputEntity, new PlayerInput
             {
                 AutoAttackEnabled = autoAttackEnabled,
@@ -91,6 +116,12 @@ public class PlayerInputManager : MonoBehaviour
             return;
         }
 
+        if (TryHandleUpgradeChoice(keyboard))
+        {
+            return;
+        }
+
+        ResumeAfterUpgradeChoice();
         UpdateAttackToggles(keyboard);
         var movement = ReadMovement(keyboard);
         var hasAimPosition = TryGetAimWorldPosition(
@@ -112,6 +143,62 @@ public class PlayerInputManager : MonoBehaviour
     {
         return !runStateQuery.IsEmptyIgnoreFilter &&
             runStateQuery.GetSingleton<RunState>().IsGameOver != 0;
+    }
+
+    private bool TryHandleUpgradeChoice(Keyboard keyboard)
+    {
+        if (!hasUpgradeQueries || upgradeChoiceQuery.IsEmptyIgnoreFilter)
+        {
+            return false;
+        }
+
+        if (!upgradePauseActive)
+        {
+            Time.timeScale = 0f;
+            upgradePauseActive = true;
+        }
+
+        entityManager.SetComponentData(inputEntity, new PlayerInput
+        {
+            AutoAttackEnabled = autoAttackEnabled,
+            ActiveAttackMask = activeAttackMask,
+        });
+
+        if (keyboard == null || !upgradeSelectionQuery.IsEmptyIgnoreFilter)
+        {
+            return true;
+        }
+
+        var choiceIndex = keyboard.digit1Key.wasPressedThisFrame
+            ? 0
+            : keyboard.digit2Key.wasPressedThisFrame
+                ? 1
+                : keyboard.digit3Key.wasPressedThisFrame
+                    ? 2
+                    : -1;
+        if (choiceIndex < 0)
+        {
+            return true;
+        }
+
+        var selectionEntity = entityManager.CreateEntity(
+            typeof(PlayerUpgradeSelection));
+        entityManager.SetComponentData(selectionEntity, new PlayerUpgradeSelection
+        {
+            ChoiceIndex = choiceIndex,
+        });
+        return true;
+    }
+
+    private void ResumeAfterUpgradeChoice()
+    {
+        if (!upgradePauseActive)
+        {
+            return;
+        }
+
+        Time.timeScale = 1f;
+        upgradePauseActive = false;
     }
 
     private void UpdateAttackToggles(Keyboard keyboard)

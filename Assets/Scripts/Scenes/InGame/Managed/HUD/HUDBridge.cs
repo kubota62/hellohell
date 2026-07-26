@@ -26,6 +26,8 @@ public class HUDBridge : MonoBehaviour
     bool isVictory;
     bool autoAttackEnabled;
     PlayerSkillStats skillStats;
+    bool hasUpgradeChoice;
+    PlayerUpgradeChoice upgradeChoice;
     string statusNotification;
     float notificationRemaining;
 
@@ -144,6 +146,15 @@ public class HUDBridge : MonoBehaviour
         Refresh();
     }
 
+    public void SetUpgradeChoice(
+        bool isActive,
+        PlayerUpgradeChoice nextUpgradeChoice)
+    {
+        hasUpgradeChoice = isActive;
+        upgradeChoice = nextUpgradeChoice;
+        Refresh();
+    }
+
     void Refresh()
     {
         unitCount.SetCount(
@@ -166,6 +177,8 @@ public class HUDBridge : MonoBehaviour
             isVictory,
             autoAttackEnabled,
             skillStats,
+            hasUpgradeChoice,
+            upgradeChoice,
             statusNotification);
     }
 
