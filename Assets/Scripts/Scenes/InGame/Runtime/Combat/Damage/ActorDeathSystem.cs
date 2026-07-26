@@ -12,9 +12,16 @@ using Unity.Transforms;
 [UpdateAfter(typeof(ActorDamageEventSystem))]
 public partial struct ActorDeathSystem : ISystem
 {
+    private const int MaximumExperiencePickups = 500;
+
+    private EntityQuery experiencePickupQuery;
+
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
+        experiencePickupQuery = SystemAPI.QueryBuilder()
+            .WithAll<ExperiencePickup>()
+            .Build();
         state.RequireForUpdate<Config>();
         state.RequireForUpdate<EndSimulationEntityCommandBufferSystem.Singleton>();
     }
@@ -26,6 +33,7 @@ public partial struct ActorDeathSystem : ISystem
             .CreateCommandBuffer(state.WorldUnmanaged);
         var rewardLookup = SystemAPI.GetComponentLookup<EnemyReward>(true);
         var config = SystemAPI.GetSingleton<Config>();
+        var experiencePickupCount = experiencePickupQuery.CalculateEntityCount();
 
         foreach (var (health, transform, entity) in
                  SystemAPI.Query<RefRO<Health>, RefRO<LocalTransform>>()
@@ -41,27 +49,61 @@ public partial struct ActorDeathSystem : ISystem
             if (rewardLookup.HasComponent(entity))
             {
                 var reward = rewardLookup[entity];
-                var pickupEntity = ecb.Instantiate(config.ProjectilePrefab);
-                ecb.SetComponent(pickupEntity, LocalTransform.FromPositionRotationScale(
-                    transform.ValueRO.Position + new float3(0f, 0.35f, 0f),
-                    quaternion.identity,
-                    0.45f));
-                ecb.SetComponent(pickupEntity, new URPMaterialPropertyBaseColor
+                if (experiencePickupCount < MaximumExperiencePickups)
                 {
-                    Value = new float4(0.2f, 1f, 0.35f, 1f),
-                });
-                ecb.AddComponent(pickupEntity, new ExperiencePickup
+                    CreateExperiencePickup(
+                        ecb,
+                        config.ProjectilePrefab,
+                        transform.ValueRO.Position,
+                        reward);
+                    experiencePickupCount++;
+                }
+                else
                 {
-                    Experience = reward.Experience,
-                    Score = reward.Score,
-                });
-                ecb.RemoveComponent<ProjectileMotion>(pickupEntity);
-                ecb.RemoveComponent<Projectile>(pickupEntity);
-                ecb.RemoveComponent<Lifetime>(pickupEntity);
-                ecb.RemoveComponent<GameplayActive>(pickupEntity);
+                    CreateRewardEvent(ecb, reward);
+                }
             }
 
             ecb.DestroyEntity(entity);
         }
+    }
+
+    private static void CreateExperiencePickup(
+        EntityCommandBuffer ecb,
+        Entity projectilePrefab,
+        float3 position,
+        EnemyReward reward)
+    {
+        var pickupEntity = ecb.Instantiate(projectilePrefab);
+        ecb.SetComponent(pickupEntity, LocalTransform.FromPositionRotationScale(
+            position + new float3(0f, 0.35f, 0f),
+            quaternion.identity,
+            0.45f));
+        ecb.SetComponent(pickupEntity, new URPMaterialPropertyBaseColor
+        {
+            Value = new float4(0.2f, 1f, 0.35f, 1f),
+        });
+        ecb.AddComponent(pickupEntity, new ExperiencePickup
+        {
+            Experience = reward.Experience,
+            Score = reward.Score,
+        });
+        ecb.RemoveComponent<ProjectileMotion>(pickupEntity);
+        ecb.RemoveComponent<Projectile>(pickupEntity);
+        ecb.RemoveComponent<Lifetime>(pickupEntity);
+        ecb.RemoveComponent<GameplayActive>(pickupEntity);
+    }
+
+    private static void CreateRewardEvent(
+        EntityCommandBuffer ecb,
+        EnemyReward reward)
+    {
+        var rewardEntity = ecb.CreateEntity();
+        ecb.AddComponent(rewardEntity, new EnemyRewardEvent
+        {
+            EnemyTypeId = 0,
+            Experience = reward.Experience,
+            Score = reward.Score,
+        });
     }
 }
