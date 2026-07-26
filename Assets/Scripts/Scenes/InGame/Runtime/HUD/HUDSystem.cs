@@ -35,10 +35,15 @@ public partial struct HUDSystem : ISystem
         if (SystemAPI.TryGetSingleton<PlayerProgress>(out var progress))
         {
             var health = new Health { Max = 1, Current = 1 };
+            var skillStats = new PlayerSkillStats();
             if (SystemAPI.TryGetSingletonEntity<Player>(out var playerEntity) &&
                 SystemAPI.HasComponent<Health>(playerEntity))
             {
                 health = SystemAPI.GetComponent<Health>(playerEntity);
+                if (SystemAPI.HasComponent<PlayerSkillStats>(playerEntity))
+                {
+                    skillStats = SystemAPI.GetComponent<PlayerSkillStats>(playerEntity);
+                }
             }
 
             var runState = SystemAPI.TryGetSingleton<RunState>(out var currentRun)
@@ -58,7 +63,8 @@ public partial struct HUDSystem : ISystem
                 runState.ElapsedSeconds,
                 runState.ThreatLevel,
                 runState.IsGameOver != 0,
-                autoAttackEnabled);
+                autoAttackEnabled,
+                skillStats);
         }
     }
 }
