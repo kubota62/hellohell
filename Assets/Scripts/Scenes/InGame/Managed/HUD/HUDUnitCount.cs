@@ -28,6 +28,7 @@ public class HUDUnitCount : MonoBehaviour
         int maxHealth,
         float elapsedSeconds,
         int threatLevel,
+        bool isGameOver,
         bool autoAttackEnabled)
     {
         var totalSeconds = Mathf.Max(0, Mathf.FloorToInt(elapsedSeconds));
@@ -38,7 +39,8 @@ public class HUDUnitCount : MonoBehaviour
         unitText.text =
             $"LV {level}   XP {experience}/{experienceToNextLevel}\n" +
             $"HP {Mathf.Max(0, health)}/{Mathf.Max(1, maxHealth)}   SCORE {score}\n" +
-            $"TIME {minutes:00}:{seconds:00}   THREAT {threatLevel}";
+            $"TIME {minutes:00}:{seconds:00}   THREAT {threatLevel}" +
+            (isGameOver ? "\nDEFEATED" : string.Empty);
         bulletText.text =
             $"ENEMIES {Mathf.Max(0, unitNum - 1)}   ELITES {Mathf.Max(0, eliteNum)}   " +
             $"SHOTS {bulletNum}   ATTACK {attackMode}";

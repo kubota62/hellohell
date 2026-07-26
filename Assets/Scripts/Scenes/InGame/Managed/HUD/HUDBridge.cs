@@ -18,6 +18,7 @@ public class HUDBridge : MonoBehaviour
     int maxHealth = 1;
     float elapsedSeconds;
     int threatLevel = 1;
+    bool isGameOver;
     bool autoAttackEnabled;
 
     void Awake()
@@ -52,6 +53,7 @@ public class HUDBridge : MonoBehaviour
         int nextMaxHealth,
         float nextElapsedSeconds,
         int nextThreatLevel,
+        bool nextIsGameOver,
         bool nextAutoAttackEnabled)
     {
         level = nextLevel;
@@ -62,6 +64,7 @@ public class HUDBridge : MonoBehaviour
         maxHealth = nextMaxHealth;
         elapsedSeconds = nextElapsedSeconds;
         threatLevel = nextThreatLevel;
+        isGameOver = nextIsGameOver;
         autoAttackEnabled = nextAutoAttackEnabled;
         Refresh();
     }
@@ -80,6 +83,7 @@ public class HUDBridge : MonoBehaviour
             maxHealth,
             elapsedSeconds,
             threatLevel,
+            isGameOver,
             autoAttackEnabled);
     }
 }

@@ -52,6 +52,7 @@ public partial struct AttackRequestSystem : ISystem
         foreach (var (_, actorEntity) in
                  SystemAPI.Query<RefRO<ActorBody>>()
                      .WithAll<Player, PlayerAttackSlot>()
+                     .WithNone<PlayerDefeated>()
                      .WithEntityAccess())
         {
             var attackSlots = entityManager.GetBuffer<PlayerAttackSlot>(actorEntity);
