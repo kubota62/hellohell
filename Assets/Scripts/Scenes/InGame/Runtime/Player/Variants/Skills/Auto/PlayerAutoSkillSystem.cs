@@ -446,6 +446,14 @@ public partial struct PlayerAutoSkillSystem : ISystem
                     skill.MaxLevel,
                     skill.EffectPerLevel);
 
+            case PlayerSkillKind.Penetration:
+                return AddSkillLevel(
+                    ref stats.PenetrationLevel,
+                    ref stats.ProjectilePierceAdd,
+                    addLevel,
+                    skill.MaxLevel,
+                    skill.EffectPerLevel);
+
             case PlayerSkillKind.Damage:
             default:
                 return AddSkillLevel(
@@ -580,6 +588,9 @@ public partial struct PlayerAutoSkillSystem : ISystem
             case PlayerSkillKind.BossHunter:
                 return stats.BossHunterLevel;
 
+            case PlayerSkillKind.Penetration:
+                return stats.PenetrationLevel;
+
             case PlayerSkillKind.Damage:
             default:
                 return stats.DamageLevel;
@@ -701,6 +712,14 @@ public partial struct PlayerAutoSkillSystem : ISystem
             stats.EliteDamageMultiplierAdd,
             0f,
             2f);
+    }
+
+    public static int GetProjectilePierceAdd(in PlayerSkillStats stats)
+    {
+        return math.clamp(
+            (int)math.round(stats.ProjectilePierceAdd),
+            0,
+            8);
     }
 }
 

@@ -163,6 +163,14 @@ public static class PlayerSkillMasterCatalog
                     effectPerLevel: 0.12f,
                     weight: 1);
 
+            case PlayerSkillMasterId.PenetrationBoost:
+                return Create(
+                    PlayerSkillMasterId.PenetrationBoost,
+                    PlayerSkillKind.Penetration,
+                    maxLevel: 3,
+                    effectPerLevel: 1f,
+                    weight: 1);
+
             case PlayerSkillMasterId.DamageBoost:
             default:
                 return Create(
@@ -233,7 +241,7 @@ public static class PlayerSkillMasterCatalog
 
     public static PlayerSkillMasterData GetByFallbackOrder(int pickIndex, PlayerSkillStats stats)
     {
-        const int fallbackCount = 20;
+        const int fallbackCount = 21;
         var startIndex = (pickIndex < 0 ? 0 : pickIndex) % fallbackCount;
         for (var i = 0; i < fallbackCount; i++)
         {
@@ -308,6 +316,9 @@ public static class PlayerSkillMasterCatalog
 
             case 19:
                 return PlayerSkillMasterId.BossHunterBoost;
+
+            case 20:
+                return PlayerSkillMasterId.PenetrationBoost;
 
             case 0:
             default:
@@ -385,6 +396,9 @@ public static class PlayerSkillMasterCatalog
 
             case PlayerSkillKind.BossHunter:
                 return stats.BossHunterLevel;
+
+            case PlayerSkillKind.Penetration:
+                return stats.PenetrationLevel;
 
             case PlayerSkillKind.Damage:
             default:

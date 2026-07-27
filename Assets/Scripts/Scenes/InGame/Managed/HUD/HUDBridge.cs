@@ -268,6 +268,9 @@ public class HUDBridge : MonoBehaviour
             case PlayerSkillKind.BossHunter:
                 return "BOSS HUNTER";
 
+            case PlayerSkillKind.Penetration:
+                return "PENETRATION";
+
             case PlayerSkillKind.Damage:
             default:
                 return "DAMAGE";

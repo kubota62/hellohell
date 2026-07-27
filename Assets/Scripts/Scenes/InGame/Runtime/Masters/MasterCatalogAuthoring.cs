@@ -159,6 +159,7 @@ public class MasterCatalogAuthoring : MonoBehaviour
             EnsurePlayerSkillMaster(buffer, PlayerSkillMasterId.WisdomBoost);
             EnsurePlayerSkillMaster(buffer, PlayerSkillMasterId.LongshotBoost);
             EnsurePlayerSkillMaster(buffer, PlayerSkillMasterId.BossHunterBoost);
+            EnsurePlayerSkillMaster(buffer, PlayerSkillMasterId.PenetrationBoost);
         }
 
         private void BakePlayerProgressMasters(

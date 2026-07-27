@@ -223,6 +223,12 @@ public partial struct AttackRequestSystem : ISystem
             definition.Lifetime = ResolveProjectileLifetime(
                 definition.Lifetime,
                 stats);
+            definition.PierceCount = ResolveProjectilePierceCount(
+                definition.PierceCount,
+                stats);
+            definition.ProjectileModifiers = ResolveProjectileModifiers(
+                definition.ProjectileModifiers,
+                definition.PierceCount);
         }
         definition.Damage = ResolveCriticalDamage(
             definition.Damage,
@@ -241,6 +247,25 @@ public partial struct AttackRequestSystem : ISystem
             0.05f,
             baseLifetime *
             PlayerAutoSkillSystem.GetProjectileLifetimeMultiplier(stats));
+    }
+
+    public static int ResolveProjectilePierceCount(
+        int basePierceCount,
+        in PlayerSkillStats stats)
+    {
+        return math.max(
+            0,
+            basePierceCount) +
+            PlayerAutoSkillSystem.GetProjectilePierceAdd(stats);
+    }
+
+    public static ProjectileModifierFlags ResolveProjectileModifiers(
+        ProjectileModifierFlags baseModifiers,
+        int pierceCount)
+    {
+        return pierceCount > 0
+            ? baseModifiers | ProjectileModifierFlags.Piercing
+            : baseModifiers;
     }
 
     public static int ResolveAttackCount(

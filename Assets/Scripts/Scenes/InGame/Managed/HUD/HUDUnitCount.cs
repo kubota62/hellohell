@@ -129,7 +129,9 @@ public class HUDUnitCount : MonoBehaviour
             $"LONGSHOT L{skillStats.LongshotLevel} " +
             $"x{1f + skillStats.ProjectileLifetimeMultiplierAdd:0.00}   " +
             $"HUNTER L{skillStats.BossHunterLevel} " +
-            $"+{skillStats.EliteDamageMultiplierAdd * 100f:0}%";
+            $"+{skillStats.EliteDamageMultiplierAdd * 100f:0}%   " +
+            $"PEN L{skillStats.PenetrationLevel} " +
+            $"+{PlayerAutoSkillSystem.GetProjectilePierceAdd(skillStats)}";
     }
 
     void CreateUpgradeChoiceOverlay()
@@ -272,6 +274,8 @@ public class HUDUnitCount : MonoBehaviour
                 return stats.LongshotLevel;
             case PlayerSkillKind.BossHunter:
                 return stats.BossHunterLevel;
+            case PlayerSkillKind.Penetration:
+                return stats.PenetrationLevel;
             case PlayerSkillKind.Damage:
             default:
                 return stats.DamageLevel;
@@ -320,6 +324,8 @@ public class HUDUnitCount : MonoBehaviour
                 return "LONGSHOT";
             case PlayerSkillKind.BossHunter:
                 return "BOSS HUNTER";
+            case PlayerSkillKind.Penetration:
+                return "PENETRATION";
             case PlayerSkillKind.Damage:
             default:
                 return "MIGHT";
@@ -365,6 +371,8 @@ public class HUDUnitCount : MonoBehaviour
                 return $"Projectile travel range +{skill.EffectPerLevel * 100f:0}%";
             case PlayerSkillKind.BossHunter:
                 return $"Damage vs Elite and Champion enemies +{skill.EffectPerLevel * 100f:0}%";
+            case PlayerSkillKind.Penetration:
+                return $"Projectile pierce +{skill.EffectPerLevel:0}";
             case PlayerSkillKind.Damage:
             default:
                 return $"Damage +{skill.EffectPerLevel * 100f:0}%";
