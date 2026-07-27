@@ -122,6 +122,14 @@ public partial struct HUDSystem : ISystem
             ecb.DestroyEntity(eventEntity);
         }
 
+        foreach (var (healedEvent, eventEntity) in
+                 SystemAPI.Query<RefRO<PlayerHealedEvent>>()
+                     .WithEntityAccess())
+        {
+            hudBridge.ShowPlayerHealed(healedEvent.ValueRO.Amount);
+            ecb.DestroyEntity(eventEntity);
+        }
+
         ecb.Playback(state.EntityManager);
         ecb.Dispose();
     }

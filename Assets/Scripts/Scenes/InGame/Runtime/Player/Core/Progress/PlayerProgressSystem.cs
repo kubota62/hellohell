@@ -5,6 +5,113 @@ using Unity.Mathematics;
 using Unity.Transforms;
 
 /// <summary>
+/// Pulls restorative shards toward the player and consumes them only when
+/// health is missing, so full-health players do not waste recovery.
+/// </summary>
+[UpdateBefore(typeof(PlayerProgressSystem))]
+public partial struct HealthPickupSystem : ISystem
+{
+    private const float BaseAttractionRadius = 2.75f;
+    private const float AttractionRadiusPerLevel = 0.18f;
+    private const float MaximumAttractionRadius = 14f;
+    private const float CollectRadius = 1.2f;
+
+    public void OnCreate(ref SystemState state)
+    {
+        state.RequireForUpdate<Player>();
+        state.RequireForUpdate<HealthPickup>();
+    }
+
+    public void OnUpdate(ref SystemState state)
+    {
+        var playerEntity = SystemAPI.GetSingletonEntity<Player>();
+        if (!SystemAPI.HasComponent<LocalTransform>(playerEntity) ||
+            !SystemAPI.HasComponent<Health>(playerEntity))
+        {
+            return;
+        }
+
+        var playerPosition = SystemAPI.GetComponent<LocalTransform>(playerEntity).Position;
+        playerPosition.y = 0.35f;
+        var playerLevel = SystemAPI.HasComponent<PlayerProgress>(playerEntity)
+            ? math.max(1, SystemAPI.GetComponent<PlayerProgress>(playerEntity).Level)
+            : 1;
+        var pickupRadiusAdd = SystemAPI.HasComponent<PlayerSkillStats>(playerEntity)
+            ? math.max(
+                0f,
+                SystemAPI.GetComponent<PlayerSkillStats>(playerEntity).PickupRadiusAdd)
+            : 0f;
+        var attractionRadius = math.min(
+            MaximumAttractionRadius,
+            BaseAttractionRadius +
+            (playerLevel - 1) * AttractionRadiusPerLevel +
+            pickupRadiusAdd);
+        var attractionRadiusSq = attractionRadius * attractionRadius;
+        var deltaTime = SystemAPI.Time.DeltaTime;
+        var playerHealth = SystemAPI.GetComponent<Health>(playerEntity);
+        var totalHealed = 0;
+        var ecb = new EntityCommandBuffer(Allocator.Temp);
+
+        foreach (var (transform, pickup, entity) in
+                 SystemAPI.Query<RefRW<LocalTransform>, RefRO<HealthPickup>>()
+                     .WithEntityAccess())
+        {
+            var toPlayer = playerPosition - transform.ValueRO.Position;
+            var distanceSq = math.lengthsq(toPlayer);
+            if (distanceSq > attractionRadiusSq)
+            {
+                continue;
+            }
+
+            if (distanceSq <= CollectRadius * CollectRadius)
+            {
+                var healed = ApplyHealing(
+                    ref playerHealth,
+                    pickup.ValueRO.Healing);
+                if (healed > 0)
+                {
+                    totalHealed += healed;
+                    ecb.DestroyEntity(entity);
+                }
+                continue;
+            }
+
+            var distance = math.sqrt(distanceSq);
+            var attraction = 1f - math.saturate(distance / attractionRadius);
+            var speed = math.lerp(5f, 14f, attraction);
+            transform.ValueRW.Position +=
+                math.normalizesafe(toPlayer) * speed * deltaTime;
+            transform.ValueRW.Rotation = math.mul(
+                quaternion.RotateY(deltaTime * 6f),
+                transform.ValueRO.Rotation);
+        }
+
+        if (totalHealed > 0)
+        {
+            ecb.SetComponent(playerEntity, playerHealth);
+            var eventEntity = ecb.CreateEntity();
+            ecb.AddComponent(eventEntity, new PlayerHealedEvent
+            {
+                Amount = totalHealed,
+            });
+        }
+
+        ecb.Playback(state.EntityManager);
+        ecb.Dispose();
+    }
+
+    public static int ApplyHealing(ref Health health, int requestedHealing)
+    {
+        var before = math.clamp(health.Current, 0, math.max(1, health.Max));
+        health.Max = math.max(1, health.Max);
+        health.Current = math.min(
+            health.Max,
+            before + math.max(0, requestedHealing));
+        return health.Current - before;
+    }
+}
+
+/// <summary>
 /// 経験値ドロップをプレイヤーへ吸引し、接触時に報酬イベントへ変換する。
 /// </summary>
 [UpdateBefore(typeof(PlayerProgressSystem))]

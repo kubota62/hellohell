@@ -146,6 +146,13 @@ public class HUDBridge : MonoBehaviour
         Refresh();
     }
 
+    public void ShowPlayerHealed(int amount)
+    {
+        statusNotification = $"RESTORATIVE SHARD  +{Mathf.Max(0, amount)} HP";
+        notificationRemaining = 2.5f;
+        Refresh();
+    }
+
     public void SetUpgradeChoice(
         bool isActive,
         PlayerUpgradeChoice nextUpgradeChoice)
