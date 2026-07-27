@@ -65,11 +65,6 @@ public class HUDUnitCount : MonoBehaviour
         var totalSeconds = Mathf.Max(0, Mathf.FloorToInt(elapsedSeconds));
         var minutes = totalSeconds / 60;
         var seconds = totalSeconds % 60;
-        var remainingTotalSeconds = Mathf.Max(
-            0,
-            Mathf.CeilToInt(durationSeconds - elapsedSeconds));
-        var remainingMinutes = remainingTotalSeconds / 60;
-        var remainingSeconds = remainingTotalSeconds % 60;
         var attackMode = autoAttackEnabled ? "AUTO" : "MANUAL";
         UpdateChampionHealthBar(
             championNum,
@@ -91,8 +86,7 @@ public class HUDUnitCount : MonoBehaviour
         unitText.text =
             $"LV {level}   XP {experience}/{experienceToNextLevel}\n" +
             $"HP {Mathf.Max(0, health)}/{Mathf.Max(1, maxHealth)}   SCORE {score}\n" +
-            $"TIME {minutes:00}:{seconds:00}   LEFT {remainingMinutes:00}:{remainingSeconds:00}   " +
-            $"THREAT {threatLevel}" +
+            $"{FormatRunClock(elapsedSeconds, durationSeconds, isGameOver)}   THREAT {threatLevel}" +
             (isGameOver
                 ? isVictory
                     ? "\nVICTORY!   PRESS R TO REPLAY"
@@ -106,6 +100,34 @@ public class HUDUnitCount : MonoBehaviour
             $"CHAMPIONS {Mathf.Max(0, championNum)}   " +
             $"SHOTS {bulletNum}   ATTACK {attackMode}\n" +
             FormatBuildStats(skillStats);
+    }
+
+    public static string FormatRunClock(
+        float elapsedSeconds,
+        float durationSeconds,
+        bool isGameOver)
+    {
+        var safeElapsedSeconds = Mathf.Max(0f, elapsedSeconds);
+        var safeDurationSeconds = Mathf.Max(0f, durationSeconds);
+        var totalSeconds = Mathf.FloorToInt(safeElapsedSeconds);
+        var minutes = totalSeconds / 60;
+        var seconds = totalSeconds % 60;
+        if (!isGameOver &&
+            safeDurationSeconds > 0f &&
+            safeElapsedSeconds >= safeDurationSeconds)
+        {
+            return $"TIME {minutes:00}:{seconds:00}   FINAL BOSS OVERTIME";
+        }
+
+        var remainingTotalSeconds = Mathf.Max(
+            0,
+            Mathf.CeilToInt(
+                safeDurationSeconds - safeElapsedSeconds));
+        var remainingMinutes = remainingTotalSeconds / 60;
+        var remainingSeconds = remainingTotalSeconds % 60;
+        return
+            $"TIME {minutes:00}:{seconds:00}   " +
+            $"LEFT {remainingMinutes:00}:{remainingSeconds:00}";
     }
 
     public static string FormatBuildStats(PlayerSkillStats skillStats)
