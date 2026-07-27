@@ -170,6 +170,14 @@ public partial struct HUDSystem : ISystem
             ecb.DestroyEntity(eventEntity);
         }
 
+        foreach (var (_, eventEntity) in
+                 SystemAPI.Query<RefRO<FinalBossEnragedEvent>>()
+                     .WithEntityAccess())
+        {
+            hudBridge.ShowFinalBossEnraged();
+            ecb.DestroyEntity(eventEntity);
+        }
+
         ecb.Playback(state.EntityManager);
         ecb.Dispose();
     }

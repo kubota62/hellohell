@@ -321,7 +321,13 @@ public partial struct AttackRequestSystem : ISystem
     {
         if (entityManager.HasComponent<FinalBossEnemy>(actorEntity))
         {
-            ApplyFinalBossAttackModifiers(ref definition);
+            var isEnraged =
+                entityManager.HasComponent<FinalBossPhaseState>(actorEntity) &&
+                entityManager.GetComponentData<FinalBossPhaseState>(
+                    actorEntity).IsEnraged != 0;
+            ApplyFinalBossAttackModifiers(
+                ref definition,
+                isEnraged);
             return;
         }
 
@@ -350,14 +356,22 @@ public partial struct AttackRequestSystem : ISystem
     }
 
     public static void ApplyFinalBossAttackModifiers(
-        ref AttackMasterData definition)
+        ref AttackMasterData definition,
+        bool isEnraged)
     {
-        definition.Damage = math.max(1, definition.Damage * 5);
-        definition.Cooldown = math.max(0.05f, definition.Cooldown * 0.5f);
-        definition.HitRadius *= 2f;
-        definition.AreaRadius *= 2f;
-        definition.ImpactAreaRadius *= 2f;
-        definition.Scale *= 2f;
+        var damageMultiplier = isEnraged ? 7 : 5;
+        var cooldownMultiplier = isEnraged ? 0.35f : 0.5f;
+        var areaMultiplier = isEnraged ? 2.25f : 2f;
+        definition.Damage = math.max(
+            1,
+            definition.Damage * damageMultiplier);
+        definition.Cooldown = math.max(
+            0.05f,
+            definition.Cooldown * cooldownMultiplier);
+        definition.HitRadius *= areaMultiplier;
+        definition.AreaRadius *= areaMultiplier;
+        definition.ImpactAreaRadius *= areaMultiplier;
+        definition.Scale *= areaMultiplier;
     }
 
     private static bool CreateAttackRequest(

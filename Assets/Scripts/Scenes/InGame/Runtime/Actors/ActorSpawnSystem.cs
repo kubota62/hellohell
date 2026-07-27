@@ -464,6 +464,10 @@ public partial struct ActorSpawnSystem : ISystem
         if (isFinalBoss)
         {
             EnsureTag<FinalBossEnemy>(entityManager, actorEntity);
+            SetOrAddComponent(
+                entityManager,
+                actorEntity,
+                new FinalBossPhaseState());
         }
         SetOrAddComponent(
             entityManager,

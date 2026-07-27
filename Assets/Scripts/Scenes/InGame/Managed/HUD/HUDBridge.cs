@@ -179,6 +179,13 @@ public class HUDBridge : MonoBehaviour
         Refresh();
     }
 
+    public void ShowFinalBossEnraged()
+    {
+        statusNotification = "FINAL BOSS ENRAGED!  PHASE II";
+        notificationRemaining = 6f;
+        Refresh();
+    }
+
     public void SetUpgradeChoice(
         bool isActive,
         PlayerUpgradeChoice nextUpgradeChoice)
