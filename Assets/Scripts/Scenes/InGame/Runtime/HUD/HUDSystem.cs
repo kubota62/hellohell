@@ -78,6 +78,7 @@ public partial struct HUDSystem : ISystem
                 runState.ElapsedSeconds,
                 runState.DurationSeconds,
                 runState.ThreatLevel,
+                runState.EnemiesDefeated,
                 runState.IsGameOver != 0,
                 runState.IsVictory != 0,
                 autoAttackEnabled,

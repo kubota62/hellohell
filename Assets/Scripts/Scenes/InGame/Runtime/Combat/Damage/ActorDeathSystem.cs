@@ -41,9 +41,11 @@ public partial struct ActorDeathSystem : ISystem
         var championLookup = SystemAPI.GetComponentLookup<ChampionEnemy>(true);
         var finalBossLookup =
             SystemAPI.GetComponentLookup<FinalBossEnemy>(true);
+        var enemyLookup = SystemAPI.GetComponentLookup<Enemy>(true);
         var config = SystemAPI.GetSingleton<Config>();
         var experiencePickupCount = experiencePickupQuery.CalculateEntityCount();
         var healthPickupCount = healthPickupQuery.CalculateEntityCount();
+        var defeatedEnemyCount = 0;
 
         foreach (var (health, transform, entity) in
                  SystemAPI.Query<RefRO<Health>, RefRO<LocalTransform>>()
@@ -54,6 +56,11 @@ public partial struct ActorDeathSystem : ISystem
             if (health.ValueRO.Current > 0)
             {
                 continue;
+            }
+
+            if (enemyLookup.HasComponent(entity))
+            {
+                defeatedEnemyCount++;
             }
 
             if (rewardLookup.HasComponent(entity))
@@ -111,6 +118,30 @@ public partial struct ActorDeathSystem : ISystem
 
             ecb.DestroyEntity(entity);
         }
+
+        if (defeatedEnemyCount > 0 &&
+            SystemAPI.TryGetSingleton<RunState>(out var runState))
+        {
+            runState.EnemiesDefeated = AccumulateDefeatedEnemies(
+                runState.EnemiesDefeated,
+                defeatedEnemyCount);
+            SystemAPI.SetSingleton(runState);
+        }
+    }
+
+    public static int AccumulateDefeatedEnemies(
+        int currentCount,
+        int newlyDefeated)
+    {
+        var safeCurrent = math.max(0, currentCount);
+        if (newlyDefeated <= 0)
+        {
+            return safeCurrent;
+        }
+
+        return newlyDefeated > int.MaxValue - safeCurrent
+            ? int.MaxValue
+            : safeCurrent + newlyDefeated;
     }
 
     public static EnemyReward ResolvePickupReward(

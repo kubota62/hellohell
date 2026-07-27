@@ -25,6 +25,7 @@ public class HUDBridge : MonoBehaviour
     float elapsedSeconds;
     float durationSeconds = 600f;
     int threatLevel = 1;
+    int enemiesDefeated;
     bool isGameOver;
     bool isVictory;
     bool autoAttackEnabled;
@@ -113,6 +114,7 @@ public class HUDBridge : MonoBehaviour
         float nextElapsedSeconds,
         float nextDurationSeconds,
         int nextThreatLevel,
+        int nextEnemiesDefeated,
         bool nextIsGameOver,
         bool nextIsVictory,
         bool nextAutoAttackEnabled,
@@ -133,6 +135,7 @@ public class HUDBridge : MonoBehaviour
         }
 
         threatLevel = nextThreatLevel;
+        enemiesDefeated = Mathf.Max(0, nextEnemiesDefeated);
         isGameOver = nextIsGameOver;
         isVictory = nextIsVictory;
         autoAttackEnabled = nextAutoAttackEnabled;
@@ -225,6 +228,7 @@ public class HUDBridge : MonoBehaviour
             elapsedSeconds,
             durationSeconds,
             threatLevel,
+            enemiesDefeated,
             isGameOver,
             isVictory,
             autoAttackEnabled,

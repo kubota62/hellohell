@@ -16,6 +16,7 @@ public struct RunState : IComponentData
     public float DurationSeconds;
     public int ThreatLevel;
     public int EnemiesSpawned;
+    public int EnemiesDefeated;
     public byte IsGameOver;
     public byte IsVictory;
     public byte IsChoosingUpgrade;

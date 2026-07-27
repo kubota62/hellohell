@@ -58,6 +58,7 @@ public class HUDUnitCount : MonoBehaviour
         float elapsedSeconds,
         float durationSeconds,
         int threatLevel,
+        int enemiesDefeated,
         bool isGameOver,
         bool isVictory,
         bool autoAttackEnabled,
@@ -84,7 +85,8 @@ public class HUDUnitCount : MonoBehaviour
             seconds,
             level,
             score,
-            threatLevel);
+            threatLevel,
+            enemiesDefeated);
         UpdateUpgradeChoiceOverlay(
             hasUpgradeChoice,
             upgradeChoice,
@@ -105,6 +107,7 @@ public class HUDUnitCount : MonoBehaviour
                 : $"{statusNotification}\n") +
             $"ENEMIES {Mathf.Max(0, unitNum - 1)}   ELITES {Mathf.Max(0, eliteNum)}   " +
             $"CHAMPIONS {Mathf.Max(0, championNum)}   " +
+            $"KILLS {Mathf.Max(0, enemiesDefeated)}   " +
             $"SHOTS {bulletNum}   ATTACK {attackMode}\n" +
             FormatBuildStats(skillStats);
     }
@@ -487,7 +490,8 @@ public class HUDUnitCount : MonoBehaviour
         int seconds,
         int level,
         int score,
-        int threatLevel)
+        int threatLevel,
+        int enemiesDefeated)
     {
         if (runResultRoot == null)
         {
@@ -505,7 +509,8 @@ public class HUDUnitCount : MonoBehaviour
         runResultLabel.text =
             $"<color={titleColor}><size=52>{title}</size></color>\n" +
             $"SURVIVED  {minutes:00}:{seconds:00}    LEVEL  {level}\n" +
-            $"SCORE  {score}    THREAT  {threatLevel}\n" +
+            $"SCORE  {score}    KILLS  {Mathf.Max(0, enemiesDefeated)}    " +
+            $"THREAT  {threatLevel}\n" +
             "<size=24>PRESS R TO PLAY AGAIN</size>";
     }
 
