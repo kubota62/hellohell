@@ -422,6 +422,14 @@ public partial struct PlayerAutoSkillSystem : ISystem
                 return gainedLevel;
             }
 
+            case PlayerSkillKind.Wisdom:
+                return AddSkillLevel(
+                    ref stats.WisdomLevel,
+                    ref stats.ExperienceMultiplierAdd,
+                    addLevel,
+                    skill.MaxLevel,
+                    skill.EffectPerLevel);
+
             case PlayerSkillKind.Damage:
             default:
                 return AddSkillLevel(
@@ -547,6 +555,9 @@ public partial struct PlayerAutoSkillSystem : ISystem
             case PlayerSkillKind.SecondWind:
                 return stats.SecondWindLevel;
 
+            case PlayerSkillKind.Wisdom:
+                return stats.WisdomLevel;
+
             case PlayerSkillKind.Damage:
             default:
                 return stats.DamageLevel;
@@ -643,6 +654,14 @@ public partial struct PlayerAutoSkillSystem : ISystem
     public static float GetExecutionDamageBonus(in PlayerSkillStats stats)
     {
         return math.clamp(stats.ExecutionDamageMultiplierAdd, 0f, 1.5f);
+    }
+
+    public static float GetExperienceMultiplier(in PlayerSkillStats stats)
+    {
+        return 1f + math.clamp(
+            stats.ExperienceMultiplierAdd,
+            0f,
+            2f);
     }
 }
 

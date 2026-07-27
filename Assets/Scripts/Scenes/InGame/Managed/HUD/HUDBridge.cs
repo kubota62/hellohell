@@ -259,6 +259,9 @@ public class HUDBridge : MonoBehaviour
             case PlayerSkillKind.SecondWind:
                 return "SECOND WIND";
 
+            case PlayerSkillKind.Wisdom:
+                return "WISDOM";
+
             case PlayerSkillKind.Damage:
             default:
                 return "DAMAGE";

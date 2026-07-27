@@ -238,10 +238,17 @@ public partial struct PlayerProgressSystem : ISystem
                      .WithAll<Player>()
                      .WithEntityAccess())
         {
+            var experienceMultiplier =
+                SystemAPI.HasComponent<PlayerSkillStats>(playerEntity)
+                    ? PlayerAutoSkillSystem.GetExperienceMultiplier(
+                        SystemAPI.GetComponent<PlayerSkillStats>(playerEntity))
+                    : 1f;
             var value = progress.ValueRO;
             value.Level = math.max(1, value.Level);
             value.ExperienceToNextLevel = math.max(1, value.ExperienceToNextLevel);
-            value.Experience += totalExperience;
+            value.Experience += ResolveExperienceReward(
+                totalExperience,
+                experienceMultiplier);
             value.Score += totalScore;
             var levelsGained = 0;
 
@@ -269,6 +276,21 @@ public partial struct PlayerProgressSystem : ISystem
 
         ecb.Playback(state.EntityManager);
         ecb.Dispose();
+    }
+
+    public static int ResolveExperienceReward(
+        int baseExperience,
+        float multiplier)
+    {
+        if (baseExperience <= 0)
+        {
+            return 0;
+        }
+
+        return math.max(
+            1,
+            (int)math.round(
+                baseExperience * math.clamp(multiplier, 1f, 3f)));
     }
 
     public static PlayerProgress CreateInitialProgress()

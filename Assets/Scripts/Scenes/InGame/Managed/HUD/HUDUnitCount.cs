@@ -123,7 +123,9 @@ public class HUDUnitCount : MonoBehaviour
             $"MULTI L{skillStats.MultistrikeLevel} {skillStats.MultistrikeChance * 100f:0}%   " +
             $"EXEC L{skillStats.ExecutionerLevel} +{skillStats.ExecutionDamageMultiplierAdd * 100f:0}%\n" +
             $"SECOND WIND L{skillStats.SecondWindLevel}   " +
-            $"READY {skillStats.SecondWindChargesRemaining}";
+            $"READY {skillStats.SecondWindChargesRemaining}   " +
+            $"WISDOM L{skillStats.WisdomLevel} " +
+            $"x{1f + skillStats.ExperienceMultiplierAdd:0.00} XP";
     }
 
     void CreateUpgradeChoiceOverlay()
@@ -260,6 +262,8 @@ public class HUDUnitCount : MonoBehaviour
                 return stats.ExecutionerLevel;
             case PlayerSkillKind.SecondWind:
                 return stats.SecondWindLevel;
+            case PlayerSkillKind.Wisdom:
+                return stats.WisdomLevel;
             case PlayerSkillKind.Damage:
             default:
                 return stats.DamageLevel;
@@ -302,6 +306,8 @@ public class HUDUnitCount : MonoBehaviour
                 return "EXECUTIONER";
             case PlayerSkillKind.SecondWind:
                 return "SECOND WIND";
+            case PlayerSkillKind.Wisdom:
+                return "WISDOM";
             case PlayerSkillKind.Damage:
             default:
                 return "MIGHT";
@@ -341,6 +347,8 @@ public class HUDUnitCount : MonoBehaviour
                 return $"Damage vs enemies below 30% HP +{skill.EffectPerLevel * 100f:0}%";
             case PlayerSkillKind.SecondWind:
                 return $"Revive once at {skill.EffectPerLevel * 100f:0}% HP with 2s invulnerability";
+            case PlayerSkillKind.Wisdom:
+                return $"Experience gained +{skill.EffectPerLevel * 100f:0}%";
             case PlayerSkillKind.Damage:
             default:
                 return $"Damage +{skill.EffectPerLevel * 100f:0}%";
