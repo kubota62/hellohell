@@ -39,6 +39,8 @@ public partial struct ActorDeathSystem : ISystem
         var rewardLookup = SystemAPI.GetComponentLookup<EnemyReward>(true);
         var eliteLookup = SystemAPI.GetComponentLookup<EliteEnemy>(true);
         var championLookup = SystemAPI.GetComponentLookup<ChampionEnemy>(true);
+        var finalBossLookup =
+            SystemAPI.GetComponentLookup<FinalBossEnemy>(true);
         var config = SystemAPI.GetSingleton<Config>();
         var experiencePickupCount = experiencePickupQuery.CalculateEntityCount();
         var healthPickupCount = healthPickupQuery.CalculateEntityCount();
@@ -59,19 +61,32 @@ public partial struct ActorDeathSystem : ISystem
                 var reward = rewardLookup[entity];
                 var isElite = eliteLookup.HasComponent(entity);
                 var isChampion = championLookup.HasComponent(entity);
+                var isFinalBoss = finalBossLookup.HasComponent(entity);
+                var pickupReward = ResolvePickupReward(
+                    reward,
+                    isFinalBoss);
+                if (isFinalBoss)
+                {
+                    CreateRewardEvent(
+                        ecb,
+                        ResolveImmediateReward(
+                            reward,
+                            isFinalBoss));
+                }
+
                 if (experiencePickupCount < MaximumExperiencePickups)
                 {
                     CreateExperiencePickup(
                         ecb,
                         config.ProjectilePrefab,
                         transform.ValueRO.Position,
-                        reward,
+                        pickupReward,
                         isChampion);
                     experiencePickupCount++;
                 }
                 else
                 {
-                    CreateRewardEvent(ecb, reward);
+                    CreateRewardEvent(ecb, pickupReward);
                 }
 
                 if (isChampion)
@@ -96,6 +111,31 @@ public partial struct ActorDeathSystem : ISystem
 
             ecb.DestroyEntity(entity);
         }
+    }
+
+    public static EnemyReward ResolvePickupReward(
+        EnemyReward reward,
+        bool isFinalBoss)
+    {
+        if (isFinalBoss)
+        {
+            reward.Score = 0;
+        }
+
+        return reward;
+    }
+
+    public static EnemyReward ResolveImmediateReward(
+        EnemyReward reward,
+        bool isFinalBoss)
+    {
+        return new EnemyReward
+        {
+            Experience = 0,
+            Score = isFinalBoss
+                ? math.max(0, reward.Score)
+                : 0,
+        };
     }
 
     private static void CreateHealthPickup(
