@@ -87,16 +87,23 @@ public partial struct ActorSpawnSystem : ISystem
             runState.ElapsedSeconds / ChampionSpawnInterval);
         if (championWave > championWavesSpawned && availableSlots > 0)
         {
-            SpawnActor(
-                ref state,
-                false,
-                GetEnemySpawnPosition(ref state, spawnMaster),
-                runState.ElapsedSeconds,
-                runState.ThreatLevel,
-                isElite: true,
-                isChampion: true);
-            spawnedActorCount++;
-            runState.EnemiesSpawned++;
+            var championCount = CalculateChampionCount(
+                championWave,
+                availableSlots);
+            for (var i = 0; i < championCount; i++)
+            {
+                SpawnActor(
+                    ref state,
+                    false,
+                    GetEnemySpawnPosition(ref state, spawnMaster),
+                    runState.ElapsedSeconds,
+                    runState.ThreatLevel,
+                    isElite: true,
+                    isChampion: true);
+                spawnedActorCount++;
+                runState.EnemiesSpawned++;
+            }
+
             championWavesSpawned = championWave;
             enemySpawnTimer = 0f;
             SystemAPI.SetSingleton(runState);
@@ -166,6 +173,18 @@ public partial struct ActorSpawnSystem : ISystem
     {
         var desiredSize = 10 + math.clamp(threatLevel, 1, 14);
         return math.clamp(desiredSize, 0, math.max(0, availableSlots));
+    }
+
+    public static int CalculateChampionCount(int wave, int availableSlots)
+    {
+        var desiredCount = math.clamp(
+            1 + math.max(0, wave - 1) / 2,
+            1,
+            3);
+        return math.clamp(
+            desiredCount,
+            0,
+            math.max(0, availableSlots));
     }
 
     private void SpawnHordeSurge(
