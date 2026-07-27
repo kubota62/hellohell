@@ -28,6 +28,7 @@ public struct PlayerSkillStats : IComponentData
     public int SecondWindChargesRemaining;
     public int WisdomLevel;
     public int LongshotLevel;
+    public int BossHunterLevel;
     public float DamageMultiplierAdd;
     public float CooldownMultiplierReduction;
     public float MoveSpeedMultiplierAdd;
@@ -47,4 +48,5 @@ public struct PlayerSkillStats : IComponentData
     public float RevivalHealthFraction;
     public float ExperienceMultiplierAdd;
     public float ProjectileLifetimeMultiplierAdd;
+    public float EliteDamageMultiplierAdd;
 }

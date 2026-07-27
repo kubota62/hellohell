@@ -438,6 +438,14 @@ public partial struct PlayerAutoSkillSystem : ISystem
                     skill.MaxLevel,
                     skill.EffectPerLevel);
 
+            case PlayerSkillKind.BossHunter:
+                return AddSkillLevel(
+                    ref stats.BossHunterLevel,
+                    ref stats.EliteDamageMultiplierAdd,
+                    addLevel,
+                    skill.MaxLevel,
+                    skill.EffectPerLevel);
+
             case PlayerSkillKind.Damage:
             default:
                 return AddSkillLevel(
@@ -569,6 +577,9 @@ public partial struct PlayerAutoSkillSystem : ISystem
             case PlayerSkillKind.Longshot:
                 return stats.LongshotLevel;
 
+            case PlayerSkillKind.BossHunter:
+                return stats.BossHunterLevel;
+
             case PlayerSkillKind.Damage:
             default:
                 return stats.DamageLevel;
@@ -680,6 +691,14 @@ public partial struct PlayerAutoSkillSystem : ISystem
     {
         return 1f + math.clamp(
             stats.ProjectileLifetimeMultiplierAdd,
+            0f,
+            2f);
+    }
+
+    public static float GetEliteDamageBonus(in PlayerSkillStats stats)
+    {
+        return math.clamp(
+            stats.EliteDamageMultiplierAdd,
             0f,
             2f);
     }

@@ -155,6 +155,14 @@ public static class PlayerSkillMasterCatalog
                     effectPerLevel: 0.1f,
                     weight: 1);
 
+            case PlayerSkillMasterId.BossHunterBoost:
+                return Create(
+                    PlayerSkillMasterId.BossHunterBoost,
+                    PlayerSkillKind.BossHunter,
+                    maxLevel: 5,
+                    effectPerLevel: 0.12f,
+                    weight: 1);
+
             case PlayerSkillMasterId.DamageBoost:
             default:
                 return Create(
@@ -225,7 +233,7 @@ public static class PlayerSkillMasterCatalog
 
     public static PlayerSkillMasterData GetByFallbackOrder(int pickIndex, PlayerSkillStats stats)
     {
-        const int fallbackCount = 19;
+        const int fallbackCount = 20;
         var startIndex = (pickIndex < 0 ? 0 : pickIndex) % fallbackCount;
         for (var i = 0; i < fallbackCount; i++)
         {
@@ -297,6 +305,9 @@ public static class PlayerSkillMasterCatalog
 
             case 18:
                 return PlayerSkillMasterId.LongshotBoost;
+
+            case 19:
+                return PlayerSkillMasterId.BossHunterBoost;
 
             case 0:
             default:
@@ -371,6 +382,9 @@ public static class PlayerSkillMasterCatalog
 
             case PlayerSkillKind.Longshot:
                 return stats.LongshotLevel;
+
+            case PlayerSkillKind.BossHunter:
+                return stats.BossHunterLevel;
 
             case PlayerSkillKind.Damage:
             default:

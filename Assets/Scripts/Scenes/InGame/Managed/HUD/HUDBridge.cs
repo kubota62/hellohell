@@ -265,6 +265,9 @@ public class HUDBridge : MonoBehaviour
             case PlayerSkillKind.Longshot:
                 return "LONGSHOT";
 
+            case PlayerSkillKind.BossHunter:
+                return "BOSS HUNTER";
+
             case PlayerSkillKind.Damage:
             default:
                 return "DAMAGE";

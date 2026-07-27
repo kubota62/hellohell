@@ -55,12 +55,21 @@ public partial struct ActorDamageEventSystem : ISystem
                     ? PlayerAutoSkillSystem.GetExecutionDamageBonus(
                         playerSkillStats)
                     : 0f;
+            var eliteDamageBonus =
+                hasPlayerSkillStats &&
+                SystemAPI.HasComponent<EliteEnemy>(actorEntity)
+                    ? PlayerAutoSkillSystem.GetEliteDamageBonus(
+                        playerSkillStats)
+                    : 0f;
 
             // このフレームに溜まったダメージをまとめて減算し、各ヒットの表示だけ別リクエストへ逃がす。
             foreach (var damage in damageEventBuffer)
             {
-                var executionDamage = ResolveExecutionDamage(
+                var eliteDamage = ResolveBonusDamage(
                     damage.Damage,
+                    eliteDamageBonus);
+                var executionDamage = ResolveExecutionDamage(
+                    eliteDamage,
                     remainingHealth,
                     health.ValueRO.Max,
                     executionDamageBonus);
@@ -95,6 +104,19 @@ public partial struct ActorDamageEventSystem : ISystem
         return math.max(
             1,
             (int)math.round(damage * (1f - safeReduction)));
+    }
+
+    public static int ResolveBonusDamage(int damage, float damageBonus)
+    {
+        if (damage <= 0)
+        {
+            return 0;
+        }
+
+        var safeBonus = math.clamp(damageBonus, 0f, 2f);
+        return math.max(
+            1,
+            (int)math.round(damage * (1f + safeBonus)));
     }
 
     public static int ResolveExecutionDamage(

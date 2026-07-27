@@ -127,7 +127,9 @@ public class HUDUnitCount : MonoBehaviour
             $"WISDOM L{skillStats.WisdomLevel} " +
             $"x{1f + skillStats.ExperienceMultiplierAdd:0.00} XP   " +
             $"LONGSHOT L{skillStats.LongshotLevel} " +
-            $"x{1f + skillStats.ProjectileLifetimeMultiplierAdd:0.00}";
+            $"x{1f + skillStats.ProjectileLifetimeMultiplierAdd:0.00}   " +
+            $"HUNTER L{skillStats.BossHunterLevel} " +
+            $"+{skillStats.EliteDamageMultiplierAdd * 100f:0}%";
     }
 
     void CreateUpgradeChoiceOverlay()
@@ -268,6 +270,8 @@ public class HUDUnitCount : MonoBehaviour
                 return stats.WisdomLevel;
             case PlayerSkillKind.Longshot:
                 return stats.LongshotLevel;
+            case PlayerSkillKind.BossHunter:
+                return stats.BossHunterLevel;
             case PlayerSkillKind.Damage:
             default:
                 return stats.DamageLevel;
@@ -314,6 +318,8 @@ public class HUDUnitCount : MonoBehaviour
                 return "WISDOM";
             case PlayerSkillKind.Longshot:
                 return "LONGSHOT";
+            case PlayerSkillKind.BossHunter:
+                return "BOSS HUNTER";
             case PlayerSkillKind.Damage:
             default:
                 return "MIGHT";
@@ -357,6 +363,8 @@ public class HUDUnitCount : MonoBehaviour
                 return $"Experience gained +{skill.EffectPerLevel * 100f:0}%";
             case PlayerSkillKind.Longshot:
                 return $"Projectile travel range +{skill.EffectPerLevel * 100f:0}%";
+            case PlayerSkillKind.BossHunter:
+                return $"Damage vs Elite and Champion enemies +{skill.EffectPerLevel * 100f:0}%";
             case PlayerSkillKind.Damage:
             default:
                 return $"Damage +{skill.EffectPerLevel * 100f:0}%";

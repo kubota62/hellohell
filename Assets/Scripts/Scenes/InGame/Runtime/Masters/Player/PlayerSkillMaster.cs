@@ -25,6 +25,7 @@ public enum PlayerSkillMasterId
     SecondWindBoost = 17,
     WisdomBoost = 18,
     LongshotBoost = 19,
+    BossHunterBoost = 20,
 }
 
 /// <summary>
@@ -52,6 +53,7 @@ public enum PlayerSkillKind : byte
     SecondWind = 17,
     Wisdom = 18,
     Longshot = 19,
+    BossHunter = 20,
 }
 
 /// <summary>
