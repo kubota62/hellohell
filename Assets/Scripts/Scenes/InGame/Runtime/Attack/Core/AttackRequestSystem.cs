@@ -91,19 +91,26 @@ public partial struct AttackRequestSystem : ISystem
                     hasAttackMasters,
                     attackMasters,
                     slot.AttackMasterId);
-                ApplyPlayerSkillStats(
+                var attackCount = ApplyPlayerSkillStats(
                     entityManager,
                     actorEntity,
                     ref definition,
+                    criticalRandom.NextUInt(),
                     criticalRandom.NextUInt());
 
-                if (CreateAttackRequest(
+                var createdAttack = false;
+                for (var attackIndex = 0; attackIndex < attackCount; attackIndex++)
+                {
+                    createdAttack |= CreateAttackRequest(
                         entityManager,
                         actorEntity,
                         definition,
                         false,
                         float3.zero,
-                        ecb))
+                        ecb);
+                }
+
+                if (createdAttack)
                 {
                     slot.Remaining = math.max(0.01f, definition.Cooldown);
                 }
@@ -184,15 +191,16 @@ public partial struct AttackRequestSystem : ISystem
             : AttackMasterCatalog.Get(attackMasterId);
     }
 
-    private static void ApplyPlayerSkillStats(
+    private static int ApplyPlayerSkillStats(
         EntityManager entityManager,
         Entity actorEntity,
         ref AttackMasterData definition,
-        uint criticalRoll)
+        uint criticalRoll,
+        uint multistrikeRoll)
     {
         if (!entityManager.HasComponent<PlayerSkillStats>(actorEntity))
         {
-            return;
+            return 1;
         }
 
         var stats = entityManager.GetComponentData<PlayerSkillStats>(actorEntity);
@@ -216,6 +224,18 @@ public partial struct AttackRequestSystem : ISystem
             criticalRoll,
             out var isCritical);
         definition.IsCritical = isCritical ? (byte)1 : (byte)0;
+        return ResolveAttackCount(stats, multistrikeRoll);
+    }
+
+    public static int ResolveAttackCount(
+        in PlayerSkillStats stats,
+        uint roll)
+    {
+        var chance = PlayerAutoSkillSystem.GetMultistrikeChance(stats);
+        return chance > 0f &&
+            roll / (float)uint.MaxValue < chance
+                ? 2
+                : 1;
     }
 
     public static int ResolveCriticalDamage(

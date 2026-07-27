@@ -340,6 +340,14 @@ public partial struct PlayerAutoSkillSystem : ISystem
                     skill.MaxLevel,
                     skill.EffectPerLevel);
 
+            case PlayerSkillKind.Multistrike:
+                return AddSkillLevel(
+                    ref stats.MultistrikeLevel,
+                    ref stats.MultistrikeChance,
+                    addLevel,
+                    skill.MaxLevel,
+                    skill.EffectPerLevel);
+
             case PlayerSkillKind.Damage:
             default:
                 return AddSkillLevel(
@@ -456,6 +464,9 @@ public partial struct PlayerAutoSkillSystem : ISystem
             case PlayerSkillKind.Armor:
                 return stats.ArmorLevel;
 
+            case PlayerSkillKind.Multistrike:
+                return stats.MultistrikeLevel;
+
             case PlayerSkillKind.Damage:
             default:
                 return stats.DamageLevel;
@@ -542,6 +553,11 @@ public partial struct PlayerAutoSkillSystem : ISystem
     public static float GetDamageReduction(in PlayerSkillStats stats)
     {
         return math.clamp(stats.DamageReduction, 0f, 0.65f);
+    }
+
+    public static float GetMultistrikeChance(in PlayerSkillStats stats)
+    {
+        return math.clamp(stats.MultistrikeChance, 0f, 1f);
     }
 }
 

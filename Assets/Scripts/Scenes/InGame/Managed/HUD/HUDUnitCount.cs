@@ -119,7 +119,8 @@ public class HUDUnitCount : MonoBehaviour
             $"CRIT L{skillStats.CriticalChanceLevel} {skillStats.CriticalChance * 100f:0}%   " +
             $"FEROCITY L{skillStats.CriticalDamageLevel} " +
             $"x{1.5f + skillStats.CriticalDamageMultiplierAdd:0.00}   " +
-            $"ARMOR L{skillStats.ArmorLevel} -{skillStats.DamageReduction * 100f:0}%";
+            $"ARMOR L{skillStats.ArmorLevel} -{skillStats.DamageReduction * 100f:0}%   " +
+            $"MULTI L{skillStats.MultistrikeLevel} {skillStats.MultistrikeChance * 100f:0}%";
     }
 
     void CreateUpgradeChoiceOverlay()
@@ -246,6 +247,8 @@ public class HUDUnitCount : MonoBehaviour
                 return stats.CriticalDamageLevel;
             case PlayerSkillKind.Armor:
                 return stats.ArmorLevel;
+            case PlayerSkillKind.Multistrike:
+                return stats.MultistrikeLevel;
             case PlayerSkillKind.Damage:
             default:
                 return stats.DamageLevel;
@@ -282,6 +285,8 @@ public class HUDUnitCount : MonoBehaviour
                 return "FEROCITY";
             case PlayerSkillKind.Armor:
                 return "IRON SKIN";
+            case PlayerSkillKind.Multistrike:
+                return "MULTISTRIKE";
             case PlayerSkillKind.Damage:
             default:
                 return "MIGHT";
@@ -315,6 +320,8 @@ public class HUDUnitCount : MonoBehaviour
                 return $"Critical damage +{skill.EffectPerLevel * 100f:0}%";
             case PlayerSkillKind.Armor:
                 return $"Damage taken -{skill.EffectPerLevel * 100f:0}%";
+            case PlayerSkillKind.Multistrike:
+                return $"Repeat attack chance +{skill.EffectPerLevel * 100f:0}%";
             case PlayerSkillKind.Damage:
             default:
                 return $"Damage +{skill.EffectPerLevel * 100f:0}%";
