@@ -29,6 +29,12 @@ public struct HordeSurgeEvent : IComponentData
     public int ThreatLevel;
 }
 
+/// <summary>最終ボス出現時のHUD通知。</summary>
+public struct FinalBossSpawnedEvent : IComponentData
+{
+    public int ThreatLevel;
+}
+
 /// <summary>
 /// 敵スポーンのタイミングと出現距離をまとめたランタイム用マスタ値。
 /// Configはプレハブ参照を持ち、スポーン調整値はこのマスタへ寄せていく。

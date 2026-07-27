@@ -95,6 +95,7 @@ public partial struct HUDSystem : ISystem
             championCountQuery.CalculateEntityCount(),
             championCurrentHealth,
             championMaxHealth);
+        ConsumeFinalBossEvents(ref state, hudBridge);
     }
 
     private void ConsumeFeedbackEvents(
@@ -148,6 +149,24 @@ public partial struct HUDSystem : ISystem
                 surgeEvent.ValueRO.Wave,
                 surgeEvent.ValueRO.EnemyCount,
                 surgeEvent.ValueRO.ThreatLevel);
+            ecb.DestroyEntity(eventEntity);
+        }
+
+        ecb.Playback(state.EntityManager);
+        ecb.Dispose();
+    }
+
+    private void ConsumeFinalBossEvents(
+        ref SystemState state,
+        HUDBridge hudBridge)
+    {
+        var ecb = new EntityCommandBuffer(Allocator.Temp);
+        foreach (var (bossEvent, eventEntity) in
+                 SystemAPI.Query<RefRO<FinalBossSpawnedEvent>>()
+                     .WithEntityAccess())
+        {
+            hudBridge.ShowFinalBossSpawned(
+                bossEvent.ValueRO.ThreatLevel);
             ecb.DestroyEntity(eventEntity);
         }
 

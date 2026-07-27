@@ -23,3 +23,11 @@ public struct EliteEnemy : IComponentData
 public struct ChampionEnemy : IComponentData
 {
 }
+
+/// <summary>
+/// ラン終盤に一度だけ出現し、撃破が勝利条件になる最終ボス。
+/// ChampionEnemyとEliteEnemyも併せて持つ。
+/// </summary>
+public struct FinalBossEnemy : IComponentData
+{
+}

@@ -171,6 +171,14 @@ public class HUDBridge : MonoBehaviour
         Refresh();
     }
 
+    public void ShowFinalBossSpawned(int currentThreat)
+    {
+        statusNotification =
+            $"FINAL BOSS APPROACHES!  THREAT {Mathf.Max(1, currentThreat)}";
+        notificationRemaining = 6f;
+        Refresh();
+    }
+
     public void SetUpgradeChoice(
         bool isActive,
         PlayerUpgradeChoice nextUpgradeChoice)

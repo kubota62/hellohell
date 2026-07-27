@@ -319,6 +319,12 @@ public partial struct AttackRequestSystem : ISystem
         Entity actorEntity,
         ref AttackMasterData definition)
     {
+        if (entityManager.HasComponent<FinalBossEnemy>(actorEntity))
+        {
+            ApplyFinalBossAttackModifiers(ref definition);
+            return;
+        }
+
         if (entityManager.HasComponent<ChampionEnemy>(actorEntity))
         {
             definition.Damage = math.max(1, definition.Damage * 3);
@@ -341,6 +347,17 @@ public partial struct AttackRequestSystem : ISystem
         definition.AreaRadius *= 1.2f;
         definition.ImpactAreaRadius *= 1.2f;
         definition.Scale *= 1.2f;
+    }
+
+    public static void ApplyFinalBossAttackModifiers(
+        ref AttackMasterData definition)
+    {
+        definition.Damage = math.max(1, definition.Damage * 5);
+        definition.Cooldown = math.max(0.05f, definition.Cooldown * 0.5f);
+        definition.HitRadius *= 2f;
+        definition.AreaRadius *= 2f;
+        definition.ImpactAreaRadius *= 2f;
+        definition.Scale *= 2f;
     }
 
     private static bool CreateAttackRequest(
