@@ -21,6 +21,7 @@ public struct PlayerSkillStats : IComponentData
     public int ExplosiveOrbLevel;
     public int CriticalChanceLevel;
     public int CriticalDamageLevel;
+    public int ArmorLevel;
     public float DamageMultiplierAdd;
     public float CooldownMultiplierReduction;
     public float MoveSpeedMultiplierAdd;
@@ -34,4 +35,5 @@ public struct PlayerSkillStats : IComponentData
     public float ExplosiveOrbDamageMultiplierAdd;
     public float CriticalChance;
     public float CriticalDamageMultiplierAdd;
+    public float DamageReduction;
 }

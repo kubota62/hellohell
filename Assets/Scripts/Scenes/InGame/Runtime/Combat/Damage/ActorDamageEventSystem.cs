@@ -28,23 +28,33 @@ public partial struct ActorDamageEventSystem : ISystem
         var ecb = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
             .CreateCommandBuffer(state.WorldUnmanaged);
 
-        foreach (var (transform, health, damageEventBuffer) in
+        foreach (var (transform, health, damageEventBuffer, actorEntity) in
                  SystemAPI.Query<RefRO<LocalTransform>, RefRW<Health>, DynamicBuffer<DamageEvent>>()
-                     .WithAll<ActorBody>())
+                     .WithAll<ActorBody>()
+                     .WithEntityAccess())
         {
             var pos = transform.ValueRO.Position + new float3(0f, 1f, 0f);
             var totalDamage = 0;
+            var damageReduction =
+                SystemAPI.HasComponent<Player>(actorEntity) &&
+                SystemAPI.HasComponent<PlayerSkillStats>(actorEntity)
+                    ? PlayerAutoSkillSystem.GetDamageReduction(
+                        SystemAPI.GetComponent<PlayerSkillStats>(actorEntity))
+                    : 0f;
 
             // このフレームに溜まったダメージをまとめて減算し、各ヒットの表示だけ別リクエストへ逃がす。
             foreach (var damage in damageEventBuffer)
             {
-                totalDamage += damage.Damage;
+                var resolvedDamage = ResolveIncomingDamage(
+                    damage.Damage,
+                    damageReduction);
+                totalDamage += resolvedDamage;
 
                 var requestEntity = ecb.CreateEntity();
                 ecb.AddComponent(requestEntity, new VfxRequest
                 {
                     Kind = VfxRequestKind.DamageDigit,
-                    IntValue = damage.Damage,
+                    IntValue = resolvedDamage,
                     Position = pos,
                     IsCritical = damage.IsCritical,
                 });
@@ -53,6 +63,19 @@ public partial struct ActorDamageEventSystem : ISystem
             health.ValueRW.Current = math.max(0, health.ValueRO.Current - totalDamage);
             damageEventBuffer.Clear();
         }
+    }
+
+    public static int ResolveIncomingDamage(int damage, float reduction)
+    {
+        if (damage <= 0)
+        {
+            return 0;
+        }
+
+        var safeReduction = math.clamp(reduction, 0f, 0.65f);
+        return math.max(
+            1,
+            (int)math.round(damage * (1f - safeReduction)));
     }
 }
 

@@ -238,6 +238,9 @@ public class HUDBridge : MonoBehaviour
             case PlayerSkillKind.CriticalDamage:
                 return "FEROCITY";
 
+            case PlayerSkillKind.Armor:
+                return "ARMOR";
+
             case PlayerSkillKind.Damage:
             default:
                 return "DAMAGE";

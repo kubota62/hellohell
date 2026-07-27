@@ -19,6 +19,7 @@ public enum PlayerSkillMasterId
     ExplosiveOrbMastery = 11,
     CriticalChanceBoost = 12,
     CriticalDamageBoost = 13,
+    ArmorBoost = 14,
 }
 
 /// <summary>
@@ -40,6 +41,7 @@ public enum PlayerSkillKind : byte
     ExplosiveOrb = 11,
     CriticalChance = 12,
     CriticalDamage = 13,
+    Armor = 14,
 }
 
 /// <summary>

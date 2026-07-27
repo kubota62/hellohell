@@ -332,6 +332,14 @@ public partial struct PlayerAutoSkillSystem : ISystem
                     skill.MaxLevel,
                     skill.EffectPerLevel);
 
+            case PlayerSkillKind.Armor:
+                return AddSkillLevel(
+                    ref stats.ArmorLevel,
+                    ref stats.DamageReduction,
+                    addLevel,
+                    skill.MaxLevel,
+                    skill.EffectPerLevel);
+
             case PlayerSkillKind.Damage:
             default:
                 return AddSkillLevel(
@@ -445,6 +453,9 @@ public partial struct PlayerAutoSkillSystem : ISystem
             case PlayerSkillKind.CriticalDamage:
                 return stats.CriticalDamageLevel;
 
+            case PlayerSkillKind.Armor:
+                return stats.ArmorLevel;
+
             case PlayerSkillKind.Damage:
             default:
                 return stats.DamageLevel;
@@ -526,6 +537,11 @@ public partial struct PlayerAutoSkillSystem : ISystem
     public static float GetCriticalDamageMultiplier(in PlayerSkillStats stats)
     {
         return math.max(1.5f, 1.5f + stats.CriticalDamageMultiplierAdd);
+    }
+
+    public static float GetDamageReduction(in PlayerSkillStats stats)
+    {
+        return math.clamp(stats.DamageReduction, 0f, 0.65f);
     }
 }
 

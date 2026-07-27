@@ -107,6 +107,14 @@ public static class PlayerSkillMasterCatalog
                     effectPerLevel: 0.2f,
                     weight: 1);
 
+            case PlayerSkillMasterId.ArmorBoost:
+                return Create(
+                    PlayerSkillMasterId.ArmorBoost,
+                    PlayerSkillKind.Armor,
+                    maxLevel: 10,
+                    effectPerLevel: 0.05f,
+                    weight: 1);
+
             case PlayerSkillMasterId.DamageBoost:
             default:
                 return Create(
@@ -177,7 +185,7 @@ public static class PlayerSkillMasterCatalog
 
     public static PlayerSkillMasterData GetByFallbackOrder(int pickIndex, PlayerSkillStats stats)
     {
-        const int fallbackCount = 13;
+        const int fallbackCount = 14;
         var startIndex = (pickIndex < 0 ? 0 : pickIndex) % fallbackCount;
         for (var i = 0; i < fallbackCount; i++)
         {
@@ -231,6 +239,9 @@ public static class PlayerSkillMasterCatalog
 
             case 12:
                 return PlayerSkillMasterId.CriticalDamageBoost;
+
+            case 13:
+                return PlayerSkillMasterId.ArmorBoost;
 
             case 0:
             default:
@@ -287,6 +298,9 @@ public static class PlayerSkillMasterCatalog
 
             case PlayerSkillKind.CriticalDamage:
                 return stats.CriticalDamageLevel;
+
+            case PlayerSkillKind.Armor:
+                return stats.ArmorLevel;
 
             case PlayerSkillKind.Damage:
             default:
