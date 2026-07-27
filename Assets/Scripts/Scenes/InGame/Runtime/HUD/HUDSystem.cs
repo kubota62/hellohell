@@ -14,6 +14,7 @@ public partial struct HUDSystem : ISystem
     EntityQuery projectileCountQuery;
     EntityQuery eliteCountQuery;
     EntityQuery championCountQuery;
+    EntityQuery finalBossCountQuery;
 
     [BurstCompile]
     public void OnCreate(ref SystemState state)
@@ -24,7 +25,13 @@ public partial struct HUDSystem : ISystem
             .WithAll<EliteEnemy, GameplayActive>()
             .WithNone<ChampionEnemy>()
             .Build();
-        championCountQuery = SystemAPI.QueryBuilder().WithAll<ChampionEnemy, GameplayActive>().Build();
+        championCountQuery = SystemAPI.QueryBuilder()
+            .WithAll<ChampionEnemy, GameplayActive>()
+            .WithNone<FinalBossEnemy>()
+            .Build();
+        finalBossCountQuery = SystemAPI.QueryBuilder()
+            .WithAll<FinalBossEnemy, GameplayActive>()
+            .Build();
     }
 
     public void OnUpdate(ref SystemState state)
@@ -85,16 +92,30 @@ public partial struct HUDSystem : ISystem
         var championMaxHealth = 0;
         foreach (var championHealth in
                  SystemAPI.Query<RefRO<Health>>()
-                     .WithAll<ChampionEnemy, GameplayActive>())
+                     .WithAll<ChampionEnemy, GameplayActive>()
+                     .WithNone<FinalBossEnemy>())
         {
             championCurrentHealth += championHealth.ValueRO.Current;
             championMaxHealth += championHealth.ValueRO.Max;
         }
 
+        var finalBossCurrentHealth = 0;
+        var finalBossMaxHealth = 0;
+        foreach (var finalBossHealth in
+                 SystemAPI.Query<RefRO<Health>>()
+                     .WithAll<FinalBossEnemy, GameplayActive>())
+        {
+            finalBossCurrentHealth += finalBossHealth.ValueRO.Current;
+            finalBossMaxHealth += finalBossHealth.ValueRO.Max;
+        }
+
         hudBridge.SetChampionState(
             championCountQuery.CalculateEntityCount(),
             championCurrentHealth,
-            championMaxHealth);
+            championMaxHealth,
+            finalBossCountQuery.CalculateEntityCount(),
+            finalBossCurrentHealth,
+            finalBossMaxHealth);
         ConsumeFinalBossEvents(ref state, hudBridge);
     }
 

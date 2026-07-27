@@ -13,6 +13,9 @@ public class HUDBridge : MonoBehaviour
     int championCount;
     int championCurrentHealth;
     int championMaxHealth;
+    int finalBossCount;
+    int finalBossCurrentHealth;
+    int finalBossMaxHealth;
     int level = 1;
     int experience;
     int experienceToNextLevel = 1;
@@ -80,7 +83,10 @@ public class HUDBridge : MonoBehaviour
     public void SetChampionState(
         int count,
         int currentHealth,
-        int maximumHealth)
+        int maximumHealth,
+        int nextFinalBossCount,
+        int nextFinalBossCurrentHealth,
+        int nextFinalBossMaxHealth)
     {
         if (count > championCount)
         {
@@ -91,6 +97,9 @@ public class HUDBridge : MonoBehaviour
         championCount = count;
         championCurrentHealth = currentHealth;
         championMaxHealth = maximumHealth;
+        finalBossCount = nextFinalBossCount;
+        finalBossCurrentHealth = nextFinalBossCurrentHealth;
+        finalBossMaxHealth = nextFinalBossMaxHealth;
         Refresh();
     }
 
@@ -204,6 +213,9 @@ public class HUDBridge : MonoBehaviour
             championCount,
             championCurrentHealth,
             championMaxHealth,
+            finalBossCount,
+            finalBossCurrentHealth,
+            finalBossMaxHealth,
             level,
             experience,
             experienceToNextLevel,
@@ -288,6 +300,9 @@ public class HUDBridge : MonoBehaviour
 
             case PlayerSkillKind.Fortune:
                 return "FORTUNE";
+
+            case PlayerSkillKind.Berserker:
+                return "BERSERKER";
 
             case PlayerSkillKind.Damage:
             default:

@@ -15,6 +15,7 @@ public class HUDUnitCount : MonoBehaviour
 
     GameObject championHealthRoot;
     RectTransform championHealthFill;
+    Image championHealthFillImage;
     TMP_Text championHealthLabel;
     GameObject runResultRoot;
     TMP_Text runResultLabel;
@@ -45,6 +46,9 @@ public class HUDUnitCount : MonoBehaviour
         int championNum,
         int championCurrentHealth,
         int championMaxHealth,
+        int finalBossNum,
+        int finalBossCurrentHealth,
+        int finalBossMaxHealth,
         int level,
         int experience,
         int experienceToNextLevel,
@@ -69,7 +73,10 @@ public class HUDUnitCount : MonoBehaviour
         UpdateChampionHealthBar(
             championNum,
             championCurrentHealth,
-            championMaxHealth);
+            championMaxHealth,
+            finalBossNum,
+            finalBossCurrentHealth,
+            finalBossMaxHealth);
         UpdateRunResultOverlay(
             isGameOver,
             isVictory,
@@ -533,9 +540,10 @@ public class HUDUnitCount : MonoBehaviour
         championHealthFill.pivot = new Vector2(0f, 0.5f);
         championHealthFill.anchoredPosition = new Vector2(3f, 0f);
 
-        var fill = fillObject.GetComponent<Image>();
-        fill.color = new Color(0.72f, 0.08f, 1f, 0.95f);
-        fill.raycastTarget = false;
+        championHealthFillImage = fillObject.GetComponent<Image>();
+        championHealthFillImage.color =
+            new Color(0.72f, 0.08f, 1f, 0.95f);
+        championHealthFillImage.raycastTarget = false;
 
         var labelObject = new GameObject(
             "Label",
@@ -567,29 +575,77 @@ public class HUDUnitCount : MonoBehaviour
     void UpdateChampionHealthBar(
         int championCount,
         int currentHealth,
-        int maximumHealth)
+        int maximumHealth,
+        int finalBossCount,
+        int finalBossCurrentHealth,
+        int finalBossMaximumHealth)
     {
         if (championHealthRoot == null)
         {
             return;
         }
 
-        var isVisible = championCount > 0 && maximumHealth > 0;
+        var hasFinalBoss =
+            finalBossCount > 0 &&
+            finalBossMaximumHealth > 0;
+        var isVisible =
+            hasFinalBoss ||
+            championCount > 0 && maximumHealth > 0;
         championHealthRoot.SetActive(isVisible);
         if (!isVisible)
         {
             return;
         }
 
+        var displayedCurrentHealth = hasFinalBoss
+            ? finalBossCurrentHealth
+            : currentHealth;
+        var displayedMaximumHealth = hasFinalBoss
+            ? finalBossMaximumHealth
+            : maximumHealth;
         var healthRatio = Mathf.Clamp01(
-            (float)Mathf.Max(0, currentHealth) /
-            Mathf.Max(1, maximumHealth));
+            (float)Mathf.Max(0, displayedCurrentHealth) /
+            Mathf.Max(1, displayedMaximumHealth));
         championHealthFill.sizeDelta = new Vector2(
             (ChampionBarWidth - 6f) * healthRatio,
             -6f);
-        championHealthLabel.text = championCount > 1
-            ? $"CHAMPIONS x{championCount}   {Mathf.Max(0, currentHealth)}/{maximumHealth}"
-            : $"CHAMPION   {Mathf.Max(0, currentHealth)}/{maximumHealth}";
+        if (championHealthFillImage != null)
+        {
+            championHealthFillImage.color = hasFinalBoss
+                ? new Color(0.92f, 0.08f, 0.12f, 0.98f)
+                : new Color(0.72f, 0.08f, 1f, 0.95f);
+        }
+
+        championHealthLabel.text = FormatThreatHealthLabel(
+            championCount,
+            currentHealth,
+            maximumHealth,
+            finalBossCount,
+            finalBossCurrentHealth,
+            finalBossMaximumHealth);
+    }
+
+    public static string FormatThreatHealthLabel(
+        int championCount,
+        int championCurrentHealth,
+        int championMaximumHealth,
+        int finalBossCount,
+        int finalBossCurrentHealth,
+        int finalBossMaximumHealth)
+    {
+        if (finalBossCount > 0 && finalBossMaximumHealth > 0)
+        {
+            return
+                $"FINAL BOSS   {Mathf.Max(0, finalBossCurrentHealth)}/" +
+                $"{Mathf.Max(1, finalBossMaximumHealth)}";
+        }
+
+        return championCount > 1
+            ? $"CHAMPIONS x{championCount}   " +
+                $"{Mathf.Max(0, championCurrentHealth)}/" +
+                $"{Mathf.Max(1, championMaximumHealth)}"
+            : $"CHAMPION   {Mathf.Max(0, championCurrentHealth)}/" +
+                $"{Mathf.Max(1, championMaximumHealth)}";
     }
 
     static void ConfigureText(
