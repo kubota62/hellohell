@@ -21,6 +21,14 @@ public struct RunState : IComponentData
     public byte IsChoosingUpgrade;
 }
 
+/// <summary>One-frame feedback emitted when a timed enemy surge begins.</summary>
+public struct HordeSurgeEvent : IComponentData
+{
+    public int Wave;
+    public int EnemyCount;
+    public int ThreatLevel;
+}
+
 /// <summary>
 /// 敵スポーンのタイミングと出現距離をまとめたランタイム用マスタ値。
 /// Configはプレハブ参照を持ち、スポーン調整値はこのマスタへ寄せていく。

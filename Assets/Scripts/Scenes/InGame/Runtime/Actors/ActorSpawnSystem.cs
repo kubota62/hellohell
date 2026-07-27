@@ -12,11 +12,13 @@ public partial struct ActorSpawnSystem : ISystem
 {
     private const int MaximumActiveEnemies = 350;
     private const float ChampionSpawnInterval = 90f;
+    private const float HordeSurgeInterval = 60f;
     private const float RunDurationSeconds = 600f;
 
     private Random random;
     private int spawnedActorCount;
     private int championWavesSpawned;
+    private int hordeWavesSpawned;
     private float enemySpawnTimer;
     private EntityQuery activeEnemyQuery;
 
@@ -25,6 +27,7 @@ public partial struct ActorSpawnSystem : ISystem
         random = new Random(123);
         spawnedActorCount = 0;
         championWavesSpawned = 0;
+        hordeWavesSpawned = 0;
         enemySpawnTimer = 0f;
         activeEnemyQuery = SystemAPI.QueryBuilder()
             .WithAll<Enemy, GameplayActive>()
@@ -100,6 +103,25 @@ public partial struct ActorSpawnSystem : ISystem
             return;
         }
 
+        var hordeWave = (int)math.floor(
+            runState.ElapsedSeconds / HordeSurgeInterval);
+        if (hordeWave > hordeWavesSpawned && availableSlots > 0)
+        {
+            var hordeSize = CalculateHordeSize(
+                runState.ThreatLevel,
+                availableSlots);
+            SpawnHordeSurge(
+                ref state,
+                spawnMaster,
+                ref runState,
+                hordeWave,
+                hordeSize);
+            hordeWavesSpawned = hordeWave;
+            enemySpawnTimer = 0f;
+            SystemAPI.SetSingleton(runState);
+            return;
+        }
+
         var spawnInterval = math.max(
             0.12f,
             spawnMaster.SpawnInterval /
@@ -138,6 +160,62 @@ public partial struct ActorSpawnSystem : ISystem
 
         enemySpawnTimer = 0f;
         SystemAPI.SetSingleton(runState);
+    }
+
+    public static int CalculateHordeSize(int threatLevel, int availableSlots)
+    {
+        var desiredSize = 10 + math.clamp(threatLevel, 1, 14);
+        return math.clamp(desiredSize, 0, math.max(0, availableSlots));
+    }
+
+    private void SpawnHordeSurge(
+        ref SystemState state,
+        in SpawnMasterData spawnMaster,
+        ref RunState runState,
+        int wave,
+        int hordeSize)
+    {
+        if (hordeSize <= 0)
+        {
+            return;
+        }
+
+        var playerPosition = GetPlayerPosition(ref state);
+        var phase = random.NextFloat(0f, 2f * math.PI);
+        var ringDistance = math.lerp(
+            spawnMaster.MinSpawnDistance,
+            spawnMaster.MaxSpawnDistance,
+            0.68f);
+
+        for (var i = 0; i < hordeSize; i++)
+        {
+            var angle = phase +
+                (2f * math.PI * i / math.max(1, hordeSize));
+            var radialJitter = random.NextFloat(-1.5f, 1.5f);
+            var position = playerPosition +
+                new float3(math.cos(angle), 0f, math.sin(angle)) *
+                (ringDistance + radialJitter);
+            var isElite = runState.ThreatLevel >= 7 &&
+                (i + 1) % 8 == 0;
+
+            SpawnActor(
+                ref state,
+                false,
+                position,
+                runState.ElapsedSeconds,
+                runState.ThreatLevel,
+                isElite);
+            spawnedActorCount++;
+            runState.EnemiesSpawned++;
+        }
+
+        var eventEntity = state.EntityManager.CreateEntity();
+        state.EntityManager.AddComponentData(eventEntity, new HordeSurgeEvent
+        {
+            Wave = wave,
+            EnemyCount = hordeSize,
+            ThreatLevel = runState.ThreatLevel,
+        });
     }
 
     private void SpawnActor(
@@ -375,12 +453,7 @@ public partial struct ActorSpawnSystem : ISystem
         ref SystemState state,
         in SpawnMasterData spawnMaster)
     {
-        var playerPosition = float3.zero;
-        if (SystemAPI.TryGetSingletonEntity<Player>(out var playerEntity) &&
-            SystemAPI.HasComponent<LocalTransform>(playerEntity))
-        {
-            playerPosition = SystemAPI.GetComponent<LocalTransform>(playerEntity).Position;
-        }
+        var playerPosition = GetPlayerPosition(ref state);
 
         var angle = random.NextFloat(0f, 2f * math.PI);
         var distance = random.NextFloat(
@@ -388,6 +461,17 @@ public partial struct ActorSpawnSystem : ISystem
             spawnMaster.MaxSpawnDistance);
         return playerPosition +
             new float3(math.cos(angle), 0f, math.sin(angle)) * distance;
+    }
+
+    private float3 GetPlayerPosition(ref SystemState state)
+    {
+        if (SystemAPI.TryGetSingletonEntity<Player>(out var playerEntity) &&
+            SystemAPI.HasComponent<LocalTransform>(playerEntity))
+        {
+            return SystemAPI.GetComponent<LocalTransform>(playerEntity).Position;
+        }
+
+        return float3.zero;
     }
 
     private static void ApplyActorColorToChildren(

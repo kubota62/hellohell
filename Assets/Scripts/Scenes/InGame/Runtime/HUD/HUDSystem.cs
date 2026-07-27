@@ -130,6 +130,17 @@ public partial struct HUDSystem : ISystem
             ecb.DestroyEntity(eventEntity);
         }
 
+        foreach (var (surgeEvent, eventEntity) in
+                 SystemAPI.Query<RefRO<HordeSurgeEvent>>()
+                     .WithEntityAccess())
+        {
+            hudBridge.ShowHordeSurge(
+                surgeEvent.ValueRO.Wave,
+                surgeEvent.ValueRO.EnemyCount,
+                surgeEvent.ValueRO.ThreatLevel);
+            ecb.DestroyEntity(eventEntity);
+        }
+
         ecb.Playback(state.EntityManager);
         ecb.Dispose();
     }

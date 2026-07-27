@@ -153,6 +153,15 @@ public class HUDBridge : MonoBehaviour
         Refresh();
     }
 
+    public void ShowHordeSurge(int wave, int enemyCount, int currentThreat)
+    {
+        statusNotification =
+            $"HORDE SURGE {Mathf.Max(1, wave)}!  " +
+            $"{Mathf.Max(0, enemyCount)} ENEMIES  THREAT {Mathf.Max(1, currentThreat)}";
+        notificationRemaining = 4f;
+        Refresh();
+    }
+
     public void SetUpgradeChoice(
         bool isActive,
         PlayerUpgradeChoice nextUpgradeChoice)
