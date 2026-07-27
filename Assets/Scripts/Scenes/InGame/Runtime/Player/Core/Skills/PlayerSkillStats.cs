@@ -31,6 +31,7 @@ public struct PlayerSkillStats : IComponentData
     public int BossHunterLevel;
     public int PenetrationLevel;
     public int FortuneLevel;
+    public int BerserkerLevel;
     public float DamageMultiplierAdd;
     public float CooldownMultiplierReduction;
     public float MoveSpeedMultiplierAdd;
@@ -53,4 +54,5 @@ public struct PlayerSkillStats : IComponentData
     public float EliteDamageMultiplierAdd;
     public float ProjectilePierceAdd;
     public float UpgradeRerollsAdd;
+    public float LowHealthDamageMultiplierAdd;
 }

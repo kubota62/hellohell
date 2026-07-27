@@ -28,6 +28,7 @@ public enum PlayerSkillMasterId
     BossHunterBoost = 20,
     PenetrationBoost = 21,
     FortuneBoost = 22,
+    BerserkerBoost = 23,
 }
 
 /// <summary>
@@ -58,6 +59,7 @@ public enum PlayerSkillKind : byte
     BossHunter = 20,
     Penetration = 21,
     Fortune = 22,
+    Berserker = 23,
 }
 
 /// <summary>

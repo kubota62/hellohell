@@ -141,7 +141,8 @@ public class HUDUnitCount : MonoBehaviour
             $"x{1.5f + skillStats.CriticalDamageMultiplierAdd:0.00}   " +
             $"MULTI L{skillStats.MultistrikeLevel} {skillStats.MultistrikeChance * 100f:0}%   " +
             $"EXEC L{skillStats.ExecutionerLevel} +{skillStats.ExecutionDamageMultiplierAdd * 100f:0}%   " +
-            $"HUNTER L{skillStats.BossHunterLevel} +{skillStats.EliteDamageMultiplierAdd * 100f:0}%\n" +
+            $"HUNTER L{skillStats.BossHunterLevel} +{skillStats.EliteDamageMultiplierAdd * 100f:0}%   " +
+            $"BERSERK L{skillStats.BerserkerLevel} +{skillStats.LowHealthDamageMultiplierAdd * 100f:0}%\n" +
             $"DEFENSE  ARMOR L{skillStats.ArmorLevel} -{skillStats.DamageReduction * 100f:0}%   " +
             $"REGEN L{skillStats.RegenerationLevel} {skillStats.HealthRegenerationPerSecond:0.0}/s   " +
             $"FORT L{skillStats.MaxHealthLevel} +{skillStats.MaxHealthAdd:0} HP   " +
@@ -306,6 +307,8 @@ public class HUDUnitCount : MonoBehaviour
                 return stats.PenetrationLevel;
             case PlayerSkillKind.Fortune:
                 return stats.FortuneLevel;
+            case PlayerSkillKind.Berserker:
+                return stats.BerserkerLevel;
             case PlayerSkillKind.Damage:
             default:
                 return stats.DamageLevel;
@@ -358,6 +361,8 @@ public class HUDUnitCount : MonoBehaviour
                 return "PENETRATION";
             case PlayerSkillKind.Fortune:
                 return "FORTUNE";
+            case PlayerSkillKind.Berserker:
+                return "BERSERKER";
             case PlayerSkillKind.Damage:
             default:
                 return "MIGHT";
@@ -407,6 +412,8 @@ public class HUDUnitCount : MonoBehaviour
                 return $"Projectile pierce +{skill.EffectPerLevel:0}";
             case PlayerSkillKind.Fortune:
                 return $"Rerolls per upgrade +{skill.EffectPerLevel:0}";
+            case PlayerSkillKind.Berserker:
+                return $"Damage at or below 50% HP +{skill.EffectPerLevel * 100f:0}%";
             case PlayerSkillKind.Damage:
             default:
                 return $"Damage +{skill.EffectPerLevel * 100f:0}%";

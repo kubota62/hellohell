@@ -204,6 +204,16 @@ public partial struct AttackRequestSystem : ISystem
         }
 
         var stats = entityManager.GetComponentData<PlayerSkillStats>(actorEntity);
+        var lowHealthDamageMultiplier = 1f;
+        if (entityManager.HasComponent<Health>(actorEntity))
+        {
+            var health = entityManager.GetComponentData<Health>(actorEntity);
+            lowHealthDamageMultiplier = ResolveLowHealthDamageMultiplier(
+                health.Current,
+                health.Max,
+                PlayerAutoSkillSystem.GetLowHealthDamageBonus(stats));
+        }
+
         definition.Damage = math.max(
             1,
             (int)math.round(
@@ -211,7 +221,8 @@ public partial struct AttackRequestSystem : ISystem
                 PlayerAutoSkillSystem.GetDamageMultiplier(stats) *
                 PlayerAutoSkillSystem.GetWeaponDamageMultiplier(
                     stats,
-                    definition.Id)));
+                    definition.Id) *
+                lowHealthDamageMultiplier));
         definition.Cooldown *= PlayerAutoSkillSystem.GetCooldownMultiplier(stats);
         var areaMultiplier = PlayerAutoSkillSystem.GetAreaMultiplier(stats);
         definition.HitRadius *= areaMultiplier;
@@ -247,6 +258,20 @@ public partial struct AttackRequestSystem : ISystem
             0.05f,
             baseLifetime *
             PlayerAutoSkillSystem.GetProjectileLifetimeMultiplier(stats));
+    }
+
+    public static float ResolveLowHealthDamageMultiplier(
+        int currentHealth,
+        int maximumHealth,
+        float damageBonus)
+    {
+        if (maximumHealth <= 0 ||
+            (long)currentHealth * 2L > maximumHealth)
+        {
+            return 1f;
+        }
+
+        return 1f + math.clamp(damageBonus, 0f, 1f);
     }
 
     public static int ResolveProjectilePierceCount(

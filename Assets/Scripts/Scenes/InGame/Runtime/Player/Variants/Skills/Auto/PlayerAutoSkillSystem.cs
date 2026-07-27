@@ -462,6 +462,14 @@ public partial struct PlayerAutoSkillSystem : ISystem
                     skill.MaxLevel,
                     skill.EffectPerLevel);
 
+            case PlayerSkillKind.Berserker:
+                return AddSkillLevel(
+                    ref stats.BerserkerLevel,
+                    ref stats.LowHealthDamageMultiplierAdd,
+                    addLevel,
+                    skill.MaxLevel,
+                    skill.EffectPerLevel);
+
             case PlayerSkillKind.Damage:
             default:
                 return AddSkillLevel(
@@ -602,6 +610,9 @@ public partial struct PlayerAutoSkillSystem : ISystem
             case PlayerSkillKind.Fortune:
                 return stats.FortuneLevel;
 
+            case PlayerSkillKind.Berserker:
+                return stats.BerserkerLevel;
+
             case PlayerSkillKind.Damage:
             default:
                 return stats.DamageLevel;
@@ -739,6 +750,14 @@ public partial struct PlayerAutoSkillSystem : ISystem
             (int)math.round(stats.UpgradeRerollsAdd),
             0,
             3);
+    }
+
+    public static float GetLowHealthDamageBonus(in PlayerSkillStats stats)
+    {
+        return math.clamp(
+            stats.LowHealthDamageMultiplierAdd,
+            0f,
+            1f);
     }
 }
 

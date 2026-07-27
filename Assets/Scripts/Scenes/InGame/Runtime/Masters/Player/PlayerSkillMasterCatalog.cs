@@ -179,6 +179,14 @@ public static class PlayerSkillMasterCatalog
                     effectPerLevel: 1f,
                     weight: 1);
 
+            case PlayerSkillMasterId.BerserkerBoost:
+                return Create(
+                    PlayerSkillMasterId.BerserkerBoost,
+                    PlayerSkillKind.Berserker,
+                    maxLevel: 5,
+                    effectPerLevel: 0.1f,
+                    weight: 1);
+
             case PlayerSkillMasterId.DamageBoost:
             default:
                 return Create(
@@ -249,7 +257,7 @@ public static class PlayerSkillMasterCatalog
 
     public static PlayerSkillMasterData GetByFallbackOrder(int pickIndex, PlayerSkillStats stats)
     {
-        const int fallbackCount = 22;
+        const int fallbackCount = 23;
         var startIndex = (pickIndex < 0 ? 0 : pickIndex) % fallbackCount;
         for (var i = 0; i < fallbackCount; i++)
         {
@@ -330,6 +338,9 @@ public static class PlayerSkillMasterCatalog
 
             case 21:
                 return PlayerSkillMasterId.FortuneBoost;
+
+            case 22:
+                return PlayerSkillMasterId.BerserkerBoost;
 
             case 0:
             default:
@@ -413,6 +424,9 @@ public static class PlayerSkillMasterCatalog
 
             case PlayerSkillKind.Fortune:
                 return stats.FortuneLevel;
+
+            case PlayerSkillKind.Berserker:
+                return stats.BerserkerLevel;
 
             case PlayerSkillKind.Damage:
             default:
