@@ -195,9 +195,13 @@ public class HUDUnitCount : MonoBehaviour
         var queuedLevels = choice.PendingLevels > 1
             ? $"  <size=22>({choice.PendingLevels} PICKS)</size>"
             : string.Empty;
+        var rerollHint = choice.RerollsRemaining > 0
+            ? "<color=#7ED8FF>[R] REROLL</color>  <size=20>1 LEFT</size>"
+            : "<color=#777788>[R] REROLL USED</color>";
         upgradeChoiceLabel.text =
             $"<color=#FFD75A><size=48>LEVEL UP!</size></color>{queuedLevels}\n" +
             "<size=22>CHOOSE AN UPGRADE — PRESS 1, 2 OR 3</size>\n\n" +
+            rerollHint + "\n\n" +
             FormatUpgradeOption(1, choice.First, stats) + "\n\n" +
             FormatUpgradeOption(2, choice.Second, stats) + "\n\n" +
             FormatUpgradeOption(3, choice.Third, stats);

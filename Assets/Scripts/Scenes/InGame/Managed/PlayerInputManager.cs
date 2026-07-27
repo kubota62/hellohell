@@ -15,6 +15,7 @@ public class PlayerInputManager : MonoBehaviour
     private EntityQuery runStateQuery;
     private EntityQuery upgradeChoiceQuery;
     private EntityQuery upgradeSelectionQuery;
+    private EntityQuery upgradeRerollQuery;
     private Camera mainCamera;
     private bool autoAttackEnabled;
     private bool hasInputEntity;
@@ -40,6 +41,8 @@ public class PlayerInputManager : MonoBehaviour
             ComponentType.ReadOnly<PlayerUpgradeChoice>());
         upgradeSelectionQuery = entityManager.CreateEntityQuery(
             ComponentType.ReadOnly<PlayerUpgradeSelection>());
+        upgradeRerollQuery = entityManager.CreateEntityQuery(
+            ComponentType.ReadOnly<PlayerUpgradeReroll>());
         hasRunStateQuery = true;
         hasUpgradeQueries = true;
         hasInputEntity = true;
@@ -62,6 +65,7 @@ public class PlayerInputManager : MonoBehaviour
         {
             upgradeChoiceQuery.Dispose();
             upgradeSelectionQuery.Dispose();
+            upgradeRerollQuery.Dispose();
             hasUpgradeQueries = false;
         }
 
@@ -164,8 +168,18 @@ public class PlayerInputManager : MonoBehaviour
             ActiveAttackMask = activeAttackMask,
         });
 
-        if (keyboard == null || !upgradeSelectionQuery.IsEmptyIgnoreFilter)
+        if (keyboard == null ||
+            !upgradeSelectionQuery.IsEmptyIgnoreFilter ||
+            !upgradeRerollQuery.IsEmptyIgnoreFilter)
         {
+            return true;
+        }
+
+        var choice = upgradeChoiceQuery.GetSingleton<PlayerUpgradeChoice>();
+        if (keyboard.rKey.wasPressedThisFrame &&
+            choice.RerollsRemaining > 0)
+        {
+            entityManager.CreateEntity(typeof(PlayerUpgradeReroll));
             return true;
         }
 

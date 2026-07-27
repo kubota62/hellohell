@@ -12,6 +12,8 @@ public struct PlayerUpgradeChoice : IComponentData
     public PlayerSkillMasterData Third;
     public int NewLevel;
     public int PendingLevels;
+    public int RerollsRemaining;
+    public int RerollGeneration;
 }
 
 /// <summary>
@@ -20,4 +22,8 @@ public struct PlayerUpgradeChoice : IComponentData
 public struct PlayerUpgradeSelection : IComponentData
 {
     public int ChoiceIndex;
+}
+
+public struct PlayerUpgradeReroll : IComponentData
+{
 }

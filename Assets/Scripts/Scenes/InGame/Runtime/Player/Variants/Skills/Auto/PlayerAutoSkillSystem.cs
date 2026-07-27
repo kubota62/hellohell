@@ -19,6 +19,17 @@ public partial struct PlayerAutoSkillSystem : ISystem
             true);
         var ecb = new EntityCommandBuffer(Unity.Collections.Allocator.Temp);
 
+        if (TryApplyReroll(
+                ref state,
+                hasSkillMasters,
+                skillMasters,
+                ecb))
+        {
+            ecb.Playback(state.EntityManager);
+            ecb.Dispose();
+            return;
+        }
+
         if (TryApplySelection(
                 ref state,
                 hasSkillMasters,
@@ -61,6 +72,45 @@ public partial struct PlayerAutoSkillSystem : ISystem
 
         ecb.Playback(state.EntityManager);
         ecb.Dispose();
+    }
+
+    bool TryApplyReroll(
+        ref SystemState state,
+        bool hasSkillMasters,
+        DynamicBuffer<PlayerSkillMasterElement> skillMasters,
+        EntityCommandBuffer ecb)
+    {
+        foreach (var (_, rerollEntity) in
+                 SystemAPI.Query<RefRO<PlayerUpgradeReroll>>()
+                     .WithEntityAccess())
+        {
+            if (SystemAPI.TryGetSingletonEntity<PlayerUpgradeChoice>(
+                    out var choiceEntity) &&
+                SystemAPI.TryGetSingleton<PlayerUpgradeChoice>(
+                    out var choice) &&
+                choice.RerollsRemaining > 0 &&
+                SystemAPI.HasComponent<PlayerSkillStats>(choice.Player))
+            {
+                var stats = SystemAPI.GetComponent<PlayerSkillStats>(
+                    choice.Player);
+                var rerolledChoice = CreateUpgradeChoice(
+                    stats,
+                    choice.NewLevel,
+                    choice.PendingLevels,
+                    hasSkillMasters,
+                    skillMasters,
+                    choice.Player,
+                    choice.RerollGeneration + 1);
+                rerolledChoice.RerollsRemaining =
+                    choice.RerollsRemaining - 1;
+                ecb.SetComponent(choiceEntity, rerolledChoice);
+            }
+
+            ecb.DestroyEntity(rerollEntity);
+            return true;
+        }
+
+        return false;
     }
 
     bool TryApplySelection(
@@ -139,25 +189,27 @@ public partial struct PlayerAutoSkillSystem : ISystem
         int pendingLevels,
         bool hasSkillMasters,
         DynamicBuffer<PlayerSkillMasterElement> skillMasters,
-        Entity playerEntity)
+        Entity playerEntity,
+        int rerollGeneration = 0)
     {
+        var generationOffset = math.max(0, rerollGeneration) * 101;
         var first = PickDistinctSkill(
             stats,
-            newLevel + pendingLevels * 11,
+            newLevel + pendingLevels * 11 + generationOffset,
             default,
             default,
             hasSkillMasters,
             skillMasters);
         var second = PickDistinctSkill(
             stats,
-            newLevel + pendingLevels * 23,
+            newLevel + pendingLevels * 23 + generationOffset,
             first.Id,
             default,
             hasSkillMasters,
             skillMasters);
         var third = PickDistinctSkill(
             stats,
-            newLevel + pendingLevels * 37,
+            newLevel + pendingLevels * 37 + generationOffset,
             first.Id,
             second.Id,
             hasSkillMasters,
@@ -171,6 +223,8 @@ public partial struct PlayerAutoSkillSystem : ISystem
             Third = third,
             NewLevel = newLevel,
             PendingLevels = math.max(1, pendingLevels),
+            RerollsRemaining = 1,
+            RerollGeneration = math.max(0, rerollGeneration),
         };
     }
 
