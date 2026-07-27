@@ -30,6 +30,7 @@ public struct PlayerSkillStats : IComponentData
     public int LongshotLevel;
     public int BossHunterLevel;
     public int PenetrationLevel;
+    public int FortuneLevel;
     public float DamageMultiplierAdd;
     public float CooldownMultiplierReduction;
     public float MoveSpeedMultiplierAdd;
@@ -51,4 +52,5 @@ public struct PlayerSkillStats : IComponentData
     public float ProjectileLifetimeMultiplierAdd;
     public float EliteDamageMultiplierAdd;
     public float ProjectilePierceAdd;
+    public float UpgradeRerollsAdd;
 }

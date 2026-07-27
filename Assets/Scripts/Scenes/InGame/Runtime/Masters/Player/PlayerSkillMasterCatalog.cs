@@ -171,6 +171,14 @@ public static class PlayerSkillMasterCatalog
                     effectPerLevel: 1f,
                     weight: 1);
 
+            case PlayerSkillMasterId.FortuneBoost:
+                return Create(
+                    PlayerSkillMasterId.FortuneBoost,
+                    PlayerSkillKind.Fortune,
+                    maxLevel: 3,
+                    effectPerLevel: 1f,
+                    weight: 1);
+
             case PlayerSkillMasterId.DamageBoost:
             default:
                 return Create(
@@ -241,7 +249,7 @@ public static class PlayerSkillMasterCatalog
 
     public static PlayerSkillMasterData GetByFallbackOrder(int pickIndex, PlayerSkillStats stats)
     {
-        const int fallbackCount = 21;
+        const int fallbackCount = 22;
         var startIndex = (pickIndex < 0 ? 0 : pickIndex) % fallbackCount;
         for (var i = 0; i < fallbackCount; i++)
         {
@@ -319,6 +327,9 @@ public static class PlayerSkillMasterCatalog
 
             case 20:
                 return PlayerSkillMasterId.PenetrationBoost;
+
+            case 21:
+                return PlayerSkillMasterId.FortuneBoost;
 
             case 0:
             default:
@@ -399,6 +410,9 @@ public static class PlayerSkillMasterCatalog
 
             case PlayerSkillKind.Penetration:
                 return stats.PenetrationLevel;
+
+            case PlayerSkillKind.Fortune:
+                return stats.FortuneLevel;
 
             case PlayerSkillKind.Damage:
             default:

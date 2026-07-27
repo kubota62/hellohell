@@ -131,7 +131,9 @@ public class HUDUnitCount : MonoBehaviour
             $"HUNTER L{skillStats.BossHunterLevel} " +
             $"+{skillStats.EliteDamageMultiplierAdd * 100f:0}%   " +
             $"PEN L{skillStats.PenetrationLevel} " +
-            $"+{PlayerAutoSkillSystem.GetProjectilePierceAdd(skillStats)}";
+            $"+{PlayerAutoSkillSystem.GetProjectilePierceAdd(skillStats)}   " +
+            $"FORTUNE L{skillStats.FortuneLevel} " +
+            $"{PlayerAutoSkillSystem.GetUpgradeRerollCount(skillStats)}R";
     }
 
     void CreateUpgradeChoiceOverlay()
@@ -204,7 +206,7 @@ public class HUDUnitCount : MonoBehaviour
             ? $"  <size=22>({choice.PendingLevels} PICKS)</size>"
             : string.Empty;
         var rerollHint = choice.RerollsRemaining > 0
-            ? "<color=#7ED8FF>[R] REROLL</color>  <size=20>1 LEFT</size>"
+            ? $"<color=#7ED8FF>[R] REROLL</color>  <size=20>{choice.RerollsRemaining} LEFT</size>"
             : "<color=#777788>[R] REROLL USED</color>";
         upgradeChoiceLabel.text =
             $"<color=#FFD75A><size=48>LEVEL UP!</size></color>{queuedLevels}\n" +
@@ -276,6 +278,8 @@ public class HUDUnitCount : MonoBehaviour
                 return stats.BossHunterLevel;
             case PlayerSkillKind.Penetration:
                 return stats.PenetrationLevel;
+            case PlayerSkillKind.Fortune:
+                return stats.FortuneLevel;
             case PlayerSkillKind.Damage:
             default:
                 return stats.DamageLevel;
@@ -326,6 +330,8 @@ public class HUDUnitCount : MonoBehaviour
                 return "BOSS HUNTER";
             case PlayerSkillKind.Penetration:
                 return "PENETRATION";
+            case PlayerSkillKind.Fortune:
+                return "FORTUNE";
             case PlayerSkillKind.Damage:
             default:
                 return "MIGHT";
@@ -373,6 +379,8 @@ public class HUDUnitCount : MonoBehaviour
                 return $"Damage vs Elite and Champion enemies +{skill.EffectPerLevel * 100f:0}%";
             case PlayerSkillKind.Penetration:
                 return $"Projectile pierce +{skill.EffectPerLevel:0}";
+            case PlayerSkillKind.Fortune:
+                return $"Rerolls per upgrade +{skill.EffectPerLevel:0}";
             case PlayerSkillKind.Damage:
             default:
                 return $"Damage +{skill.EffectPerLevel * 100f:0}%";

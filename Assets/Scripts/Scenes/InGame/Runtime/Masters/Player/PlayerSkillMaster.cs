@@ -27,6 +27,7 @@ public enum PlayerSkillMasterId
     LongshotBoost = 19,
     BossHunterBoost = 20,
     PenetrationBoost = 21,
+    FortuneBoost = 22,
 }
 
 /// <summary>
@@ -56,6 +57,7 @@ public enum PlayerSkillKind : byte
     Longshot = 19,
     BossHunter = 20,
     Penetration = 21,
+    Fortune = 22,
 }
 
 /// <summary>

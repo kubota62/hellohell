@@ -223,7 +223,7 @@ public partial struct PlayerAutoSkillSystem : ISystem
             Third = third,
             NewLevel = newLevel,
             PendingLevels = math.max(1, pendingLevels),
-            RerollsRemaining = 1,
+            RerollsRemaining = GetUpgradeRerollCount(stats),
             RerollGeneration = math.max(0, rerollGeneration),
         };
     }
@@ -454,6 +454,14 @@ public partial struct PlayerAutoSkillSystem : ISystem
                     skill.MaxLevel,
                     skill.EffectPerLevel);
 
+            case PlayerSkillKind.Fortune:
+                return AddSkillLevel(
+                    ref stats.FortuneLevel,
+                    ref stats.UpgradeRerollsAdd,
+                    addLevel,
+                    skill.MaxLevel,
+                    skill.EffectPerLevel);
+
             case PlayerSkillKind.Damage:
             default:
                 return AddSkillLevel(
@@ -591,6 +599,9 @@ public partial struct PlayerAutoSkillSystem : ISystem
             case PlayerSkillKind.Penetration:
                 return stats.PenetrationLevel;
 
+            case PlayerSkillKind.Fortune:
+                return stats.FortuneLevel;
+
             case PlayerSkillKind.Damage:
             default:
                 return stats.DamageLevel;
@@ -720,6 +731,14 @@ public partial struct PlayerAutoSkillSystem : ISystem
             (int)math.round(stats.ProjectilePierceAdd),
             0,
             8);
+    }
+
+    public static int GetUpgradeRerollCount(in PlayerSkillStats stats)
+    {
+        return 1 + math.clamp(
+            (int)math.round(stats.UpgradeRerollsAdd),
+            0,
+            3);
     }
 }
 
