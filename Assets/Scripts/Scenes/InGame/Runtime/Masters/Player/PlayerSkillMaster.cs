@@ -22,6 +22,7 @@ public enum PlayerSkillMasterId
     ArmorBoost = 14,
     MultistrikeBoost = 15,
     ExecutionerBoost = 16,
+    SecondWindBoost = 17,
 }
 
 /// <summary>
@@ -46,6 +47,7 @@ public enum PlayerSkillKind : byte
     Armor = 14,
     Multistrike = 15,
     Executioner = 16,
+    SecondWind = 17,
 }
 
 /// <summary>

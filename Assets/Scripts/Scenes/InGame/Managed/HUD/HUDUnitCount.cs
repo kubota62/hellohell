@@ -121,7 +121,9 @@ public class HUDUnitCount : MonoBehaviour
             $"x{1.5f + skillStats.CriticalDamageMultiplierAdd:0.00}   " +
             $"ARMOR L{skillStats.ArmorLevel} -{skillStats.DamageReduction * 100f:0}%   " +
             $"MULTI L{skillStats.MultistrikeLevel} {skillStats.MultistrikeChance * 100f:0}%   " +
-            $"EXEC L{skillStats.ExecutionerLevel} +{skillStats.ExecutionDamageMultiplierAdd * 100f:0}%";
+            $"EXEC L{skillStats.ExecutionerLevel} +{skillStats.ExecutionDamageMultiplierAdd * 100f:0}%\n" +
+            $"SECOND WIND L{skillStats.SecondWindLevel}   " +
+            $"READY {skillStats.SecondWindChargesRemaining}";
     }
 
     void CreateUpgradeChoiceOverlay()
@@ -252,6 +254,8 @@ public class HUDUnitCount : MonoBehaviour
                 return stats.MultistrikeLevel;
             case PlayerSkillKind.Executioner:
                 return stats.ExecutionerLevel;
+            case PlayerSkillKind.SecondWind:
+                return stats.SecondWindLevel;
             case PlayerSkillKind.Damage:
             default:
                 return stats.DamageLevel;
@@ -292,6 +296,8 @@ public class HUDUnitCount : MonoBehaviour
                 return "MULTISTRIKE";
             case PlayerSkillKind.Executioner:
                 return "EXECUTIONER";
+            case PlayerSkillKind.SecondWind:
+                return "SECOND WIND";
             case PlayerSkillKind.Damage:
             default:
                 return "MIGHT";
@@ -329,6 +335,8 @@ public class HUDUnitCount : MonoBehaviour
                 return $"Repeat attack chance +{skill.EffectPerLevel * 100f:0}%";
             case PlayerSkillKind.Executioner:
                 return $"Damage vs enemies below 30% HP +{skill.EffectPerLevel * 100f:0}%";
+            case PlayerSkillKind.SecondWind:
+                return $"Revive once at {skill.EffectPerLevel * 100f:0}% HP with 2s invulnerability";
             case PlayerSkillKind.Damage:
             default:
                 return $"Damage +{skill.EffectPerLevel * 100f:0}%";

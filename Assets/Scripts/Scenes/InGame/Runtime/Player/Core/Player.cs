@@ -16,6 +16,41 @@ public struct PlayerDefeated : IComponentData
 {
 }
 
+public struct PlayerRevivalGrace : IComponentData
+{
+    public float RemainingSeconds;
+}
+
+public struct PlayerRevivedEvent : IComponentData
+{
+    public int RestoredHealth;
+    public int ChargesRemaining;
+}
+
+[UpdateBefore(typeof(ActorDamageEventSystem))]
+public partial struct PlayerRevivalGraceSystem : ISystem
+{
+    public void OnUpdate(ref SystemState state)
+    {
+        var ecb = new EntityCommandBuffer(Unity.Collections.Allocator.Temp);
+        var deltaTime = SystemAPI.Time.DeltaTime;
+        foreach (var (grace, entity) in
+                 SystemAPI.Query<RefRW<PlayerRevivalGrace>>()
+                     .WithEntityAccess())
+        {
+            grace.ValueRW.RemainingSeconds -= deltaTime;
+            if (grace.ValueRO.RemainingSeconds <= 0f)
+            {
+                ecb.RemoveComponent<PlayerRevivalGrace>(entity);
+            }
+        }
+
+        ecb.Playback(state.EntityManager);
+        ecb.Dispose();
+    }
+
+}
+
 /// <summary>
 /// プレイヤー死亡をラン終了状態へ変換する。
 /// </summary>
@@ -38,14 +73,32 @@ public partial struct PlayerDefeatSystem : ISystem
 
         var ecb = new EntityCommandBuffer(Unity.Collections.Allocator.Temp);
         var defeated = false;
-        foreach (var (health, playerEntity) in
-                 SystemAPI.Query<RefRO<Health>>()
+        foreach (var (health, skillStats, playerEntity) in
+                 SystemAPI.Query<RefRW<Health>, RefRW<PlayerSkillStats>>()
                      .WithAll<Player>()
                      .WithNone<PlayerDefeated>()
                      .WithEntityAccess())
         {
             if (health.ValueRO.Current > 0)
             {
+                continue;
+            }
+
+            if (TryConsumeSecondWind(
+                    ref skillStats.ValueRW,
+                    ref health.ValueRW))
+            {
+                ecb.AddComponent(playerEntity, new PlayerRevivalGrace
+                {
+                    RemainingSeconds = 2f,
+                });
+                var eventEntity = ecb.CreateEntity();
+                ecb.AddComponent(eventEntity, new PlayerRevivedEvent
+                {
+                    RestoredHealth = health.ValueRO.Current,
+                    ChargesRemaining =
+                        skillStats.ValueRO.SecondWindChargesRemaining,
+                });
                 continue;
             }
 
@@ -68,5 +121,28 @@ public partial struct PlayerDefeatSystem : ISystem
 
         ecb.Playback(state.EntityManager);
         ecb.Dispose();
+    }
+
+    public static bool TryConsumeSecondWind(
+        ref PlayerSkillStats stats,
+        ref Health health)
+    {
+        if (health.Current > 0 ||
+            health.Max <= 0 ||
+            stats.SecondWindChargesRemaining <= 0)
+        {
+            return false;
+        }
+
+        var restoreFraction = Unity.Mathematics.math.clamp(
+            stats.RevivalHealthFraction,
+            0.1f,
+            1f);
+        health.Current = Unity.Mathematics.math.max(
+            1,
+            (int)Unity.Mathematics.math.round(
+                health.Max * restoreFraction));
+        stats.SecondWindChargesRemaining--;
+        return true;
     }
 }

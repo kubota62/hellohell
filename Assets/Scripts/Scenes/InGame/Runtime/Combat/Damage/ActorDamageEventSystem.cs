@@ -35,6 +35,12 @@ public partial struct ActorDamageEventSystem : ISystem
                      .WithAll<ActorBody>()
                      .WithEntityAccess())
         {
+            if (SystemAPI.HasComponent<PlayerRevivalGrace>(actorEntity))
+            {
+                damageEventBuffer.Clear();
+                continue;
+            }
+
             var pos = transform.ValueRO.Position + new float3(0f, 1f, 0f);
             var remainingHealth = health.ValueRO.Current;
             var damageReduction =

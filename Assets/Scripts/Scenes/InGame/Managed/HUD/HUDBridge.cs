@@ -153,6 +153,15 @@ public class HUDBridge : MonoBehaviour
         Refresh();
     }
 
+    public void ShowPlayerRevived(int restoredHealth, int chargesRemaining)
+    {
+        statusNotification =
+            $"SECOND WIND!  {Mathf.Max(1, restoredHealth)} HP  " +
+            $"{Mathf.Max(0, chargesRemaining)} CHARGES LEFT";
+        notificationRemaining = 4f;
+        Refresh();
+    }
+
     public void ShowHordeSurge(int wave, int enemyCount, int currentThreat)
     {
         statusNotification =
@@ -246,6 +255,9 @@ public class HUDBridge : MonoBehaviour
 
             case PlayerSkillKind.Executioner:
                 return "EXECUTIONER";
+
+            case PlayerSkillKind.SecondWind:
+                return "SECOND WIND";
 
             case PlayerSkillKind.Damage:
             default:

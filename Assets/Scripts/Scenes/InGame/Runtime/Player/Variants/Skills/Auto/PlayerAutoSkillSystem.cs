@@ -356,6 +356,18 @@ public partial struct PlayerAutoSkillSystem : ISystem
                     skill.MaxLevel,
                     skill.EffectPerLevel);
 
+            case PlayerSkillKind.SecondWind:
+            {
+                var gainedLevel = AddSkillLevel(
+                    ref stats.SecondWindLevel,
+                    ref stats.RevivalHealthFraction,
+                    addLevel,
+                    skill.MaxLevel,
+                    skill.EffectPerLevel);
+                stats.SecondWindChargesRemaining += gainedLevel;
+                return gainedLevel;
+            }
+
             case PlayerSkillKind.Damage:
             default:
                 return AddSkillLevel(
@@ -477,6 +489,9 @@ public partial struct PlayerAutoSkillSystem : ISystem
 
             case PlayerSkillKind.Executioner:
                 return stats.ExecutionerLevel;
+
+            case PlayerSkillKind.SecondWind:
+                return stats.SecondWindLevel;
 
             case PlayerSkillKind.Damage:
             default:

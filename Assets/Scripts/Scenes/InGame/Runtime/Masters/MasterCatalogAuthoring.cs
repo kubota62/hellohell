@@ -155,6 +155,7 @@ public class MasterCatalogAuthoring : MonoBehaviour
             EnsurePlayerSkillMaster(buffer, PlayerSkillMasterId.ArmorBoost);
             EnsurePlayerSkillMaster(buffer, PlayerSkillMasterId.MultistrikeBoost);
             EnsurePlayerSkillMaster(buffer, PlayerSkillMasterId.ExecutionerBoost);
+            EnsurePlayerSkillMaster(buffer, PlayerSkillMasterId.SecondWindBoost);
         }
 
         private void BakePlayerProgressMasters(

@@ -24,6 +24,8 @@ public struct PlayerSkillStats : IComponentData
     public int ArmorLevel;
     public int MultistrikeLevel;
     public int ExecutionerLevel;
+    public int SecondWindLevel;
+    public int SecondWindChargesRemaining;
     public float DamageMultiplierAdd;
     public float CooldownMultiplierReduction;
     public float MoveSpeedMultiplierAdd;
@@ -40,4 +42,5 @@ public struct PlayerSkillStats : IComponentData
     public float DamageReduction;
     public float MultistrikeChance;
     public float ExecutionDamageMultiplierAdd;
+    public float RevivalHealthFraction;
 }

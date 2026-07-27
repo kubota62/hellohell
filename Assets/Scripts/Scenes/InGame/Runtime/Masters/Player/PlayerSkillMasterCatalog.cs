@@ -131,6 +131,14 @@ public static class PlayerSkillMasterCatalog
                     effectPerLevel: 0.15f,
                     weight: 1);
 
+            case PlayerSkillMasterId.SecondWindBoost:
+                return Create(
+                    PlayerSkillMasterId.SecondWindBoost,
+                    PlayerSkillKind.SecondWind,
+                    maxLevel: 1,
+                    effectPerLevel: 0.4f,
+                    weight: 1);
+
             case PlayerSkillMasterId.DamageBoost:
             default:
                 return Create(
@@ -201,7 +209,7 @@ public static class PlayerSkillMasterCatalog
 
     public static PlayerSkillMasterData GetByFallbackOrder(int pickIndex, PlayerSkillStats stats)
     {
-        const int fallbackCount = 16;
+        const int fallbackCount = 17;
         var startIndex = (pickIndex < 0 ? 0 : pickIndex) % fallbackCount;
         for (var i = 0; i < fallbackCount; i++)
         {
@@ -264,6 +272,9 @@ public static class PlayerSkillMasterCatalog
 
             case 15:
                 return PlayerSkillMasterId.ExecutionerBoost;
+
+            case 16:
+                return PlayerSkillMasterId.SecondWindBoost;
 
             case 0:
             default:
@@ -329,6 +340,9 @@ public static class PlayerSkillMasterCatalog
 
             case PlayerSkillKind.Executioner:
                 return stats.ExecutionerLevel;
+
+            case PlayerSkillKind.SecondWind:
+                return stats.SecondWindLevel;
 
             case PlayerSkillKind.Damage:
             default:

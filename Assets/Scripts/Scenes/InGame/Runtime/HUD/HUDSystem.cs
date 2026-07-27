@@ -130,6 +130,16 @@ public partial struct HUDSystem : ISystem
             ecb.DestroyEntity(eventEntity);
         }
 
+        foreach (var (revivedEvent, eventEntity) in
+                 SystemAPI.Query<RefRO<PlayerRevivedEvent>>()
+                     .WithEntityAccess())
+        {
+            hudBridge.ShowPlayerRevived(
+                revivedEvent.ValueRO.RestoredHealth,
+                revivedEvent.ValueRO.ChargesRemaining);
+            ecb.DestroyEntity(eventEntity);
+        }
+
         foreach (var (surgeEvent, eventEntity) in
                  SystemAPI.Query<RefRO<HordeSurgeEvent>>()
                      .WithEntityAccess())
