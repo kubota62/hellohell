@@ -31,8 +31,8 @@ public class HUDUnitCount : MonoBehaviour
         ConfigureText(
             bulletText,
             new Vector2(24f, 194f),
-            new Vector2(1400f, 140f),
-            22f);
+            new Vector2(1600f, 210f),
+            20f);
         CreateChampionHealthBar();
         CreateRunResultOverlay();
         CreateUpgradeChoiceOverlay();
@@ -105,31 +105,35 @@ public class HUDUnitCount : MonoBehaviour
             $"ENEMIES {Mathf.Max(0, unitNum - 1)}   ELITES {Mathf.Max(0, eliteNum)}   " +
             $"CHAMPIONS {Mathf.Max(0, championNum)}   " +
             $"SHOTS {bulletNum}   ATTACK {attackMode}\n" +
-            $"BUILD  DMG L{skillStats.DamageLevel} x{1f + skillStats.DamageMultiplierAdd:0.00}   " +
+            FormatBuildStats(skillStats);
+    }
+
+    public static string FormatBuildStats(PlayerSkillStats skillStats)
+    {
+        return
+            $"OFFENSE  DMG L{skillStats.DamageLevel} x{1f + skillStats.DamageMultiplierAdd:0.00}   " +
             $"HASTE L{skillStats.AttackSpeedLevel} +{skillStats.CooldownMultiplierReduction * 100f:0}%   " +
             $"AREA L{skillStats.AreaLevel} x{1f + skillStats.AreaMultiplierAdd:0.00}\n" +
-            $"MOVE L{skillStats.MoveSpeedLevel} x{1f + skillStats.MoveSpeedMultiplierAdd:0.00}   " +
-            $"REGEN L{skillStats.RegenerationLevel} {skillStats.HealthRegenerationPerSecond:0.0}/s\n" +
+            $"SPECIAL  CRIT L{skillStats.CriticalChanceLevel} {skillStats.CriticalChance * 100f:0}%   " +
+            $"FEROCITY L{skillStats.CriticalDamageLevel} " +
+            $"x{1.5f + skillStats.CriticalDamageMultiplierAdd:0.00}   " +
+            $"MULTI L{skillStats.MultistrikeLevel} {skillStats.MultistrikeChance * 100f:0}%   " +
+            $"EXEC L{skillStats.ExecutionerLevel} +{skillStats.ExecutionDamageMultiplierAdd * 100f:0}%   " +
+            $"HUNTER L{skillStats.BossHunterLevel} +{skillStats.EliteDamageMultiplierAdd * 100f:0}%\n" +
+            $"DEFENSE  ARMOR L{skillStats.ArmorLevel} -{skillStats.DamageReduction * 100f:0}%   " +
+            $"REGEN L{skillStats.RegenerationLevel} {skillStats.HealthRegenerationPerSecond:0.0}/s   " +
             $"FORT L{skillStats.MaxHealthLevel} +{skillStats.MaxHealthAdd:0} HP   " +
-            $"MAGNET L{skillStats.PickupRangeLevel} +{skillStats.PickupRadiusAdd:0.0}m\n" +
+            $"SECOND WIND L{skillStats.SecondWindLevel} READY {skillStats.SecondWindChargesRemaining}\n" +
             $"WEAPONS  BLADE L{skillStats.MeleeArcLevel}   " +
             $"BOLT L{skillStats.RapidBoltLevel}   " +
             $"LANCE L{skillStats.PiercingLanceLevel}   " +
             $"ORB L{skillStats.ExplosiveOrbLevel}\n" +
-            $"CRIT L{skillStats.CriticalChanceLevel} {skillStats.CriticalChance * 100f:0}%   " +
-            $"FEROCITY L{skillStats.CriticalDamageLevel} " +
-            $"x{1.5f + skillStats.CriticalDamageMultiplierAdd:0.00}   " +
-            $"ARMOR L{skillStats.ArmorLevel} -{skillStats.DamageReduction * 100f:0}%   " +
-            $"MULTI L{skillStats.MultistrikeLevel} {skillStats.MultistrikeChance * 100f:0}%   " +
-            $"EXEC L{skillStats.ExecutionerLevel} +{skillStats.ExecutionDamageMultiplierAdd * 100f:0}%\n" +
-            $"SECOND WIND L{skillStats.SecondWindLevel}   " +
-            $"READY {skillStats.SecondWindChargesRemaining}   " +
+            $"UTILITY  MOVE L{skillStats.MoveSpeedLevel} x{1f + skillStats.MoveSpeedMultiplierAdd:0.00}   " +
+            $"MAGNET L{skillStats.PickupRangeLevel} +{skillStats.PickupRadiusAdd:0.0}m   " +
             $"WISDOM L{skillStats.WisdomLevel} " +
             $"x{1f + skillStats.ExperienceMultiplierAdd:0.00} XP   " +
             $"LONGSHOT L{skillStats.LongshotLevel} " +
             $"x{1f + skillStats.ProjectileLifetimeMultiplierAdd:0.00}   " +
-            $"HUNTER L{skillStats.BossHunterLevel} " +
-            $"+{skillStats.EliteDamageMultiplierAdd * 100f:0}%   " +
             $"PEN L{skillStats.PenetrationLevel} " +
             $"+{PlayerAutoSkillSystem.GetProjectilePierceAdd(skillStats)}   " +
             $"FORTUNE L{skillStats.FortuneLevel} " +
