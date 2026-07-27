@@ -125,7 +125,9 @@ public class HUDUnitCount : MonoBehaviour
             $"SECOND WIND L{skillStats.SecondWindLevel}   " +
             $"READY {skillStats.SecondWindChargesRemaining}   " +
             $"WISDOM L{skillStats.WisdomLevel} " +
-            $"x{1f + skillStats.ExperienceMultiplierAdd:0.00} XP";
+            $"x{1f + skillStats.ExperienceMultiplierAdd:0.00} XP   " +
+            $"LONGSHOT L{skillStats.LongshotLevel} " +
+            $"x{1f + skillStats.ProjectileLifetimeMultiplierAdd:0.00}";
     }
 
     void CreateUpgradeChoiceOverlay()
@@ -264,6 +266,8 @@ public class HUDUnitCount : MonoBehaviour
                 return stats.SecondWindLevel;
             case PlayerSkillKind.Wisdom:
                 return stats.WisdomLevel;
+            case PlayerSkillKind.Longshot:
+                return stats.LongshotLevel;
             case PlayerSkillKind.Damage:
             default:
                 return stats.DamageLevel;
@@ -308,6 +312,8 @@ public class HUDUnitCount : MonoBehaviour
                 return "SECOND WIND";
             case PlayerSkillKind.Wisdom:
                 return "WISDOM";
+            case PlayerSkillKind.Longshot:
+                return "LONGSHOT";
             case PlayerSkillKind.Damage:
             default:
                 return "MIGHT";
@@ -349,6 +355,8 @@ public class HUDUnitCount : MonoBehaviour
                 return $"Revive once at {skill.EffectPerLevel * 100f:0}% HP with 2s invulnerability";
             case PlayerSkillKind.Wisdom:
                 return $"Experience gained +{skill.EffectPerLevel * 100f:0}%";
+            case PlayerSkillKind.Longshot:
+                return $"Projectile travel range +{skill.EffectPerLevel * 100f:0}%";
             case PlayerSkillKind.Damage:
             default:
                 return $"Damage +{skill.EffectPerLevel * 100f:0}%";

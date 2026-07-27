@@ -218,6 +218,12 @@ public partial struct AttackRequestSystem : ISystem
         definition.AreaRadius *= areaMultiplier;
         definition.ImpactAreaRadius *= areaMultiplier;
         definition.Scale *= areaMultiplier;
+        if (definition.Kind == AttackKind.Projectile)
+        {
+            definition.Lifetime = ResolveProjectileLifetime(
+                definition.Lifetime,
+                stats);
+        }
         definition.Damage = ResolveCriticalDamage(
             definition.Damage,
             stats,
@@ -225,6 +231,16 @@ public partial struct AttackRequestSystem : ISystem
             out var isCritical);
         definition.IsCritical = isCritical ? (byte)1 : (byte)0;
         return ResolveAttackCount(stats, multistrikeRoll);
+    }
+
+    public static float ResolveProjectileLifetime(
+        float baseLifetime,
+        in PlayerSkillStats stats)
+    {
+        return math.max(
+            0.05f,
+            baseLifetime *
+            PlayerAutoSkillSystem.GetProjectileLifetimeMultiplier(stats));
     }
 
     public static int ResolveAttackCount(

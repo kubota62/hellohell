@@ -430,6 +430,14 @@ public partial struct PlayerAutoSkillSystem : ISystem
                     skill.MaxLevel,
                     skill.EffectPerLevel);
 
+            case PlayerSkillKind.Longshot:
+                return AddSkillLevel(
+                    ref stats.LongshotLevel,
+                    ref stats.ProjectileLifetimeMultiplierAdd,
+                    addLevel,
+                    skill.MaxLevel,
+                    skill.EffectPerLevel);
+
             case PlayerSkillKind.Damage:
             default:
                 return AddSkillLevel(
@@ -558,6 +566,9 @@ public partial struct PlayerAutoSkillSystem : ISystem
             case PlayerSkillKind.Wisdom:
                 return stats.WisdomLevel;
 
+            case PlayerSkillKind.Longshot:
+                return stats.LongshotLevel;
+
             case PlayerSkillKind.Damage:
             default:
                 return stats.DamageLevel;
@@ -660,6 +671,15 @@ public partial struct PlayerAutoSkillSystem : ISystem
     {
         return 1f + math.clamp(
             stats.ExperienceMultiplierAdd,
+            0f,
+            2f);
+    }
+
+    public static float GetProjectileLifetimeMultiplier(
+        in PlayerSkillStats stats)
+    {
+        return 1f + math.clamp(
+            stats.ProjectileLifetimeMultiplierAdd,
             0f,
             2f);
     }

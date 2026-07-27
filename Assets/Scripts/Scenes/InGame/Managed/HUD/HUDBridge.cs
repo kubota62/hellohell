@@ -262,6 +262,9 @@ public class HUDBridge : MonoBehaviour
             case PlayerSkillKind.Wisdom:
                 return "WISDOM";
 
+            case PlayerSkillKind.Longshot:
+                return "LONGSHOT";
+
             case PlayerSkillKind.Damage:
             default:
                 return "DAMAGE";
