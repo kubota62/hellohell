@@ -111,7 +111,11 @@ public class HUDUnitCount : MonoBehaviour
             $"MOVE L{skillStats.MoveSpeedLevel} x{1f + skillStats.MoveSpeedMultiplierAdd:0.00}   " +
             $"REGEN L{skillStats.RegenerationLevel} {skillStats.HealthRegenerationPerSecond:0.0}/s\n" +
             $"FORT L{skillStats.MaxHealthLevel} +{skillStats.MaxHealthAdd:0} HP   " +
-            $"MAGNET L{skillStats.PickupRangeLevel} +{skillStats.PickupRadiusAdd:0.0}m";
+            $"MAGNET L{skillStats.PickupRangeLevel} +{skillStats.PickupRadiusAdd:0.0}m\n" +
+            $"WEAPONS  BLADE L{skillStats.MeleeArcLevel}   " +
+            $"BOLT L{skillStats.RapidBoltLevel}   " +
+            $"LANCE L{skillStats.PiercingLanceLevel}   " +
+            $"ORB L{skillStats.ExplosiveOrbLevel}";
     }
 
     void CreateUpgradeChoiceOverlay()
@@ -224,6 +228,14 @@ public class HUDUnitCount : MonoBehaviour
                 return stats.MaxHealthLevel;
             case PlayerSkillKind.PickupRange:
                 return stats.PickupRangeLevel;
+            case PlayerSkillKind.MeleeArc:
+                return stats.MeleeArcLevel;
+            case PlayerSkillKind.RapidBolt:
+                return stats.RapidBoltLevel;
+            case PlayerSkillKind.PiercingLance:
+                return stats.PiercingLanceLevel;
+            case PlayerSkillKind.ExplosiveOrb:
+                return stats.ExplosiveOrbLevel;
             case PlayerSkillKind.Damage:
             default:
                 return stats.DamageLevel;
@@ -246,6 +258,14 @@ public class HUDUnitCount : MonoBehaviour
                 return "FORTITUDE";
             case PlayerSkillKind.PickupRange:
                 return "MAGNETISM";
+            case PlayerSkillKind.MeleeArc:
+                return "BLADE MASTERY";
+            case PlayerSkillKind.RapidBolt:
+                return "RAPID BOLT";
+            case PlayerSkillKind.PiercingLance:
+                return "PIERCING LANCE";
+            case PlayerSkillKind.ExplosiveOrb:
+                return "EXPLOSIVE ORB";
             case PlayerSkillKind.Damage:
             default:
                 return "MIGHT";
@@ -268,6 +288,11 @@ public class HUDUnitCount : MonoBehaviour
                 return $"Maximum health +{skill.EffectPerLevel:0}";
             case PlayerSkillKind.PickupRange:
                 return $"Experience attraction +{skill.EffectPerLevel:0.0}m";
+            case PlayerSkillKind.MeleeArc:
+            case PlayerSkillKind.RapidBolt:
+            case PlayerSkillKind.PiercingLance:
+            case PlayerSkillKind.ExplosiveOrb:
+                return $"Unlock or strengthen weapon; damage +{skill.EffectPerLevel * 100f:0}%";
             case PlayerSkillKind.Damage:
             default:
                 return $"Damage +{skill.EffectPerLevel * 100f:0}%";

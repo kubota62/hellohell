@@ -59,6 +59,38 @@ public static class PlayerSkillMasterCatalog
                     effectPerLevel: 0.6f,
                     weight: 1);
 
+            case PlayerSkillMasterId.MeleeArcMastery:
+                return Create(
+                    PlayerSkillMasterId.MeleeArcMastery,
+                    PlayerSkillKind.MeleeArc,
+                    maxLevel: 8,
+                    effectPerLevel: 0.18f,
+                    weight: 1);
+
+            case PlayerSkillMasterId.RapidBoltMastery:
+                return Create(
+                    PlayerSkillMasterId.RapidBoltMastery,
+                    PlayerSkillKind.RapidBolt,
+                    maxLevel: 8,
+                    effectPerLevel: 0.18f,
+                    weight: 1);
+
+            case PlayerSkillMasterId.PiercingLanceMastery:
+                return Create(
+                    PlayerSkillMasterId.PiercingLanceMastery,
+                    PlayerSkillKind.PiercingLance,
+                    maxLevel: 8,
+                    effectPerLevel: 0.18f,
+                    weight: 1);
+
+            case PlayerSkillMasterId.ExplosiveOrbMastery:
+                return Create(
+                    PlayerSkillMasterId.ExplosiveOrbMastery,
+                    PlayerSkillKind.ExplosiveOrb,
+                    maxLevel: 8,
+                    effectPerLevel: 0.18f,
+                    weight: 1);
+
             case PlayerSkillMasterId.DamageBoost:
             default:
                 return Create(
@@ -129,7 +161,7 @@ public static class PlayerSkillMasterCatalog
 
     public static PlayerSkillMasterData GetByFallbackOrder(int pickIndex, PlayerSkillStats stats)
     {
-        const int fallbackCount = 7;
+        const int fallbackCount = 11;
         var startIndex = (pickIndex < 0 ? 0 : pickIndex) % fallbackCount;
         for (var i = 0; i < fallbackCount; i++)
         {
@@ -165,6 +197,18 @@ public static class PlayerSkillMasterCatalog
 
             case 6:
                 return PlayerSkillMasterId.PickupRangeBoost;
+
+            case 7:
+                return PlayerSkillMasterId.MeleeArcMastery;
+
+            case 8:
+                return PlayerSkillMasterId.RapidBoltMastery;
+
+            case 9:
+                return PlayerSkillMasterId.PiercingLanceMastery;
+
+            case 10:
+                return PlayerSkillMasterId.ExplosiveOrbMastery;
 
             case 0:
             default:
@@ -203,6 +247,18 @@ public static class PlayerSkillMasterCatalog
 
             case PlayerSkillKind.PickupRange:
                 return stats.PickupRangeLevel;
+
+            case PlayerSkillKind.MeleeArc:
+                return stats.MeleeArcLevel;
+
+            case PlayerSkillKind.RapidBolt:
+                return stats.RapidBoltLevel;
+
+            case PlayerSkillKind.PiercingLance:
+                return stats.PiercingLanceLevel;
+
+            case PlayerSkillKind.ExplosiveOrb:
+                return stats.ExplosiveOrbLevel;
 
             case PlayerSkillKind.Damage:
             default:

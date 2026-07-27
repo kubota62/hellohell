@@ -75,6 +75,15 @@ public partial struct AttackRequestSystem : ISystem
                     continue;
                 }
 
+                if (!CanUsePlayerAttack(
+                        entityManager,
+                        actorEntity,
+                        slot.AttackMasterId))
+                {
+                    attackSlots[i] = slot;
+                    continue;
+                }
+
                 var definition = ResolveDefinition(
                     hasAttackMasters,
                     attackMasters,
@@ -183,13 +192,30 @@ public partial struct AttackRequestSystem : ISystem
             1,
             (int)math.round(
                 definition.Damage *
-                PlayerAutoSkillSystem.GetDamageMultiplier(stats)));
+                PlayerAutoSkillSystem.GetDamageMultiplier(stats) *
+                PlayerAutoSkillSystem.GetWeaponDamageMultiplier(
+                    stats,
+                    definition.Id)));
         definition.Cooldown *= PlayerAutoSkillSystem.GetCooldownMultiplier(stats);
         var areaMultiplier = PlayerAutoSkillSystem.GetAreaMultiplier(stats);
         definition.HitRadius *= areaMultiplier;
         definition.AreaRadius *= areaMultiplier;
         definition.ImpactAreaRadius *= areaMultiplier;
         definition.Scale *= areaMultiplier;
+    }
+
+    private static bool CanUsePlayerAttack(
+        EntityManager entityManager,
+        Entity actorEntity,
+        AttackMasterId attackMasterId)
+    {
+        if (!entityManager.HasComponent<PlayerSkillStats>(actorEntity))
+        {
+            return true;
+        }
+
+        var stats = entityManager.GetComponentData<PlayerSkillStats>(actorEntity);
+        return PlayerAutoSkillSystem.GetWeaponLevel(stats, attackMasterId) > 0;
     }
 
     private static void ApplyEnemyModifiers(

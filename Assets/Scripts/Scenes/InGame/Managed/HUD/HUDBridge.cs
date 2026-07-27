@@ -204,6 +204,18 @@ public class HUDBridge : MonoBehaviour
             case PlayerSkillKind.PickupRange:
                 return "MAGNET";
 
+            case PlayerSkillKind.MeleeArc:
+                return "BLADE";
+
+            case PlayerSkillKind.RapidBolt:
+                return "BOLT";
+
+            case PlayerSkillKind.PiercingLance:
+                return "LANCE";
+
+            case PlayerSkillKind.ExplosiveOrb:
+                return "ORB";
+
             case PlayerSkillKind.Damage:
             default:
                 return "DAMAGE";

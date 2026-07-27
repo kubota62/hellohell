@@ -15,6 +15,10 @@ public struct PlayerSkillStats : IComponentData
     public int RegenerationLevel;
     public int MaxHealthLevel;
     public int PickupRangeLevel;
+    public int MeleeArcLevel;
+    public int RapidBoltLevel;
+    public int PiercingLanceLevel;
+    public int ExplosiveOrbLevel;
     public float DamageMultiplierAdd;
     public float CooldownMultiplierReduction;
     public float MoveSpeedMultiplierAdd;
@@ -22,4 +26,8 @@ public struct PlayerSkillStats : IComponentData
     public float HealthRegenerationPerSecond;
     public float MaxHealthAdd;
     public float PickupRadiusAdd;
+    public float MeleeArcDamageMultiplierAdd;
+    public float RapidBoltDamageMultiplierAdd;
+    public float PiercingLanceDamageMultiplierAdd;
+    public float ExplosiveOrbDamageMultiplierAdd;
 }

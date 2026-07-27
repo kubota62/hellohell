@@ -227,7 +227,15 @@ public partial struct ActorSpawnSystem : ISystem
             entityManager,
             actorEntity,
             PlayerProgressSystem.CreateInitialProgress(progressMaster));
-        SetOrAddComponent(entityManager, actorEntity, new PlayerSkillStats());
+        SetOrAddComponent(
+            entityManager,
+            actorEntity,
+            new PlayerSkillStats
+            {
+                // A run begins with one signature weapon. The remaining slots
+                // stay present but are unlocked through level-up choices.
+                MeleeArcLevel = 1,
+            });
         SetOrAddComponent(
             entityManager,
             actorEntity,

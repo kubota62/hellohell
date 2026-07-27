@@ -284,6 +284,38 @@ public partial struct PlayerAutoSkillSystem : ISystem
                     skill.MaxLevel,
                     skill.EffectPerLevel);
 
+            case PlayerSkillKind.MeleeArc:
+                return AddSkillLevel(
+                    ref stats.MeleeArcLevel,
+                    ref stats.MeleeArcDamageMultiplierAdd,
+                    addLevel,
+                    skill.MaxLevel,
+                    skill.EffectPerLevel);
+
+            case PlayerSkillKind.RapidBolt:
+                return AddSkillLevel(
+                    ref stats.RapidBoltLevel,
+                    ref stats.RapidBoltDamageMultiplierAdd,
+                    addLevel,
+                    skill.MaxLevel,
+                    skill.EffectPerLevel);
+
+            case PlayerSkillKind.PiercingLance:
+                return AddSkillLevel(
+                    ref stats.PiercingLanceLevel,
+                    ref stats.PiercingLanceDamageMultiplierAdd,
+                    addLevel,
+                    skill.MaxLevel,
+                    skill.EffectPerLevel);
+
+            case PlayerSkillKind.ExplosiveOrb:
+                return AddSkillLevel(
+                    ref stats.ExplosiveOrbLevel,
+                    ref stats.ExplosiveOrbDamageMultiplierAdd,
+                    addLevel,
+                    skill.MaxLevel,
+                    skill.EffectPerLevel);
+
             case PlayerSkillKind.Damage:
             default:
                 return AddSkillLevel(
@@ -379,6 +411,18 @@ public partial struct PlayerAutoSkillSystem : ISystem
             case PlayerSkillKind.PickupRange:
                 return stats.PickupRangeLevel;
 
+            case PlayerSkillKind.MeleeArc:
+                return stats.MeleeArcLevel;
+
+            case PlayerSkillKind.RapidBolt:
+                return stats.RapidBoltLevel;
+
+            case PlayerSkillKind.PiercingLance:
+                return stats.PiercingLanceLevel;
+
+            case PlayerSkillKind.ExplosiveOrb:
+                return stats.ExplosiveOrbLevel;
+
             case PlayerSkillKind.Damage:
             default:
                 return stats.DamageLevel;
@@ -404,6 +448,52 @@ public partial struct PlayerAutoSkillSystem : ISystem
     public static float GetAreaMultiplier(in PlayerSkillStats stats)
     {
         return 1f + stats.AreaMultiplierAdd;
+    }
+
+    public static int GetWeaponLevel(
+        in PlayerSkillStats stats,
+        AttackMasterId attackMasterId)
+    {
+        switch (attackMasterId)
+        {
+            case AttackMasterId.BasicMeleeArc:
+                return stats.MeleeArcLevel;
+
+            case AttackMasterId.RapidBolt:
+                return stats.RapidBoltLevel;
+
+            case AttackMasterId.PiercingLance:
+                return stats.PiercingLanceLevel;
+
+            case AttackMasterId.ExplosiveOrb:
+                return stats.ExplosiveOrbLevel;
+
+            default:
+                return 1;
+        }
+    }
+
+    public static float GetWeaponDamageMultiplier(
+        in PlayerSkillStats stats,
+        AttackMasterId attackMasterId)
+    {
+        switch (attackMasterId)
+        {
+            case AttackMasterId.BasicMeleeArc:
+                return 1f + stats.MeleeArcDamageMultiplierAdd;
+
+            case AttackMasterId.RapidBolt:
+                return 1f + stats.RapidBoltDamageMultiplierAdd;
+
+            case AttackMasterId.PiercingLance:
+                return 1f + stats.PiercingLanceDamageMultiplierAdd;
+
+            case AttackMasterId.ExplosiveOrb:
+                return 1f + stats.ExplosiveOrbDamageMultiplierAdd;
+
+            default:
+                return 1f;
+        }
     }
 }
 

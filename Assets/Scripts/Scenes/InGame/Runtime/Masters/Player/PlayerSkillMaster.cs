@@ -13,6 +13,10 @@ public enum PlayerSkillMasterId
     RegenerationBoost = 5,
     MaxHealthBoost = 6,
     PickupRangeBoost = 7,
+    MeleeArcMastery = 8,
+    RapidBoltMastery = 9,
+    PiercingLanceMastery = 10,
+    ExplosiveOrbMastery = 11,
 }
 
 /// <summary>
@@ -28,6 +32,10 @@ public enum PlayerSkillKind : byte
     Regeneration = 5,
     MaxHealth = 6,
     PickupRange = 7,
+    MeleeArc = 8,
+    RapidBolt = 9,
+    PiercingLance = 10,
+    ExplosiveOrb = 11,
 }
 
 /// <summary>
