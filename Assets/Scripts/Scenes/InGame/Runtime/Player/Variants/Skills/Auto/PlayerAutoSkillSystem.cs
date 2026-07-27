@@ -19,6 +19,17 @@ public partial struct PlayerAutoSkillSystem : ISystem
             true);
         var ecb = new EntityCommandBuffer(Unity.Collections.Allocator.Temp);
 
+        if (TryApplyBanish(
+                ref state,
+                hasSkillMasters,
+                skillMasters,
+                ecb))
+        {
+            ecb.Playback(state.EntityManager);
+            ecb.Dispose();
+            return;
+        }
+
         if (TryApplyReroll(
                 ref state,
                 hasSkillMasters,
@@ -72,6 +83,58 @@ public partial struct PlayerAutoSkillSystem : ISystem
 
         ecb.Playback(state.EntityManager);
         ecb.Dispose();
+    }
+
+    bool TryApplyBanish(
+        ref SystemState state,
+        bool hasSkillMasters,
+        DynamicBuffer<PlayerSkillMasterElement> skillMasters,
+        EntityCommandBuffer ecb)
+    {
+        foreach (var (banish, banishEntity) in
+                 SystemAPI.Query<RefRO<PlayerUpgradeBanish>>()
+                     .WithEntityAccess())
+        {
+            if (SystemAPI.TryGetSingletonEntity<PlayerUpgradeChoice>(
+                    out var choiceEntity) &&
+                SystemAPI.TryGetSingleton<PlayerUpgradeChoice>(
+                    out var choice) &&
+                choice.BanishesRemaining > 0 &&
+                SystemAPI.HasComponent<PlayerSkillStats>(choice.Player))
+            {
+                var stats = SystemAPI.GetComponent<PlayerSkillStats>(
+                    choice.Player);
+                var skill = ResolveSelectedSkill(
+                    choice,
+                    banish.ValueRO.ChoiceIndex);
+                if (TryAddBanishedSkill(
+                        ref stats,
+                        skill.Id))
+                {
+                    var nextChoice = CreateUpgradeChoice(
+                        stats,
+                        choice.NewLevel,
+                        choice.PendingLevels,
+                        hasSkillMasters,
+                        skillMasters,
+                        choice.Player,
+                        choice.RerollGeneration + 1);
+                    nextChoice.RerollsRemaining =
+                        choice.RerollsRemaining;
+                    nextChoice.BanishesRemaining =
+                        math.max(
+                            0,
+                            choice.BanishesRemaining - 1);
+                    ecb.SetComponent(choice.Player, stats);
+                    ecb.SetComponent(choiceEntity, nextChoice);
+                }
+            }
+
+            ecb.DestroyEntity(banishEntity);
+            return true;
+        }
+
+        return false;
     }
 
     bool TryApplyReroll(
@@ -225,6 +288,7 @@ public partial struct PlayerAutoSkillSystem : ISystem
             PendingLevels = math.max(1, pendingLevels),
             RerollsRemaining = GetUpgradeRerollCount(stats),
             RerollGeneration = math.max(0, rerollGeneration),
+            BanishesRemaining = GetUpgradeBanishCount(stats),
         };
     }
 
@@ -750,6 +814,48 @@ public partial struct PlayerAutoSkillSystem : ISystem
             (int)math.round(stats.UpgradeRerollsAdd),
             0,
             3);
+    }
+
+    public static int GetUpgradeBanishCount(in PlayerSkillStats stats)
+    {
+        return math.clamp(
+            1 - stats.BanishedSkillCount,
+            0,
+            1);
+    }
+
+    public static bool TryAddBanishedSkill(
+        ref PlayerSkillStats stats,
+        PlayerSkillMasterId skillId)
+    {
+        if (skillId == default ||
+            stats.IsSkillBanished(skillId))
+        {
+            return false;
+        }
+
+        if (stats.BanishedSkillFirst == default)
+        {
+            stats.BanishedSkillFirst = skillId;
+        }
+        else if (stats.BanishedSkillSecond == default)
+        {
+            stats.BanishedSkillSecond = skillId;
+        }
+        else if (stats.BanishedSkillThird == default)
+        {
+            stats.BanishedSkillThird = skillId;
+        }
+        else
+        {
+            return false;
+        }
+
+        stats.BanishedSkillCount = math.clamp(
+            stats.BanishedSkillCount + 1,
+            0,
+            3);
+        return true;
     }
 
     public static float GetLowHealthDamageBonus(in PlayerSkillStats stats)

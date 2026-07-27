@@ -350,6 +350,11 @@ public static class PlayerSkillMasterCatalog
 
     private static bool CanApply(PlayerSkillMasterData master, PlayerSkillStats stats)
     {
+        if (stats.IsSkillBanished(master.Id))
+        {
+            return false;
+        }
+
         if (master.MaxLevel <= 0)
         {
             return true;

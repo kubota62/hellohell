@@ -242,10 +242,13 @@ public class HUDUnitCount : MonoBehaviour
         var rerollHint = choice.RerollsRemaining > 0
             ? $"<color=#7ED8FF>[R] REROLL</color>  <size=20>{choice.RerollsRemaining} LEFT</size>"
             : "<color=#777788>[R] REROLL USED</color>";
+        var banishHint = choice.BanishesRemaining > 0
+            ? $"<color=#FF9E7A>[Q/W/E] BANISH 1/2/3</color>  <size=20>{choice.BanishesRemaining} LEFT</size>"
+            : "<color=#777788>[Q/W/E] BANISH USED</color>";
         upgradeChoiceLabel.text =
             $"<color=#FFD75A><size=48>LEVEL UP!</size></color>{queuedLevels}\n" +
             "<size=22>CHOOSE AN UPGRADE — PRESS 1, 2 OR 3</size>\n\n" +
-            rerollHint + "\n\n" +
+            rerollHint + "     " + banishHint + "\n\n" +
             FormatUpgradeOption(1, choice.First, stats) + "\n\n" +
             FormatUpgradeOption(2, choice.Second, stats) + "\n\n" +
             FormatUpgradeOption(3, choice.Third, stats);

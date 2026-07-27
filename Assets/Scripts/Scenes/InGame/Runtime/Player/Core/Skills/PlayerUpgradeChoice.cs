@@ -14,6 +14,7 @@ public struct PlayerUpgradeChoice : IComponentData
     public int PendingLevels;
     public int RerollsRemaining;
     public int RerollGeneration;
+    public int BanishesRemaining;
 }
 
 /// <summary>
@@ -26,4 +27,9 @@ public struct PlayerUpgradeSelection : IComponentData
 
 public struct PlayerUpgradeReroll : IComponentData
 {
+}
+
+public struct PlayerUpgradeBanish : IComponentData
+{
+    public int ChoiceIndex;
 }

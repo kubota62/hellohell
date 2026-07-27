@@ -32,6 +32,10 @@ public struct PlayerSkillStats : IComponentData
     public int PenetrationLevel;
     public int FortuneLevel;
     public int BerserkerLevel;
+    public int BanishedSkillCount;
+    public PlayerSkillMasterId BanishedSkillFirst;
+    public PlayerSkillMasterId BanishedSkillSecond;
+    public PlayerSkillMasterId BanishedSkillThird;
     public float DamageMultiplierAdd;
     public float CooldownMultiplierReduction;
     public float MoveSpeedMultiplierAdd;
@@ -55,4 +59,12 @@ public struct PlayerSkillStats : IComponentData
     public float ProjectilePierceAdd;
     public float UpgradeRerollsAdd;
     public float LowHealthDamageMultiplierAdd;
+
+    public bool IsSkillBanished(PlayerSkillMasterId skillId)
+    {
+        return skillId != default &&
+            (BanishedSkillFirst == skillId ||
+             BanishedSkillSecond == skillId ||
+             BanishedSkillThird == skillId);
+    }
 }

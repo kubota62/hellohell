@@ -16,6 +16,7 @@ public class PlayerInputManager : MonoBehaviour
     private EntityQuery upgradeChoiceQuery;
     private EntityQuery upgradeSelectionQuery;
     private EntityQuery upgradeRerollQuery;
+    private EntityQuery upgradeBanishQuery;
     private Camera mainCamera;
     private bool autoAttackEnabled;
     private bool hasInputEntity;
@@ -43,6 +44,8 @@ public class PlayerInputManager : MonoBehaviour
             ComponentType.ReadOnly<PlayerUpgradeSelection>());
         upgradeRerollQuery = entityManager.CreateEntityQuery(
             ComponentType.ReadOnly<PlayerUpgradeReroll>());
+        upgradeBanishQuery = entityManager.CreateEntityQuery(
+            ComponentType.ReadOnly<PlayerUpgradeBanish>());
         hasRunStateQuery = true;
         hasUpgradeQueries = true;
         hasInputEntity = true;
@@ -66,6 +69,7 @@ public class PlayerInputManager : MonoBehaviour
             upgradeChoiceQuery.Dispose();
             upgradeSelectionQuery.Dispose();
             upgradeRerollQuery.Dispose();
+            upgradeBanishQuery.Dispose();
             hasUpgradeQueries = false;
         }
 
@@ -170,7 +174,8 @@ public class PlayerInputManager : MonoBehaviour
 
         if (keyboard == null ||
             !upgradeSelectionQuery.IsEmptyIgnoreFilter ||
-            !upgradeRerollQuery.IsEmptyIgnoreFilter)
+            !upgradeRerollQuery.IsEmptyIgnoreFilter ||
+            !upgradeBanishQuery.IsEmptyIgnoreFilter)
         {
             return true;
         }
@@ -180,6 +185,27 @@ public class PlayerInputManager : MonoBehaviour
             choice.RerollsRemaining > 0)
         {
             entityManager.CreateEntity(typeof(PlayerUpgradeReroll));
+            return true;
+        }
+
+        var banishIndex = keyboard.qKey.wasPressedThisFrame
+            ? 0
+            : keyboard.wKey.wasPressedThisFrame
+                ? 1
+                : keyboard.eKey.wasPressedThisFrame
+                    ? 2
+                    : -1;
+        if (banishIndex >= 0 &&
+            choice.BanishesRemaining > 0)
+        {
+            var banishEntity = entityManager.CreateEntity(
+                typeof(PlayerUpgradeBanish));
+            entityManager.SetComponentData(
+                banishEntity,
+                new PlayerUpgradeBanish
+                {
+                    ChoiceIndex = banishIndex,
+                });
             return true;
         }
 
