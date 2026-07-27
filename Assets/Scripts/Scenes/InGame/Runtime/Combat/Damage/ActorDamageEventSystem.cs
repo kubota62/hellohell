@@ -35,6 +35,8 @@ public partial struct ActorDamageEventSystem : ISystem
                      .WithAll<ActorBody>()
                      .WithEntityAccess())
         {
+            var isPlayerDamage =
+                SystemAPI.HasComponent<Player>(actorEntity);
             if (SystemAPI.HasComponent<PlayerRevivalGrace>(actorEntity))
             {
                 damageEventBuffer.Clear();
@@ -85,6 +87,7 @@ public partial struct ActorDamageEventSystem : ISystem
                     IntValue = resolvedDamage,
                     Position = pos,
                     IsCritical = damage.IsCritical,
+                    IsPlayerDamage = isPlayerDamage ? (byte)1 : (byte)0,
                 });
             }
 
@@ -153,6 +156,7 @@ public struct VfxRequest : IComponentData
     public int IntValue;
     public float3 Position;
     public byte IsCritical;
+    public byte IsPlayerDamage;
 }
 
 /// <summary>
@@ -197,7 +201,8 @@ public partial struct VfxRequestSystem : ISystem
                     config.DamageDigitPrefab,
                     request.ValueRO.IntValue,
                     request.ValueRO.Position,
-                    request.ValueRO.IsCritical != 0);
+                    request.ValueRO.IsCritical != 0,
+                    request.ValueRO.IsPlayerDamage != 0);
             }
 
             ecb.DestroyEntity(entity);

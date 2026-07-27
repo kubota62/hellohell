@@ -18,7 +18,8 @@ public static class DamageDigitSpawnUtility
         Entity digitPrefab,
         int damage,
         float3 worldPosition,
-        bool isCritical = false)
+        bool isCritical = false,
+        bool isPlayerDamage = false)
     {
         if (digitPrefab == Entity.Null)
             return;
@@ -53,16 +54,31 @@ public static class DamageDigitSpawnUtility
                 StartPosition = worldPosition,
                 HorizontalOffset = horizontalOffset,
                 Elapsed = 0f,
-                Lifetime = 0.4f,
+                Lifetime = isPlayerDamage ? 0.55f : 0.4f,
                 IsCritical = isCritical ? (byte)1 : (byte)0,
+                IsPlayerDamage = isPlayerDamage ? (byte)1 : (byte)0,
             });
             ecb.AddComponent(entity, new DigitIndexProperty { Value = columnIndex });
             ecb.AddComponent(entity, new URPMaterialPropertyBaseColor
             {
-                Value = isCritical
-                    ? new float4(1f, 0.2f, 0.04f, 1f)
-                    : new float4(1f, 1f, 1f, 1f),
+                Value = ResolveColor(
+                    isCritical,
+                    isPlayerDamage),
             });
         }
+    }
+
+    public static float4 ResolveColor(
+        bool isCritical,
+        bool isPlayerDamage)
+    {
+        if (isPlayerDamage)
+        {
+            return new float4(1f, 0.12f, 0.18f, 1f);
+        }
+
+        return isCritical
+            ? new float4(1f, 0.2f, 0.04f, 1f)
+            : new float4(1f, 1f, 1f, 1f);
     }
 }
