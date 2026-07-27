@@ -126,6 +126,7 @@ public partial struct MeleeArcAttackSystem : ISystem
         {
             Damage = request.Damage,
             Attacker = request.Owner,
+            IsCritical = request.IsCritical,
         });
     }
 
@@ -139,7 +140,9 @@ public partial struct MeleeArcAttackSystem : ISystem
             Radius = request.Radius,
             AngleDegrees = request.AngleDegrees,
             Duration = request.VisualDuration,
-            Color = new float4(1f, 0.92f, 0.18f, 0.38f),
+            Color = request.IsCritical != 0
+                ? new float4(1f, 0.32f, 0.05f, 0.62f)
+                : new float4(1f, 0.92f, 0.18f, 0.38f),
         });
     }
 

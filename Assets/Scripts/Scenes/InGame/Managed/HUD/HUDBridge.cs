@@ -223,6 +223,12 @@ public class HUDBridge : MonoBehaviour
             case PlayerSkillKind.ExplosiveOrb:
                 return "ORB";
 
+            case PlayerSkillKind.CriticalChance:
+                return "CRIT";
+
+            case PlayerSkillKind.CriticalDamage:
+                return "FEROCITY";
+
             case PlayerSkillKind.Damage:
             default:
                 return "DAMAGE";

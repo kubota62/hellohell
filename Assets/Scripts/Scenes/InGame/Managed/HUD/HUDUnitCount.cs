@@ -115,7 +115,10 @@ public class HUDUnitCount : MonoBehaviour
             $"WEAPONS  BLADE L{skillStats.MeleeArcLevel}   " +
             $"BOLT L{skillStats.RapidBoltLevel}   " +
             $"LANCE L{skillStats.PiercingLanceLevel}   " +
-            $"ORB L{skillStats.ExplosiveOrbLevel}";
+            $"ORB L{skillStats.ExplosiveOrbLevel}\n" +
+            $"CRIT L{skillStats.CriticalChanceLevel} {skillStats.CriticalChance * 100f:0}%   " +
+            $"FEROCITY L{skillStats.CriticalDamageLevel} " +
+            $"x{1.5f + skillStats.CriticalDamageMultiplierAdd:0.00}";
     }
 
     void CreateUpgradeChoiceOverlay()
@@ -236,6 +239,10 @@ public class HUDUnitCount : MonoBehaviour
                 return stats.PiercingLanceLevel;
             case PlayerSkillKind.ExplosiveOrb:
                 return stats.ExplosiveOrbLevel;
+            case PlayerSkillKind.CriticalChance:
+                return stats.CriticalChanceLevel;
+            case PlayerSkillKind.CriticalDamage:
+                return stats.CriticalDamageLevel;
             case PlayerSkillKind.Damage:
             default:
                 return stats.DamageLevel;
@@ -266,6 +273,10 @@ public class HUDUnitCount : MonoBehaviour
                 return "PIERCING LANCE";
             case PlayerSkillKind.ExplosiveOrb:
                 return "EXPLOSIVE ORB";
+            case PlayerSkillKind.CriticalChance:
+                return "KEEN EYE";
+            case PlayerSkillKind.CriticalDamage:
+                return "FEROCITY";
             case PlayerSkillKind.Damage:
             default:
                 return "MIGHT";
@@ -293,6 +304,10 @@ public class HUDUnitCount : MonoBehaviour
             case PlayerSkillKind.PiercingLance:
             case PlayerSkillKind.ExplosiveOrb:
                 return $"Unlock or strengthen weapon; damage +{skill.EffectPerLevel * 100f:0}%";
+            case PlayerSkillKind.CriticalChance:
+                return $"Critical chance +{skill.EffectPerLevel * 100f:0}%";
+            case PlayerSkillKind.CriticalDamage:
+                return $"Critical damage +{skill.EffectPerLevel * 100f:0}%";
             case PlayerSkillKind.Damage:
             default:
                 return $"Damage +{skill.EffectPerLevel * 100f:0}%";

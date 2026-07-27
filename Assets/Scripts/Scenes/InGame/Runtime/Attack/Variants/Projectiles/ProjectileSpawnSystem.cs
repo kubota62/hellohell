@@ -117,6 +117,7 @@ public partial struct ProjectileSpawnSystem : ISystem
             Owner = value.Owner,
             Team = value.Team,
             Damage = value.Damage,
+            IsCritical = value.IsCritical,
             HitRadius = value.HitRadius,
         });
         entityManager.SetComponentData(projectileEntity, new Hitbox

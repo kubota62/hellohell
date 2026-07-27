@@ -46,6 +46,7 @@ public partial struct ActorDamageEventSystem : ISystem
                     Kind = VfxRequestKind.DamageDigit,
                     IntValue = damage.Damage,
                     Position = pos,
+                    IsCritical = damage.IsCritical,
                 });
             }
 
@@ -64,6 +65,7 @@ public struct VfxRequest : IComponentData
     public VfxRequestKind Kind;
     public int IntValue;
     public float3 Position;
+    public byte IsCritical;
 }
 
 /// <summary>
@@ -107,7 +109,8 @@ public partial struct VfxRequestSystem : ISystem
                     ecb,
                     config.DamageDigitPrefab,
                     request.ValueRO.IntValue,
-                    request.ValueRO.Position);
+                    request.ValueRO.Position,
+                    request.ValueRO.IsCritical != 0);
             }
 
             ecb.DestroyEntity(entity);

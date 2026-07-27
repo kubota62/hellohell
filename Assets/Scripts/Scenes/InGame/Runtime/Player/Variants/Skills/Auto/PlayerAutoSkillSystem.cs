@@ -316,6 +316,22 @@ public partial struct PlayerAutoSkillSystem : ISystem
                     skill.MaxLevel,
                     skill.EffectPerLevel);
 
+            case PlayerSkillKind.CriticalChance:
+                return AddSkillLevel(
+                    ref stats.CriticalChanceLevel,
+                    ref stats.CriticalChance,
+                    addLevel,
+                    skill.MaxLevel,
+                    skill.EffectPerLevel);
+
+            case PlayerSkillKind.CriticalDamage:
+                return AddSkillLevel(
+                    ref stats.CriticalDamageLevel,
+                    ref stats.CriticalDamageMultiplierAdd,
+                    addLevel,
+                    skill.MaxLevel,
+                    skill.EffectPerLevel);
+
             case PlayerSkillKind.Damage:
             default:
                 return AddSkillLevel(
@@ -423,6 +439,12 @@ public partial struct PlayerAutoSkillSystem : ISystem
             case PlayerSkillKind.ExplosiveOrb:
                 return stats.ExplosiveOrbLevel;
 
+            case PlayerSkillKind.CriticalChance:
+                return stats.CriticalChanceLevel;
+
+            case PlayerSkillKind.CriticalDamage:
+                return stats.CriticalDamageLevel;
+
             case PlayerSkillKind.Damage:
             default:
                 return stats.DamageLevel;
@@ -494,6 +516,16 @@ public partial struct PlayerAutoSkillSystem : ISystem
             default:
                 return 1f;
         }
+    }
+
+    public static float GetCriticalChance(in PlayerSkillStats stats)
+    {
+        return math.clamp(stats.CriticalChance, 0f, 0.75f);
+    }
+
+    public static float GetCriticalDamageMultiplier(in PlayerSkillStats stats)
+    {
+        return math.max(1.5f, 1.5f + stats.CriticalDamageMultiplierAdd);
     }
 }
 

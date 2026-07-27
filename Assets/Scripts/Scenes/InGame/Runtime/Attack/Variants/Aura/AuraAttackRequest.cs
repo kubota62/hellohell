@@ -13,4 +13,5 @@ public struct AuraAttackRequest : IComponentData
     public float3 Position;
     public float Radius;
     public int Damage;
+    public byte IsCritical;
 }

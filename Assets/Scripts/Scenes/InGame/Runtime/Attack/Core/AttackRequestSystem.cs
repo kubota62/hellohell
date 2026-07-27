@@ -8,8 +8,11 @@ using Unity.Transforms;
 [UpdateBefore(typeof(ProjectileSpawnSystem))]
 public partial struct AttackRequestSystem : ISystem
 {
+    private Unity.Mathematics.Random criticalRandom;
+
     public void OnCreate(ref SystemState state)
     {
+        criticalRandom = new Unity.Mathematics.Random(0xC17C0DEu);
         state.RequireForUpdate<Config>();
         state.RequireForUpdate<PlayerInput>();
     }
@@ -88,7 +91,11 @@ public partial struct AttackRequestSystem : ISystem
                     hasAttackMasters,
                     attackMasters,
                     slot.AttackMasterId);
-                ApplyPlayerSkillStats(entityManager, actorEntity, ref definition);
+                ApplyPlayerSkillStats(
+                    entityManager,
+                    actorEntity,
+                    ref definition,
+                    criticalRandom.NextUInt());
 
                 if (CreateAttackRequest(
                         entityManager,
@@ -180,7 +187,8 @@ public partial struct AttackRequestSystem : ISystem
     private static void ApplyPlayerSkillStats(
         EntityManager entityManager,
         Entity actorEntity,
-        ref AttackMasterData definition)
+        ref AttackMasterData definition,
+        uint criticalRoll)
     {
         if (!entityManager.HasComponent<PlayerSkillStats>(actorEntity))
         {
@@ -202,6 +210,33 @@ public partial struct AttackRequestSystem : ISystem
         definition.AreaRadius *= areaMultiplier;
         definition.ImpactAreaRadius *= areaMultiplier;
         definition.Scale *= areaMultiplier;
+        definition.Damage = ResolveCriticalDamage(
+            definition.Damage,
+            stats,
+            criticalRoll,
+            out var isCritical);
+        definition.IsCritical = isCritical ? (byte)1 : (byte)0;
+    }
+
+    public static int ResolveCriticalDamage(
+        int damage,
+        in PlayerSkillStats stats,
+        uint roll,
+        out bool isCritical)
+    {
+        var chance = PlayerAutoSkillSystem.GetCriticalChance(stats);
+        isCritical = chance > 0f &&
+            roll / (float)uint.MaxValue < chance;
+        if (!isCritical)
+        {
+            return math.max(1, damage);
+        }
+
+        return math.max(
+            1,
+            (int)math.round(
+                damage *
+                PlayerAutoSkillSystem.GetCriticalDamageMultiplier(stats)));
     }
 
     private static bool CanUsePlayerAttack(
@@ -320,6 +355,7 @@ public partial struct AttackRequestSystem : ISystem
             Direction = direction,
             Speed = definition.ProjectileSpeed,
             Damage = definition.Damage,
+            IsCritical = definition.IsCritical,
             HitRadius = definition.HitRadius,
             Lifetime = definition.Lifetime,
             Scale = definition.Scale,
@@ -347,6 +383,7 @@ public partial struct AttackRequestSystem : ISystem
             Position = position,
             Radius = definition.AreaRadius,
             Damage = definition.Damage,
+            IsCritical = definition.IsCritical,
         });
     }
 
@@ -369,6 +406,7 @@ public partial struct AttackRequestSystem : ISystem
             Radius = definition.AreaRadius,
             AngleDegrees = definition.ArcAngleDegrees,
             Damage = definition.Damage,
+            IsCritical = definition.IsCritical,
             VisualDuration = definition.VisualDuration,
         });
     }

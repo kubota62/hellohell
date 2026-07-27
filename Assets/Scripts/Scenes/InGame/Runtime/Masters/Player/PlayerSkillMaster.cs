@@ -17,6 +17,8 @@ public enum PlayerSkillMasterId
     RapidBoltMastery = 9,
     PiercingLanceMastery = 10,
     ExplosiveOrbMastery = 11,
+    CriticalChanceBoost = 12,
+    CriticalDamageBoost = 13,
 }
 
 /// <summary>
@@ -36,6 +38,8 @@ public enum PlayerSkillKind : byte
     RapidBolt = 9,
     PiercingLance = 10,
     ExplosiveOrb = 11,
+    CriticalChance = 12,
+    CriticalDamage = 13,
 }
 
 /// <summary>

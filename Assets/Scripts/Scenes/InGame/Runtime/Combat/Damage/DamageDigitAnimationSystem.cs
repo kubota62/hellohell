@@ -68,6 +68,11 @@ public partial struct DamageDigitAnimationSystem : ISystem
                 alpha = 1f - InQuad(math.saturate(t));
             }
 
+            if (digit.ValueRO.IsCritical != 0)
+            {
+                uniformScale *= 1.4f;
+            }
+
             var position = startPos + localOffset;
             position.y = y;
 

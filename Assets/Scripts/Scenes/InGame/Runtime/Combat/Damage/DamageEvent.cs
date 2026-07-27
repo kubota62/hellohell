@@ -8,4 +8,5 @@ public struct DamageEvent : IBufferElementData
 {
     public int Damage;
     public Entity Attacker;
+    public byte IsCritical;
 }

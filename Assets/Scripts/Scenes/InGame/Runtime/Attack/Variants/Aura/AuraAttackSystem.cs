@@ -108,6 +108,7 @@ public partial struct AuraAttackSystem : ISystem
         {
             Damage = request.Damage,
             Attacker = request.Owner,
+            IsCritical = request.IsCritical,
         });
     }
 }

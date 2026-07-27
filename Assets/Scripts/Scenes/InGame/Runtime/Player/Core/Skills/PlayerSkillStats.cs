@@ -19,6 +19,8 @@ public struct PlayerSkillStats : IComponentData
     public int RapidBoltLevel;
     public int PiercingLanceLevel;
     public int ExplosiveOrbLevel;
+    public int CriticalChanceLevel;
+    public int CriticalDamageLevel;
     public float DamageMultiplierAdd;
     public float CooldownMultiplierReduction;
     public float MoveSpeedMultiplierAdd;
@@ -30,4 +32,6 @@ public struct PlayerSkillStats : IComponentData
     public float RapidBoltDamageMultiplierAdd;
     public float PiercingLanceDamageMultiplierAdd;
     public float ExplosiveOrbDamageMultiplierAdd;
+    public float CriticalChance;
+    public float CriticalDamageMultiplierAdd;
 }

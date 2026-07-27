@@ -104,4 +104,5 @@ public struct AttackMasterData
 
     public float ArcAngleDegrees;
     public float VisualDuration;
+    public byte IsCritical;
 }

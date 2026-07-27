@@ -339,6 +339,7 @@ public partial struct ProjectileHitJob : IJobEntity
         {
             Damage = projectile.Damage,
             Attacker = projectile.Owner,
+            IsCritical = projectile.IsCritical,
         });
     }
 

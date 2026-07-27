@@ -91,6 +91,22 @@ public static class PlayerSkillMasterCatalog
                     effectPerLevel: 0.18f,
                     weight: 1);
 
+            case PlayerSkillMasterId.CriticalChanceBoost:
+                return Create(
+                    PlayerSkillMasterId.CriticalChanceBoost,
+                    PlayerSkillKind.CriticalChance,
+                    maxLevel: 8,
+                    effectPerLevel: 0.04f,
+                    weight: 1);
+
+            case PlayerSkillMasterId.CriticalDamageBoost:
+                return Create(
+                    PlayerSkillMasterId.CriticalDamageBoost,
+                    PlayerSkillKind.CriticalDamage,
+                    maxLevel: 8,
+                    effectPerLevel: 0.2f,
+                    weight: 1);
+
             case PlayerSkillMasterId.DamageBoost:
             default:
                 return Create(
@@ -161,7 +177,7 @@ public static class PlayerSkillMasterCatalog
 
     public static PlayerSkillMasterData GetByFallbackOrder(int pickIndex, PlayerSkillStats stats)
     {
-        const int fallbackCount = 11;
+        const int fallbackCount = 13;
         var startIndex = (pickIndex < 0 ? 0 : pickIndex) % fallbackCount;
         for (var i = 0; i < fallbackCount; i++)
         {
@@ -209,6 +225,12 @@ public static class PlayerSkillMasterCatalog
 
             case 10:
                 return PlayerSkillMasterId.ExplosiveOrbMastery;
+
+            case 11:
+                return PlayerSkillMasterId.CriticalChanceBoost;
+
+            case 12:
+                return PlayerSkillMasterId.CriticalDamageBoost;
 
             case 0:
             default:
@@ -259,6 +281,12 @@ public static class PlayerSkillMasterCatalog
 
             case PlayerSkillKind.ExplosiveOrb:
                 return stats.ExplosiveOrbLevel;
+
+            case PlayerSkillKind.CriticalChance:
+                return stats.CriticalChanceLevel;
+
+            case PlayerSkillKind.CriticalDamage:
+                return stats.CriticalDamageLevel;
 
             case PlayerSkillKind.Damage:
             default:

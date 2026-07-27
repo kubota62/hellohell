@@ -9,6 +9,7 @@ public struct Projectile : IComponentData
     public Entity Owner;
     public TeamId Team;
     public int Damage;
+    public byte IsCritical;
     public float HitRadius;
 }
 
