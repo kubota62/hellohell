@@ -86,6 +86,12 @@ public partial struct PlayerAutoSkillSystem : ISystem
                 var appliedLevel = ApplySkill(ref stats, skill);
                 if (appliedLevel > 0)
                 {
+                    ApplyImmediateHealthIncrease(
+                        ref state,
+                        choice.Player,
+                        skill,
+                        appliedLevel,
+                        ecb);
                     CreateSkillAppliedEvent(
                         choice.Player,
                         skill,
@@ -262,6 +268,22 @@ public partial struct PlayerAutoSkillSystem : ISystem
                     skill.MaxLevel,
                     skill.EffectPerLevel);
 
+            case PlayerSkillKind.MaxHealth:
+                return AddSkillLevel(
+                    ref stats.MaxHealthLevel,
+                    ref stats.MaxHealthAdd,
+                    addLevel,
+                    skill.MaxLevel,
+                    skill.EffectPerLevel);
+
+            case PlayerSkillKind.PickupRange:
+                return AddSkillLevel(
+                    ref stats.PickupRangeLevel,
+                    ref stats.PickupRadiusAdd,
+                    addLevel,
+                    skill.MaxLevel,
+                    skill.EffectPerLevel);
+
             case PlayerSkillKind.Damage:
             default:
                 return AddSkillLevel(
@@ -271,6 +293,31 @@ public partial struct PlayerAutoSkillSystem : ISystem
                     skill.MaxLevel,
                     skill.EffectPerLevel);
         }
+    }
+
+    void ApplyImmediateHealthIncrease(
+        ref SystemState state,
+        Entity playerEntity,
+        PlayerSkillMasterData skill,
+        int appliedLevel,
+        EntityCommandBuffer ecb)
+    {
+        if (skill.Kind != PlayerSkillKind.MaxHealth ||
+            !SystemAPI.HasComponent<Health>(playerEntity))
+        {
+            return;
+        }
+
+        var health = SystemAPI.GetComponent<Health>(playerEntity);
+        var healthIncrease = math.max(
+            1,
+            (int)math.round(
+                appliedLevel * math.max(0f, skill.EffectPerLevel)));
+        health.Max += healthIncrease;
+        health.Current = math.min(
+            health.Max,
+            health.Current + healthIncrease);
+        ecb.SetComponent(playerEntity, health);
     }
 
     static int AddSkillLevel(
@@ -325,6 +372,12 @@ public partial struct PlayerAutoSkillSystem : ISystem
 
             case PlayerSkillKind.Regeneration:
                 return stats.RegenerationLevel;
+
+            case PlayerSkillKind.MaxHealth:
+                return stats.MaxHealthLevel;
+
+            case PlayerSkillKind.PickupRange:
+                return stats.PickupRangeLevel;
 
             case PlayerSkillKind.Damage:
             default:

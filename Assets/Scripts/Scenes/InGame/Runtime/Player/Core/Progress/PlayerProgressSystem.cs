@@ -12,7 +12,7 @@ public partial struct ExperiencePickupSystem : ISystem
 {
     private const float BaseAttractionRadius = 2.75f;
     private const float AttractionRadiusPerLevel = 0.18f;
-    private const float MaximumAttractionRadius = 7.5f;
+    private const float MaximumAttractionRadius = 14f;
     private const float CollectRadius = 1.2f;
     private const float MinimumMoveSpeed = 5f;
     private const float MaximumMoveSpeed = 14f;
@@ -36,9 +36,16 @@ public partial struct ExperiencePickupSystem : ISystem
         var playerLevel = SystemAPI.HasComponent<PlayerProgress>(playerEntity)
             ? math.max(1, SystemAPI.GetComponent<PlayerProgress>(playerEntity).Level)
             : 1;
+        var pickupRadiusAdd = SystemAPI.HasComponent<PlayerSkillStats>(playerEntity)
+            ? math.max(
+                0f,
+                SystemAPI.GetComponent<PlayerSkillStats>(playerEntity).PickupRadiusAdd)
+            : 0f;
         var attractionRadius = math.min(
             MaximumAttractionRadius,
-            BaseAttractionRadius + (playerLevel - 1) * AttractionRadiusPerLevel);
+            BaseAttractionRadius +
+            (playerLevel - 1) * AttractionRadiusPerLevel +
+            pickupRadiusAdd);
         var attractionRadiusSq = attractionRadius * attractionRadius;
         var deltaTime = SystemAPI.Time.DeltaTime;
         var ecb = new EntityCommandBuffer(Allocator.Temp);

@@ -13,9 +13,13 @@ public struct PlayerSkillStats : IComponentData
     public int MoveSpeedLevel;
     public int AreaLevel;
     public int RegenerationLevel;
+    public int MaxHealthLevel;
+    public int PickupRangeLevel;
     public float DamageMultiplierAdd;
     public float CooldownMultiplierReduction;
     public float MoveSpeedMultiplierAdd;
     public float AreaMultiplierAdd;
     public float HealthRegenerationPerSecond;
+    public float MaxHealthAdd;
+    public float PickupRadiusAdd;
 }

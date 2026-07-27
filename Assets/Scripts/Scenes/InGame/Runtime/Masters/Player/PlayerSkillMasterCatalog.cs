@@ -43,6 +43,22 @@ public static class PlayerSkillMasterCatalog
                     effectPerLevel: 0.4f,
                     weight: 1);
 
+            case PlayerSkillMasterId.MaxHealthBoost:
+                return Create(
+                    PlayerSkillMasterId.MaxHealthBoost,
+                    PlayerSkillKind.MaxHealth,
+                    maxLevel: 10,
+                    effectPerLevel: 15f,
+                    weight: 1);
+
+            case PlayerSkillMasterId.PickupRangeBoost:
+                return Create(
+                    PlayerSkillMasterId.PickupRangeBoost,
+                    PlayerSkillKind.PickupRange,
+                    maxLevel: 10,
+                    effectPerLevel: 0.6f,
+                    weight: 1);
+
             case PlayerSkillMasterId.DamageBoost:
             default:
                 return Create(
@@ -113,10 +129,11 @@ public static class PlayerSkillMasterCatalog
 
     public static PlayerSkillMasterData GetByFallbackOrder(int pickIndex, PlayerSkillStats stats)
     {
-        var startIndex = (pickIndex < 0 ? 0 : pickIndex) % 5;
-        for (var i = 0; i < 5; i++)
+        const int fallbackCount = 7;
+        var startIndex = (pickIndex < 0 ? 0 : pickIndex) % fallbackCount;
+        for (var i = 0; i < fallbackCount; i++)
         {
-            var id = GetFallbackId((startIndex + i) % 5);
+            var id = GetFallbackId((startIndex + i) % fallbackCount);
             var master = Get(id);
             if (CanApply(master, stats))
             {
@@ -142,6 +159,12 @@ public static class PlayerSkillMasterCatalog
 
             case 4:
                 return PlayerSkillMasterId.RegenerationBoost;
+
+            case 5:
+                return PlayerSkillMasterId.MaxHealthBoost;
+
+            case 6:
+                return PlayerSkillMasterId.PickupRangeBoost;
 
             case 0:
             default:
@@ -174,6 +197,12 @@ public static class PlayerSkillMasterCatalog
 
             case PlayerSkillKind.Regeneration:
                 return stats.RegenerationLevel;
+
+            case PlayerSkillKind.MaxHealth:
+                return stats.MaxHealthLevel;
+
+            case PlayerSkillKind.PickupRange:
+                return stats.PickupRangeLevel;
 
             case PlayerSkillKind.Damage:
             default:

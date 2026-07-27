@@ -109,7 +109,9 @@ public class HUDUnitCount : MonoBehaviour
             $"HASTE L{skillStats.AttackSpeedLevel} +{skillStats.CooldownMultiplierReduction * 100f:0}%   " +
             $"AREA L{skillStats.AreaLevel} x{1f + skillStats.AreaMultiplierAdd:0.00}\n" +
             $"MOVE L{skillStats.MoveSpeedLevel} x{1f + skillStats.MoveSpeedMultiplierAdd:0.00}   " +
-            $"REGEN L{skillStats.RegenerationLevel} {skillStats.HealthRegenerationPerSecond:0.0}/s";
+            $"REGEN L{skillStats.RegenerationLevel} {skillStats.HealthRegenerationPerSecond:0.0}/s\n" +
+            $"FORT L{skillStats.MaxHealthLevel} +{skillStats.MaxHealthAdd:0} HP   " +
+            $"MAGNET L{skillStats.PickupRangeLevel} +{skillStats.PickupRadiusAdd:0.0}m";
     }
 
     void CreateUpgradeChoiceOverlay()
@@ -218,6 +220,10 @@ public class HUDUnitCount : MonoBehaviour
                 return stats.AreaLevel;
             case PlayerSkillKind.Regeneration:
                 return stats.RegenerationLevel;
+            case PlayerSkillKind.MaxHealth:
+                return stats.MaxHealthLevel;
+            case PlayerSkillKind.PickupRange:
+                return stats.PickupRangeLevel;
             case PlayerSkillKind.Damage:
             default:
                 return stats.DamageLevel;
@@ -236,6 +242,10 @@ public class HUDUnitCount : MonoBehaviour
                 return "REACH";
             case PlayerSkillKind.Regeneration:
                 return "VITALITY";
+            case PlayerSkillKind.MaxHealth:
+                return "FORTITUDE";
+            case PlayerSkillKind.PickupRange:
+                return "MAGNETISM";
             case PlayerSkillKind.Damage:
             default:
                 return "MIGHT";
@@ -254,6 +264,10 @@ public class HUDUnitCount : MonoBehaviour
                 return $"Attack area +{skill.EffectPerLevel * 100f:0}%";
             case PlayerSkillKind.Regeneration:
                 return $"Health regeneration +{skill.EffectPerLevel:0.0}/s";
+            case PlayerSkillKind.MaxHealth:
+                return $"Maximum health +{skill.EffectPerLevel:0}";
+            case PlayerSkillKind.PickupRange:
+                return $"Experience attraction +{skill.EffectPerLevel:0.0}m";
             case PlayerSkillKind.Damage:
             default:
                 return $"Damage +{skill.EffectPerLevel * 100f:0}%";

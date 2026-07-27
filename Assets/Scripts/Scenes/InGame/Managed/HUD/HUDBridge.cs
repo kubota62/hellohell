@@ -198,6 +198,12 @@ public class HUDBridge : MonoBehaviour
             case PlayerSkillKind.Regeneration:
                 return "REGEN";
 
+            case PlayerSkillKind.MaxHealth:
+                return "FORTITUDE";
+
+            case PlayerSkillKind.PickupRange:
+                return "MAGNET";
+
             case PlayerSkillKind.Damage:
             default:
                 return "DAMAGE";

@@ -11,6 +11,8 @@ public enum PlayerSkillMasterId
     MoveSpeedBoost = 3,
     AreaBoost = 4,
     RegenerationBoost = 5,
+    MaxHealthBoost = 6,
+    PickupRangeBoost = 7,
 }
 
 /// <summary>
@@ -24,6 +26,8 @@ public enum PlayerSkillKind : byte
     MoveSpeed = 3,
     Area = 4,
     Regeneration = 5,
+    MaxHealth = 6,
+    PickupRange = 7,
 }
 
 /// <summary>
