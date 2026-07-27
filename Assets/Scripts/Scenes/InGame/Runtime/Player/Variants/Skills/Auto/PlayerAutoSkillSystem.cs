@@ -348,6 +348,14 @@ public partial struct PlayerAutoSkillSystem : ISystem
                     skill.MaxLevel,
                     skill.EffectPerLevel);
 
+            case PlayerSkillKind.Executioner:
+                return AddSkillLevel(
+                    ref stats.ExecutionerLevel,
+                    ref stats.ExecutionDamageMultiplierAdd,
+                    addLevel,
+                    skill.MaxLevel,
+                    skill.EffectPerLevel);
+
             case PlayerSkillKind.Damage:
             default:
                 return AddSkillLevel(
@@ -467,6 +475,9 @@ public partial struct PlayerAutoSkillSystem : ISystem
             case PlayerSkillKind.Multistrike:
                 return stats.MultistrikeLevel;
 
+            case PlayerSkillKind.Executioner:
+                return stats.ExecutionerLevel;
+
             case PlayerSkillKind.Damage:
             default:
                 return stats.DamageLevel;
@@ -558,6 +569,11 @@ public partial struct PlayerAutoSkillSystem : ISystem
     public static float GetMultistrikeChance(in PlayerSkillStats stats)
     {
         return math.clamp(stats.MultistrikeChance, 0f, 1f);
+    }
+
+    public static float GetExecutionDamageBonus(in PlayerSkillStats stats)
+    {
+        return math.clamp(stats.ExecutionDamageMultiplierAdd, 0f, 1.5f);
     }
 }
 

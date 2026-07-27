@@ -21,6 +21,7 @@ public enum PlayerSkillMasterId
     CriticalDamageBoost = 13,
     ArmorBoost = 14,
     MultistrikeBoost = 15,
+    ExecutionerBoost = 16,
 }
 
 /// <summary>
@@ -44,6 +45,7 @@ public enum PlayerSkillKind : byte
     CriticalDamage = 13,
     Armor = 14,
     Multistrike = 15,
+    Executioner = 16,
 }
 
 /// <summary>

@@ -27,6 +27,8 @@ public partial struct ActorDamageEventSystem : ISystem
 
         var ecb = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
             .CreateCommandBuffer(state.WorldUnmanaged);
+        var hasPlayerSkillStats = SystemAPI.TryGetSingleton<PlayerSkillStats>(
+            out var playerSkillStats);
 
         foreach (var (transform, health, damageEventBuffer, actorEntity) in
                  SystemAPI.Query<RefRO<LocalTransform>, RefRW<Health>, DynamicBuffer<DamageEvent>>()
@@ -34,21 +36,32 @@ public partial struct ActorDamageEventSystem : ISystem
                      .WithEntityAccess())
         {
             var pos = transform.ValueRO.Position + new float3(0f, 1f, 0f);
-            var totalDamage = 0;
+            var remainingHealth = health.ValueRO.Current;
             var damageReduction =
                 SystemAPI.HasComponent<Player>(actorEntity) &&
                 SystemAPI.HasComponent<PlayerSkillStats>(actorEntity)
                     ? PlayerAutoSkillSystem.GetDamageReduction(
                         SystemAPI.GetComponent<PlayerSkillStats>(actorEntity))
                     : 0f;
+            var executionDamageBonus =
+                hasPlayerSkillStats &&
+                SystemAPI.HasComponent<Enemy>(actorEntity)
+                    ? PlayerAutoSkillSystem.GetExecutionDamageBonus(
+                        playerSkillStats)
+                    : 0f;
 
             // このフレームに溜まったダメージをまとめて減算し、各ヒットの表示だけ別リクエストへ逃がす。
             foreach (var damage in damageEventBuffer)
             {
-                var resolvedDamage = ResolveIncomingDamage(
+                var executionDamage = ResolveExecutionDamage(
                     damage.Damage,
+                    remainingHealth,
+                    health.ValueRO.Max,
+                    executionDamageBonus);
+                var resolvedDamage = ResolveIncomingDamage(
+                    executionDamage,
                     damageReduction);
-                totalDamage += resolvedDamage;
+                remainingHealth = math.max(0, remainingHealth - resolvedDamage);
 
                 var requestEntity = ecb.CreateEntity();
                 ecb.AddComponent(requestEntity, new VfxRequest
@@ -60,7 +73,7 @@ public partial struct ActorDamageEventSystem : ISystem
                 });
             }
 
-            health.ValueRW.Current = math.max(0, health.ValueRO.Current - totalDamage);
+            health.ValueRW.Current = remainingHealth;
             damageEventBuffer.Clear();
         }
     }
@@ -76,6 +89,29 @@ public partial struct ActorDamageEventSystem : ISystem
         return math.max(
             1,
             (int)math.round(damage * (1f - safeReduction)));
+    }
+
+    public static int ResolveExecutionDamage(
+        int damage,
+        int currentHealth,
+        int maxHealth,
+        float damageBonus)
+    {
+        if (damage <= 0)
+        {
+            return 0;
+        }
+
+        if (maxHealth <= 0 ||
+            math.clamp(currentHealth / (float)maxHealth, 0f, 1f) > 0.3f)
+        {
+            return damage;
+        }
+
+        var safeBonus = math.clamp(damageBonus, 0f, 1.5f);
+        return math.max(
+            1,
+            (int)math.round(damage * (1f + safeBonus)));
     }
 }
 

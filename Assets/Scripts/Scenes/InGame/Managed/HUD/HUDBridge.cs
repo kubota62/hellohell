@@ -244,6 +244,9 @@ public class HUDBridge : MonoBehaviour
             case PlayerSkillKind.Multistrike:
                 return "MULTISTRIKE";
 
+            case PlayerSkillKind.Executioner:
+                return "EXECUTIONER";
+
             case PlayerSkillKind.Damage:
             default:
                 return "DAMAGE";
