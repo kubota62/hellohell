@@ -253,6 +253,33 @@ public class HUDBridge : MonoBehaviour
         Refresh();
     }
 
+    public void ShowChampionWarning(
+        int wave,
+        float secondsUntilArrival,
+        int currentThreat,
+        bool includesHorde)
+    {
+        var seconds = Mathf.Max(
+            1,
+            Mathf.CeilToInt(secondsUntilArrival));
+        var threatName = includesHorde
+            ? "大群＋チャンピオン"
+            : "チャンピオン";
+        var message =
+            $"{threatName}接近 第{Mathf.Max(1, wave)}波  " +
+            $"{seconds}秒後";
+        statusNotification =
+            $"{message}  脅威度 {Mathf.Max(1, currentThreat)}";
+        notificationRemaining = Mathf.Max(2.5f, secondsUntilArrival);
+        unitCount.ShowThreatAnnouncement(
+            message,
+            Mathf.Max(2.5f, secondsUntilArrival),
+            includesHorde
+                ? new Color(1f, 0.28f, 0.72f, 1f)
+                : new Color(0.76f, 0.24f, 1f, 1f));
+        Refresh();
+    }
+
     public void ShowFinalBossSpawned(int currentThreat)
     {
         statusNotification =

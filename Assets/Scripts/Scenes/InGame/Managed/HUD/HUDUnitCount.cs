@@ -25,7 +25,7 @@ public class HUDUnitCount : MonoBehaviour
         "早業俊足広域化活力強靭剣術慧眼獰猛鉄壁人狩り剛力間隔最大吸引" +
         "解放強化被追加以下一度復活秒間無獲得飛び道具ごとの大群襲来第波" +
         "体接近上昇回復欠片激昂形態生存時間残" +
-        "連続倍率最高後次まで";
+        "連続倍率最高後次まで＋";
 
     public TMP_Text unitText;
     public TMP_Text bulletText;
@@ -918,9 +918,7 @@ public class HUDUnitCount : MonoBehaviour
         }
 
         var isImminent = remainingSeconds <= 10f;
-        var accent = kind == UpcomingThreatEventKind.FinalBoss
-            ? new Color(1f, 0.16f, 0.22f, 1f)
-            : new Color(1f, 0.62f, 0.12f, 1f);
+        var accent = ResolveUpcomingThreatColor(kind);
         var pulse = isImminent
             ? 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 8f)
             : 0f;
@@ -952,10 +950,40 @@ public class HUDUnitCount : MonoBehaviour
             Mathf.CeilToInt(remainingSeconds));
         var minutes = totalSeconds / 60;
         var seconds = totalSeconds % 60;
-        var eventName = kind == UpcomingThreatEventKind.FinalBoss
-            ? "最終ボス"
-            : "次の大群";
+        string eventName;
+        switch (kind)
+        {
+            case UpcomingThreatEventKind.FinalBoss:
+                eventName = "最終ボス";
+                break;
+            case UpcomingThreatEventKind.ChampionWave:
+                eventName = "チャンピオン";
+                break;
+            case UpcomingThreatEventKind.HordeAndChampion:
+                eventName = "大群＋チャンピオン";
+                break;
+            default:
+                eventName = "次の大群";
+                break;
+        }
+
         return $"{eventName}まで  {minutes:00}:{seconds:00}";
+    }
+
+    public static Color ResolveUpcomingThreatColor(
+        UpcomingThreatEventKind kind)
+    {
+        switch (kind)
+        {
+            case UpcomingThreatEventKind.FinalBoss:
+                return new Color(1f, 0.16f, 0.22f, 1f);
+            case UpcomingThreatEventKind.ChampionWave:
+                return new Color(0.76f, 0.24f, 1f, 1f);
+            case UpcomingThreatEventKind.HordeAndChampion:
+                return new Color(1f, 0.28f, 0.72f, 1f);
+            default:
+                return new Color(1f, 0.62f, 0.12f, 1f);
+        }
     }
 
     void CreateRunResultOverlay()

@@ -41,6 +41,15 @@ public struct HordeSurgeWarningEvent : IComponentData
     public int ThreatLevel;
 }
 
+/// <summary>チャンピオン波の少し前にHUDへ危険を知らせる一度きりの予告。</summary>
+public struct ChampionWaveWarningEvent : IComponentData
+{
+    public int Wave;
+    public float SecondsUntilArrival;
+    public int ThreatLevel;
+    public byte IncludesHorde;
+}
+
 /// <summary>最終ボス出現時のHUD通知。</summary>
 public struct FinalBossSpawnedEvent : IComponentData
 {
