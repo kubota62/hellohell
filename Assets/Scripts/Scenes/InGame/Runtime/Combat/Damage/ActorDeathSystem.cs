@@ -14,10 +14,12 @@ public partial struct ActorDeathSystem : ISystem
 {
     private const int MaximumExperiencePickups = 500;
     private const int MaximumHealthPickups = 60;
+    private const int MaximumDeathBurstParticles = 700;
     public const float KillStreakDurationSeconds = 3f;
 
     private EntityQuery experiencePickupQuery;
     private EntityQuery healthPickupQuery;
+    private EntityQuery deathBurstQuery;
 
     [BurstCompile]
     public void OnCreate(ref SystemState state)
@@ -27,6 +29,9 @@ public partial struct ActorDeathSystem : ISystem
             .Build();
         healthPickupQuery = SystemAPI.QueryBuilder()
             .WithAll<HealthPickup>()
+            .Build();
+        deathBurstQuery = SystemAPI.QueryBuilder()
+            .WithAll<DeathBurstParticle>()
             .Build();
         state.RequireForUpdate<Config>();
         state.RequireForUpdate<EndSimulationEntityCommandBufferSystem.Singleton>();
@@ -43,9 +48,12 @@ public partial struct ActorDeathSystem : ISystem
         var finalBossLookup =
             SystemAPI.GetComponentLookup<FinalBossEnemy>(true);
         var enemyLookup = SystemAPI.GetComponentLookup<Enemy>(true);
+        var colorLookup = SystemAPI.GetComponentLookup<
+            URPMaterialPropertyBaseColor>(true);
         var config = SystemAPI.GetSingleton<Config>();
         var experiencePickupCount = experiencePickupQuery.CalculateEntityCount();
         var healthPickupCount = healthPickupQuery.CalculateEntityCount();
+        var deathBurstCount = deathBurstQuery.CalculateEntityCount();
         var defeatedEnemyCount = 0;
         var hasRunState = SystemAPI.TryGetSingleton<RunState>(out var runState);
 
@@ -60,7 +68,11 @@ public partial struct ActorDeathSystem : ISystem
                 continue;
             }
 
-            if (enemyLookup.HasComponent(entity))
+            var isEnemy = enemyLookup.HasComponent(entity);
+            var isElite = eliteLookup.HasComponent(entity);
+            var isChampion = championLookup.HasComponent(entity);
+            var isFinalBoss = finalBossLookup.HasComponent(entity);
+            if (isEnemy)
             {
                 defeatedEnemyCount++;
                 if (hasRunState)
@@ -75,9 +87,6 @@ public partial struct ActorDeathSystem : ISystem
             if (rewardLookup.HasComponent(entity))
             {
                 var reward = rewardLookup[entity];
-                var isElite = eliteLookup.HasComponent(entity);
-                var isChampion = championLookup.HasComponent(entity);
-                var isFinalBoss = finalBossLookup.HasComponent(entity);
                 var pickupReward = ResolvePickupReward(
                     reward,
                     isFinalBoss);
@@ -137,6 +146,30 @@ public partial struct ActorDeathSystem : ISystem
                         isChampion);
                     healthPickupCount++;
                 }
+            }
+
+            if (isEnemy &&
+                deathBurstCount < MaximumDeathBurstParticles)
+            {
+                var particleCount = math.min(
+                    DeathBurstSpawnUtility.ResolveParticleCount(
+                        isElite,
+                        isChampion,
+                        isFinalBoss),
+                    MaximumDeathBurstParticles - deathBurstCount);
+                DeathBurstSpawnUtility.Spawn(
+                    ecb,
+                    config.ProjectilePrefab,
+                    transform.ValueRO.Position,
+                    colorLookup.HasComponent(entity)
+                        ? colorLookup[entity].Value
+                        : new float4(0.72f, 0.72f, 0.72f, 1f),
+                    entity.Index,
+                    particleCount,
+                    isElite,
+                    isChampion,
+                    isFinalBoss);
+                deathBurstCount += particleCount;
             }
 
             ecb.DestroyEntity(entity);
