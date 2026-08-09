@@ -37,6 +37,8 @@ public partial struct ActorDamageEventSystem : ISystem
             LocalTransform>(true);
         var cameraShakeAmplitude = 0f;
         var cameraShakeDuration = 0f;
+        var hitStopDuration = 0f;
+        var hitStopTimeScale = 1f;
 
         foreach (var (transform, health, knockback, damageEventBuffer, actorEntity) in
                  SystemAPI.Query<
@@ -131,6 +133,23 @@ public partial struct ActorDamageEventSystem : ISystem
                         isPlayerDamage);
                 }
 
+                var nextHitStopDuration = CombatHitStopSystem.ResolveDuration(
+                    resolvedDamage,
+                    damage.IsCritical != 0,
+                    isPlayerDamage);
+                if (nextHitStopDuration > 0f)
+                {
+                    hitStopDuration = math.max(
+                        hitStopDuration,
+                        nextHitStopDuration);
+                    hitStopTimeScale = math.min(
+                        hitStopTimeScale,
+                        CombatHitStopSystem.ResolveTimeScale(
+                            resolvedDamage,
+                            damage.IsCritical != 0,
+                            isPlayerDamage));
+                }
+
                 var requestEntity = ecb.CreateEntity();
                 ecb.AddComponent(requestEntity, new VfxRequest
                 {
@@ -169,6 +188,16 @@ public partial struct ActorDamageEventSystem : ISystem
             {
                 Amplitude = cameraShakeAmplitude,
                 DurationSeconds = cameraShakeDuration,
+            });
+        }
+
+        if (hitStopDuration > 0f)
+        {
+            var hitStopEntity = ecb.CreateEntity();
+            ecb.AddComponent(hitStopEntity, new CombatHitStopRequest
+            {
+                DurationSeconds = hitStopDuration,
+                TimeScale = hitStopTimeScale,
             });
         }
     }
