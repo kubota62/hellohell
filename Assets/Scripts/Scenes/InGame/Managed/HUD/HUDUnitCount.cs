@@ -9,6 +9,7 @@ using UnityEngine.UI;
 public class HUDUnitCount : MonoBehaviour
 {
     const float ChampionBarWidth = 720f;
+    const float ExperienceBarWidth = 920f;
     const string JapaneseFontResourcePath =
         "Fonts/noto-sans-jp/NotoSansJP-Medium SDF";
     const string RequiredHudCharacters =
@@ -29,6 +30,9 @@ public class HUDUnitCount : MonoBehaviour
     RectTransform championHealthFill;
     Image championHealthFillImage;
     TMP_Text championHealthLabel;
+    GameObject experienceProgressRoot;
+    RectTransform experienceProgressFill;
+    TMP_Text experienceProgressLabel;
     GameObject runResultRoot;
     TMP_Text runResultLabel;
     GameObject upgradeChoiceRoot;
@@ -52,6 +56,7 @@ public class HUDUnitCount : MonoBehaviour
             new Vector2(24f, 194f),
             new Vector2(1600f, 210f),
             20f);
+        CreateExperienceProgressBar();
         CreateChampionHealthBar();
         CreateRunResultOverlay();
         CreateUpgradeChoiceOverlay();
@@ -89,6 +94,10 @@ public class HUDUnitCount : MonoBehaviour
         var minutes = totalSeconds / 60;
         var seconds = totalSeconds % 60;
         var attackMode = autoAttackEnabled ? "自動" : "手動";
+        UpdateExperienceProgressBar(
+            level,
+            experience,
+            experienceToNextLevel);
         UpdateChampionHealthBar(
             championNum,
             championCurrentHealth,
@@ -111,7 +120,6 @@ public class HUDUnitCount : MonoBehaviour
             skillStats);
 
         unitText.text =
-            $"Lv {level}   経験値 {experience}/{experienceToNextLevel}\n" +
             $"HP {Mathf.Max(0, health)}/{Mathf.Max(1, maxHealth)}   スコア {score}\n" +
             $"{FormatRunClock(elapsedSeconds, durationSeconds, isGameOver)}   脅威度 {threatLevel}" +
             (isGameOver
@@ -587,6 +595,101 @@ public class HUDUnitCount : MonoBehaviour
         championHealthLabel.raycastTarget = false;
 
         championHealthRoot.SetActive(false);
+    }
+
+    void CreateExperienceProgressBar()
+    {
+        experienceProgressRoot = new GameObject(
+            "Experience Progress Bar",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(Image));
+        experienceProgressRoot.layer = gameObject.layer;
+        experienceProgressRoot.transform.SetParent(transform, false);
+
+        var rootRect = experienceProgressRoot.GetComponent<RectTransform>();
+        rootRect.anchorMin = new Vector2(0.5f, 1f);
+        rootRect.anchorMax = new Vector2(0.5f, 1f);
+        rootRect.pivot = new Vector2(0.5f, 1f);
+        rootRect.anchoredPosition = new Vector2(0f, -68f);
+        rootRect.sizeDelta = new Vector2(ExperienceBarWidth, 28f);
+
+        var background = experienceProgressRoot.GetComponent<Image>();
+        background.color = new Color(0.025f, 0.035f, 0.055f, 0.9f);
+        background.raycastTarget = false;
+
+        var fillObject = new GameObject(
+            "Fill",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(Image));
+        fillObject.layer = gameObject.layer;
+        fillObject.transform.SetParent(experienceProgressRoot.transform, false);
+        experienceProgressFill = fillObject.GetComponent<RectTransform>();
+        experienceProgressFill.anchorMin = new Vector2(0f, 0f);
+        experienceProgressFill.anchorMax = new Vector2(0f, 1f);
+        experienceProgressFill.pivot = new Vector2(0f, 0.5f);
+        experienceProgressFill.anchoredPosition = new Vector2(3f, 0f);
+
+        var fillImage = fillObject.GetComponent<Image>();
+        fillImage.color = new Color(0.18f, 0.72f, 1f, 0.96f);
+        fillImage.raycastTarget = false;
+
+        var labelObject = new GameObject(
+            "Label",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(TextMeshProUGUI));
+        labelObject.layer = gameObject.layer;
+        labelObject.transform.SetParent(experienceProgressRoot.transform, false);
+
+        var labelRect = labelObject.GetComponent<RectTransform>();
+        labelRect.anchorMin = Vector2.zero;
+        labelRect.anchorMax = Vector2.one;
+        labelRect.offsetMin = Vector2.zero;
+        labelRect.offsetMax = Vector2.zero;
+
+        experienceProgressLabel = labelObject.GetComponent<TextMeshProUGUI>();
+        ApplyJapaneseFont(experienceProgressLabel);
+        experienceProgressLabel.fontSize = 18f;
+        experienceProgressLabel.fontStyle = FontStyles.Bold;
+        experienceProgressLabel.alignment = TextAlignmentOptions.Center;
+        experienceProgressLabel.color = Color.white;
+        experienceProgressLabel.raycastTarget = false;
+    }
+
+    void UpdateExperienceProgressBar(
+        int level,
+        int experience,
+        int experienceToNextLevel)
+    {
+        if (experienceProgressRoot == null)
+        {
+            return;
+        }
+
+        var safeExperience = Mathf.Max(0, experience);
+        var safeExperienceToNextLevel = Mathf.Max(
+            1,
+            experienceToNextLevel);
+        var progress = CalculateExperienceProgress(
+            safeExperience,
+            safeExperienceToNextLevel);
+        experienceProgressFill.sizeDelta = new Vector2(
+            (ExperienceBarWidth - 6f) * progress,
+            -6f);
+        experienceProgressLabel.text =
+            $"Lv {Mathf.Max(1, level)}   経験値 " +
+            $"{safeExperience}/{safeExperienceToNextLevel}";
+    }
+
+    public static float CalculateExperienceProgress(
+        int experience,
+        int experienceToNextLevel)
+    {
+        return Mathf.Clamp01(
+            (float)Mathf.Max(0, experience) /
+            Mathf.Max(1, experienceToNextLevel));
     }
 
     void UpdateChampionHealthBar(
