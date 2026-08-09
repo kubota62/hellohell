@@ -267,11 +267,13 @@ public partial struct ActorDeathSystem : ISystem
         bool isChampion)
     {
         var healing = isChampion ? 40 : isElite ? 18 : 8;
+        var pickupPosition = position + new float3(0.45f, 0.35f, 0f);
+        var pickupScale = isChampion ? 0.75f : isElite ? 0.58f : 0.42f;
         var pickupEntity = ecb.Instantiate(projectilePrefab);
         ecb.SetComponent(pickupEntity, LocalTransform.FromPositionRotationScale(
-            position + new float3(0.45f, 0.35f, 0f),
+            pickupPosition,
             quaternion.identity,
-            isChampion ? 0.75f : isElite ? 0.58f : 0.42f));
+            pickupScale));
         ecb.SetComponent(pickupEntity, new URPMaterialPropertyBaseColor
         {
             Value = isChampion
@@ -282,6 +284,13 @@ public partial struct ActorDeathSystem : ISystem
         {
             Healing = healing,
         });
+        ecb.AddComponent(
+            pickupEntity,
+            RewardPickupVisualSystem.Create(
+                pickupPosition,
+                pickupScale,
+                isChampion,
+                true));
         ecb.RemoveComponent<ProjectileMotion>(pickupEntity);
         ecb.RemoveComponent<Projectile>(pickupEntity);
         ecb.RemoveComponent<Lifetime>(pickupEntity);
@@ -295,11 +304,13 @@ public partial struct ActorDeathSystem : ISystem
         EnemyReward reward,
         bool isChampion)
     {
+        var pickupPosition = position + new float3(0f, 0.35f, 0f);
+        var pickupScale = isChampion ? 0.85f : 0.45f;
         var pickupEntity = ecb.Instantiate(projectilePrefab);
         ecb.SetComponent(pickupEntity, LocalTransform.FromPositionRotationScale(
-            position + new float3(0f, 0.35f, 0f),
+            pickupPosition,
             quaternion.identity,
-            isChampion ? 0.85f : 0.45f));
+            pickupScale));
         ecb.SetComponent(pickupEntity, new URPMaterialPropertyBaseColor
         {
             Value = isChampion
@@ -311,6 +322,13 @@ public partial struct ActorDeathSystem : ISystem
             Experience = reward.Experience,
             Score = reward.Score,
         });
+        ecb.AddComponent(
+            pickupEntity,
+            RewardPickupVisualSystem.Create(
+                pickupPosition,
+                pickupScale,
+                isChampion,
+                false));
         if (isChampion)
         {
             ecb.AddComponent<ChampionRewardPickup>(pickupEntity);
