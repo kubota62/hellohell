@@ -11,6 +11,8 @@ public class HUDUnitCount : MonoBehaviour
     const float ChampionBarWidth = 720f;
     const float ExperienceBarWidth = 920f;
     const float PlayerHealthBarWidth = 420f;
+    const float LowHealthThreshold = 0.25f;
+    const float LowHealthPulseSpeed = 5.5f;
     const string JapaneseFontResourcePath =
         "Fonts/noto-sans-jp/NotoSansJP-Medium SDF";
     const string RequiredHudCharacters =
@@ -39,6 +41,9 @@ public class HUDUnitCount : MonoBehaviour
     RectTransform playerHealthFill;
     Image playerHealthFillImage;
     TMP_Text playerHealthLabel;
+    GameObject lowHealthWarningRoot;
+    Image[] lowHealthWarningEdges;
+    bool lowHealthWarningActive;
     GameObject runResultRoot;
     TMP_Text runResultLabel;
     GameObject upgradeChoiceRoot;
@@ -63,10 +68,40 @@ public class HUDUnitCount : MonoBehaviour
             new Vector2(1600f, 210f),
             20f);
         CreatePlayerHealthBar();
+        CreateLowHealthWarning();
         CreateExperienceProgressBar();
         CreateChampionHealthBar();
         CreateRunResultOverlay();
         CreateUpgradeChoiceOverlay();
+    }
+
+    void Update()
+    {
+        if (!lowHealthWarningActive || lowHealthWarningRoot == null)
+        {
+            return;
+        }
+
+        var pulse = CalculateLowHealthPulse(Time.unscaledTime);
+        var warningColor = GetLowHealthWarningColor(pulse);
+        for (var i = 0; i < lowHealthWarningEdges.Length; i++)
+        {
+            lowHealthWarningEdges[i].color = warningColor;
+        }
+
+        if (playerHealthRoot != null)
+        {
+            playerHealthRoot.transform.localScale =
+                Vector3.one * Mathf.Lerp(1.02f, 1.07f, pulse);
+        }
+
+        if (playerHealthLabel != null)
+        {
+            playerHealthLabel.color = Color.Lerp(
+                Color.white,
+                new Color(1f, 0.52f, 0.52f, 1f),
+                pulse);
+        }
     }
 
     public void SetCount(
@@ -811,6 +846,129 @@ public class HUDUnitCount : MonoBehaviour
             -6f);
         playerHealthFillImage.color = GetPlayerHealthColor(healthRatio);
         playerHealthLabel.text = $"HP {safeHealth}/{safeMaximumHealth}";
+        SetLowHealthWarningActive(
+            ShouldShowLowHealthWarning(safeHealth, safeMaximumHealth));
+    }
+
+    void CreateLowHealthWarning()
+    {
+        lowHealthWarningRoot = new GameObject(
+            "Low Health Warning",
+            typeof(RectTransform));
+        lowHealthWarningRoot.layer = gameObject.layer;
+        lowHealthWarningRoot.transform.SetParent(transform, false);
+        lowHealthWarningRoot.transform.SetAsFirstSibling();
+
+        var rootRect = lowHealthWarningRoot.GetComponent<RectTransform>();
+        rootRect.anchorMin = Vector2.zero;
+        rootRect.anchorMax = Vector2.one;
+        rootRect.offsetMin = Vector2.zero;
+        rootRect.offsetMax = Vector2.zero;
+
+        lowHealthWarningEdges = new[]
+        {
+            CreateLowHealthWarningEdge(
+                "Top",
+                new Vector2(0f, 1f),
+                new Vector2(1f, 1f),
+                new Vector2(0.5f, 1f),
+                new Vector2(0f, 42f)),
+            CreateLowHealthWarningEdge(
+                "Bottom",
+                new Vector2(0f, 0f),
+                new Vector2(1f, 0f),
+                new Vector2(0.5f, 0f),
+                new Vector2(0f, 42f)),
+            CreateLowHealthWarningEdge(
+                "Left",
+                new Vector2(0f, 0f),
+                new Vector2(0f, 1f),
+                new Vector2(0f, 0.5f),
+                new Vector2(42f, 0f)),
+            CreateLowHealthWarningEdge(
+                "Right",
+                new Vector2(1f, 0f),
+                new Vector2(1f, 1f),
+                new Vector2(1f, 0.5f),
+                new Vector2(42f, 0f)),
+        };
+        lowHealthWarningRoot.SetActive(false);
+    }
+
+    Image CreateLowHealthWarningEdge(
+        string edgeName,
+        Vector2 anchorMin,
+        Vector2 anchorMax,
+        Vector2 pivot,
+        Vector2 sizeDelta)
+    {
+        var edgeObject = new GameObject(
+            edgeName,
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(Image));
+        edgeObject.layer = gameObject.layer;
+        edgeObject.transform.SetParent(lowHealthWarningRoot.transform, false);
+
+        var edgeRect = edgeObject.GetComponent<RectTransform>();
+        edgeRect.anchorMin = anchorMin;
+        edgeRect.anchorMax = anchorMax;
+        edgeRect.pivot = pivot;
+        edgeRect.anchoredPosition = Vector2.zero;
+        edgeRect.sizeDelta = sizeDelta;
+
+        var edgeImage = edgeObject.GetComponent<Image>();
+        edgeImage.color = GetLowHealthWarningColor(0f);
+        edgeImage.raycastTarget = false;
+        return edgeImage;
+    }
+
+    void SetLowHealthWarningActive(bool isActive)
+    {
+        lowHealthWarningActive = isActive;
+        if (lowHealthWarningRoot != null)
+        {
+            lowHealthWarningRoot.SetActive(isActive);
+        }
+
+        if (isActive)
+        {
+            return;
+        }
+
+        if (playerHealthRoot != null)
+        {
+            playerHealthRoot.transform.localScale = Vector3.one;
+        }
+
+        if (playerHealthLabel != null)
+        {
+            playerHealthLabel.color = Color.white;
+        }
+    }
+
+    public static bool ShouldShowLowHealthWarning(
+        int health,
+        int maximumHealth)
+    {
+        return health > 0 &&
+            CalculatePlayerHealthRatio(health, maximumHealth) <=
+                LowHealthThreshold;
+    }
+
+    public static float CalculateLowHealthPulse(float unscaledTime)
+    {
+        return 0.5f + 0.5f * Mathf.Sin(
+            Mathf.Max(0f, unscaledTime) * LowHealthPulseSpeed);
+    }
+
+    public static Color GetLowHealthWarningColor(float pulse)
+    {
+        return new Color(
+            0.95f,
+            0.025f,
+            0.035f,
+            Mathf.Lerp(0.08f, 0.34f, Mathf.Clamp01(pulse)));
     }
 
     public static float CalculatePlayerHealthRatio(
