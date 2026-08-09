@@ -399,6 +399,13 @@ public partial struct ActorSpawnSystem : ISystem
                 isElite,
                 isChampion,
                 isFinalBoss);
+            ThreatAuraSpawnUtility.Spawn(
+                entityManager,
+                config.ProjectilePrefab,
+                actorEntity,
+                isElite,
+                isChampion,
+                isFinalBoss);
         }
 
         ApplyActorColorToChildren(entityManager, actorEntity);
