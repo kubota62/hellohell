@@ -358,12 +358,11 @@ public partial struct AttackRequestSystem : ISystem
 
         if (entityManager.HasComponent<ChampionEnemy>(actorEntity))
         {
-            definition.Damage = math.max(1, definition.Damage * 3);
-            definition.Cooldown = math.max(0.05f, definition.Cooldown * 0.65f);
-            definition.HitRadius *= 1.5f;
-            definition.AreaRadius *= 1.5f;
-            definition.ImpactAreaRadius *= 1.5f;
-            definition.Scale *= 1.5f;
+            var isEnraged =
+                entityManager.HasComponent<ChampionPhaseState>(actorEntity) &&
+                entityManager.GetComponentData<ChampionPhaseState>(
+                    actorEntity).IsEnraged != 0;
+            ApplyChampionAttackModifiers(ref definition, isEnraged);
             return;
         }
 
@@ -387,6 +386,25 @@ public partial struct AttackRequestSystem : ISystem
         var damageMultiplier = isEnraged ? 7 : 5;
         var cooldownMultiplier = isEnraged ? 0.35f : 0.5f;
         var areaMultiplier = isEnraged ? 2.25f : 2f;
+        definition.Damage = math.max(
+            1,
+            definition.Damage * damageMultiplier);
+        definition.Cooldown = math.max(
+            0.05f,
+            definition.Cooldown * cooldownMultiplier);
+        definition.HitRadius *= areaMultiplier;
+        definition.AreaRadius *= areaMultiplier;
+        definition.ImpactAreaRadius *= areaMultiplier;
+        definition.Scale *= areaMultiplier;
+    }
+
+    public static void ApplyChampionAttackModifiers(
+        ref AttackMasterData definition,
+        bool isEnraged)
+    {
+        var damageMultiplier = isEnraged ? 4 : 3;
+        var cooldownMultiplier = isEnraged ? 0.48f : 0.65f;
+        var areaMultiplier = isEnraged ? 1.7f : 1.5f;
         definition.Damage = math.max(
             1,
             definition.Damage * damageMultiplier);

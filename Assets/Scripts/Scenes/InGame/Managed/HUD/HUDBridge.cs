@@ -303,6 +303,17 @@ public class HUDBridge : MonoBehaviour
         Refresh();
     }
 
+    public void ShowChampionEnraged()
+    {
+        statusNotification = "チャンピオン激昂！ 攻撃・移動強化";
+        notificationRemaining = 4f;
+        unitCount.ShowThreatAnnouncement(
+            "チャンピオン激昂！",
+            3.2f,
+            new Color(1f, 0.08f, 0.38f, 1f));
+        Refresh();
+    }
+
     public void SetUpgradeChoice(
         bool isActive,
         PlayerUpgradeChoice nextUpgradeChoice)

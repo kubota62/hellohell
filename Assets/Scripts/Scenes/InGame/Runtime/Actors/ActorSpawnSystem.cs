@@ -636,6 +636,13 @@ public partial struct ActorSpawnSystem : ISystem
         if (isChampion)
         {
             EnsureTag<ChampionEnemy>(entityManager, actorEntity);
+            if (!isFinalBoss)
+            {
+                SetOrAddComponent(
+                    entityManager,
+                    actorEntity,
+                    new ChampionPhaseState());
+            }
         }
         if (isFinalBoss)
         {

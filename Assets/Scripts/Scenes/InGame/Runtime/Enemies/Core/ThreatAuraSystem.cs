@@ -146,18 +146,49 @@ public static class ThreatAuraSpawnUtility
         out float scale,
         out float4 color)
     {
-        var angle = aura.Angle + aura.Elapsed * aura.AngularSpeed;
+        EvaluateVisual(
+            aura,
+            ownerPosition,
+            false,
+            out position,
+            out scale,
+            out color);
+    }
+
+    public static void EvaluateVisual(
+        ThreatAuraSegment aura,
+        float3 ownerPosition,
+        bool isEnraged,
+        out float3 position,
+        out float scale,
+        out float4 color)
+    {
+        var speedMultiplier = ResolveAngularSpeedMultiplier(isEnraged);
+        var angle = aura.Angle +
+            aura.Elapsed * aura.AngularSpeed * speedMultiplier;
         math.sincos(angle, out var sin, out var cos);
         var pulse = 0.5f + 0.5f * math.sin(
-            aura.Elapsed * 4.5f + aura.Phase);
+            aura.Elapsed * (isEnraged ? 8f : 4.5f) + aura.Phase);
         position = ownerPosition + new float3(
             cos * aura.Radius,
             0.1f + pulse * 0.08f,
             sin * aura.Radius);
-        scale = math.max(0.01f, aura.BaseScale) *
-            math.lerp(0.82f, 1.22f, pulse);
-        color = aura.BaseColor;
+        scale = math.max(0.01f, aura.BaseScale) * math.lerp(
+            isEnraged ? 0.9f : 0.82f,
+            isEnraged ? 1.5f : 1.22f,
+            pulse);
+        color = isEnraged
+            ? math.lerp(
+                aura.BaseColor,
+                new float4(1f, 0.06f, 0.32f, 1f),
+                0.58f)
+            : aura.BaseColor;
         color.w *= math.lerp(0.58f, 1f, pulse);
+    }
+
+    public static float ResolveAngularSpeedMultiplier(bool isEnraged)
+    {
+        return isEnraged ? 1.8f : 1f;
     }
 
     static void SetOrAddColor(
@@ -212,6 +243,8 @@ public partial struct ThreatAuraSystem : ISystem
         var deltaTime = isPaused ? 0f : SystemAPI.Time.DeltaTime;
         var ownerTransforms =
             SystemAPI.GetComponentLookup<LocalTransform>(true);
+        var championPhases =
+            SystemAPI.GetComponentLookup<ChampionPhaseState>(true);
         var ecb = new EntityCommandBuffer(Allocator.Temp);
 
         foreach (var (aura, transform, color, entity) in
@@ -228,16 +261,22 @@ public partial struct ThreatAuraSystem : ISystem
             }
 
             aura.ValueRW.Elapsed += deltaTime;
+            var isEnraged =
+                championPhases.HasComponent(aura.ValueRO.Owner) &&
+                championPhases[aura.ValueRO.Owner].IsEnraged != 0;
             ThreatAuraSpawnUtility.EvaluateVisual(
                 aura.ValueRO,
                 ownerTransforms[aura.ValueRO.Owner].Position,
+                isEnraged,
                 out var position,
                 out var scale,
                 out var nextColor);
             transform.ValueRW.Position = position;
             transform.ValueRW.Rotation = quaternion.RotateY(
                 -aura.ValueRO.Angle -
-                aura.ValueRO.Elapsed * aura.ValueRO.AngularSpeed);
+                aura.ValueRO.Elapsed * aura.ValueRO.AngularSpeed *
+                ThreatAuraSpawnUtility.ResolveAngularSpeedMultiplier(
+                    isEnraged));
             transform.ValueRW.Scale = scale;
             color.ValueRW.Value = nextColor;
         }

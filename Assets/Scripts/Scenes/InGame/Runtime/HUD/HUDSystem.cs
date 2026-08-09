@@ -309,6 +309,14 @@ public partial struct HUDSystem : ISystem
         HUDBridge hudBridge)
     {
         var ecb = new EntityCommandBuffer(Allocator.Temp);
+        foreach (var (_, eventEntity) in
+                 SystemAPI.Query<RefRO<ChampionEnragedEvent>>()
+                     .WithEntityAccess())
+        {
+            hudBridge.ShowChampionEnraged();
+            ecb.DestroyEntity(eventEntity);
+        }
+
         foreach (var (bossEvent, eventEntity) in
                  SystemAPI.Query<RefRO<FinalBossSpawnedEvent>>()
                      .WithEntityAccess())
