@@ -25,7 +25,7 @@ public class HUDUnitCount : MonoBehaviour
         "早業俊足広域化活力強靭剣術慧眼獰猛鉄壁人狩り剛力間隔最大吸引" +
         "解放強化被追加以下一度復活秒間無獲得飛び道具ごとの大群襲来第波" +
         "体接近上昇回復欠片激昂形態生存時間残" +
-        "連続倍率最高";
+        "連続倍率最高後";
 
     public TMP_Text unitText;
     public TMP_Text bulletText;
@@ -44,6 +44,11 @@ public class HUDUnitCount : MonoBehaviour
     GameObject lowHealthWarningRoot;
     Image[] lowHealthWarningEdges;
     bool lowHealthWarningActive;
+    GameObject threatAnnouncementRoot;
+    Image threatAnnouncementBackground;
+    TMP_Text threatAnnouncementLabel;
+    float threatAnnouncementRemaining;
+    Color threatAnnouncementAccent;
     GameObject runResultRoot;
     TMP_Text runResultLabel;
     GameObject upgradeChoiceRoot;
@@ -71,11 +76,18 @@ public class HUDUnitCount : MonoBehaviour
         CreateLowHealthWarning();
         CreateExperienceProgressBar();
         CreateChampionHealthBar();
+        CreateThreatAnnouncement();
         CreateRunResultOverlay();
         CreateUpgradeChoiceOverlay();
     }
 
     void Update()
+    {
+        UpdateLowHealthWarning();
+        UpdateThreatAnnouncement();
+    }
+
+    void UpdateLowHealthWarning()
     {
         if (!lowHealthWarningActive || lowHealthWarningRoot == null)
         {
@@ -102,6 +114,38 @@ public class HUDUnitCount : MonoBehaviour
                 new Color(1f, 0.52f, 0.52f, 1f),
                 pulse);
         }
+    }
+
+    void UpdateThreatAnnouncement()
+    {
+        if (threatAnnouncementRoot == null ||
+            threatAnnouncementRemaining <= 0f)
+        {
+            return;
+        }
+
+        threatAnnouncementRemaining = Mathf.Max(
+            0f,
+            threatAnnouncementRemaining - Time.unscaledDeltaTime);
+        if (threatAnnouncementRemaining <= 0f)
+        {
+            threatAnnouncementRoot.SetActive(false);
+            threatAnnouncementRoot.transform.localScale = Vector3.one;
+            return;
+        }
+
+        var pulse = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 8f);
+        threatAnnouncementRoot.transform.localScale =
+            Vector3.one * Mathf.Lerp(1f, 1.035f, pulse);
+        threatAnnouncementBackground.color = new Color(
+            threatAnnouncementAccent.r * 0.18f,
+            threatAnnouncementAccent.g * 0.12f,
+            threatAnnouncementAccent.b * 0.12f,
+            0.9f);
+        threatAnnouncementLabel.color = Color.Lerp(
+            Color.white,
+            threatAnnouncementAccent,
+            0.35f + pulse * 0.35f);
     }
 
     public void SetCount(
@@ -531,6 +575,74 @@ public class HUDUnitCount : MonoBehaviour
             default:
                 return $"ダメージ +{skill.EffectPerLevel * 100f:0}%";
         }
+    }
+
+    void CreateThreatAnnouncement()
+    {
+        threatAnnouncementRoot = new GameObject(
+            "Threat Announcement",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(Image));
+        threatAnnouncementRoot.layer = gameObject.layer;
+        threatAnnouncementRoot.transform.SetParent(transform, false);
+
+        var rootRect = threatAnnouncementRoot.GetComponent<RectTransform>();
+        rootRect.anchorMin = new Vector2(0.5f, 1f);
+        rootRect.anchorMax = new Vector2(0.5f, 1f);
+        rootRect.pivot = new Vector2(0.5f, 1f);
+        rootRect.anchoredPosition = new Vector2(0f, -128f);
+        rootRect.sizeDelta = new Vector2(860f, 108f);
+
+        threatAnnouncementBackground =
+            threatAnnouncementRoot.GetComponent<Image>();
+        threatAnnouncementBackground.raycastTarget = false;
+
+        var labelObject = new GameObject(
+            "Label",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(TextMeshProUGUI));
+        labelObject.layer = gameObject.layer;
+        labelObject.transform.SetParent(
+            threatAnnouncementRoot.transform,
+            false);
+
+        var labelRect = labelObject.GetComponent<RectTransform>();
+        labelRect.anchorMin = Vector2.zero;
+        labelRect.anchorMax = Vector2.one;
+        labelRect.offsetMin = new Vector2(24f, 8f);
+        labelRect.offsetMax = new Vector2(-24f, -8f);
+
+        threatAnnouncementLabel = labelObject.GetComponent<TextMeshProUGUI>();
+        ApplyJapaneseFont(threatAnnouncementLabel);
+        threatAnnouncementLabel.alignment = TextAlignmentOptions.Center;
+        threatAnnouncementLabel.fontStyle = FontStyles.Bold;
+        threatAnnouncementLabel.fontSize = 38f;
+        threatAnnouncementLabel.textWrappingMode =
+            TextWrappingModes.NoWrap;
+        threatAnnouncementLabel.raycastTarget = false;
+        threatAnnouncementRoot.SetActive(false);
+    }
+
+    public void ShowThreatAnnouncement(
+        string message,
+        float durationSeconds,
+        Color accent)
+    {
+        if (threatAnnouncementRoot == null ||
+            string.IsNullOrEmpty(message))
+        {
+            return;
+        }
+
+        threatAnnouncementRemaining = Mathf.Max(
+            0.1f,
+            durationSeconds);
+        threatAnnouncementAccent = accent;
+        threatAnnouncementLabel.text = message;
+        threatAnnouncementRoot.transform.localScale = Vector3.one;
+        threatAnnouncementRoot.SetActive(true);
     }
 
     void CreateRunResultOverlay()

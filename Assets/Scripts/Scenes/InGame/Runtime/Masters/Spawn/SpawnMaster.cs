@@ -33,6 +33,14 @@ public struct HordeSurgeEvent : IComponentData
     public int ThreatLevel;
 }
 
+/// <summary>大群出現の少し前にHUDへ危険を知らせる一度きりの予告。</summary>
+public struct HordeSurgeWarningEvent : IComponentData
+{
+    public int Wave;
+    public float SecondsUntilArrival;
+    public int ThreatLevel;
+}
+
 /// <summary>最終ボス出現時のHUD通知。</summary>
 public struct FinalBossSpawnedEvent : IComponentData
 {

@@ -13,6 +13,7 @@ public partial struct ActorSpawnSystem : ISystem
     private const int MaximumActiveEnemies = 350;
     private const float ChampionSpawnInterval = 90f;
     private const float HordeSurgeInterval = 60f;
+    private const float HordeWarningLeadTime = 3f;
     private const float FinalBossSpawnTime = 540f;
     private const float RunDurationSeconds = 600f;
 
@@ -20,6 +21,7 @@ public partial struct ActorSpawnSystem : ISystem
     private int spawnedActorCount;
     private int championWavesSpawned;
     private int hordeWavesSpawned;
+    private int hordeWarningsIssued;
     private bool finalBossSpawned;
     private float enemySpawnTimer;
     private EntityQuery activeEnemyQuery;
@@ -31,6 +33,7 @@ public partial struct ActorSpawnSystem : ISystem
         spawnedActorCount = 0;
         championWavesSpawned = 0;
         hordeWavesSpawned = 0;
+        hordeWarningsIssued = 0;
         finalBossSpawned = false;
         enemySpawnTimer = 0f;
         activeEnemyQuery = SystemAPI.QueryBuilder()
@@ -81,6 +84,26 @@ public partial struct ActorSpawnSystem : ISystem
         enemySpawnTimer += SystemAPI.Time.DeltaTime;
         var availableSlots = MaximumActiveEnemies -
             activeEnemyQuery.CalculateEntityCount();
+        var warningWave = ResolveHordeWarningWave(
+            runState.ElapsedSeconds,
+            hordeWarningsIssued);
+        if (warningWave > 0)
+        {
+            hordeWarningsIssued = warningWave;
+            var warningEntity = state.EntityManager.CreateEntity();
+            state.EntityManager.AddComponentData(
+                warningEntity,
+                new HordeSurgeWarningEvent
+                {
+                    Wave = warningWave,
+                    SecondsUntilArrival = math.max(
+                        0f,
+                        warningWave * HordeSurgeInterval -
+                            runState.ElapsedSeconds),
+                    ThreatLevel = runState.ThreatLevel,
+                });
+        }
+
         if (ShouldSpawnFinalBoss(
                 runState.ElapsedSeconds,
                 finalBossSpawned))
@@ -105,6 +128,9 @@ public partial struct ActorSpawnSystem : ISystem
                 hordeWavesSpawned,
                 (int)math.floor(
                     runState.ElapsedSeconds / HordeSurgeInterval));
+            hordeWarningsIssued = math.max(
+                hordeWarningsIssued,
+                hordeWavesSpawned);
 
             var eventEntity = state.EntityManager.CreateEntity();
             state.EntityManager.AddComponentData(
@@ -176,6 +202,9 @@ public partial struct ActorSpawnSystem : ISystem
                 hordeWave,
                 hordeSize);
             hordeWavesSpawned = hordeWave;
+            hordeWarningsIssued = math.max(
+                hordeWarningsIssued,
+                hordeWave);
             enemySpawnTimer = 0f;
             SystemAPI.SetSingleton(runState);
             return;
@@ -225,6 +254,30 @@ public partial struct ActorSpawnSystem : ISystem
     {
         var desiredSize = 10 + math.clamp(threatLevel, 1, 14);
         return math.clamp(desiredSize, 0, math.max(0, availableSlots));
+    }
+
+    public static int ResolveHordeWarningWave(
+        float elapsedSeconds,
+        int warningsIssued)
+    {
+        var safeElapsed = math.max(0f, elapsedSeconds);
+        var candidateWave = (int)math.floor(
+            (safeElapsed + HordeWarningLeadTime) /
+            HordeSurgeInterval);
+        if (candidateWave <= math.max(0, warningsIssued))
+        {
+            return 0;
+        }
+
+        var arrivalTime = candidateWave * HordeSurgeInterval;
+        if (arrivalTime >= FinalBossSpawnTime ||
+            safeElapsed < arrivalTime - HordeWarningLeadTime ||
+            safeElapsed >= arrivalTime)
+        {
+            return 0;
+        }
+
+        return candidateWave;
     }
 
     public static int CalculateChampionCount(int wave, int availableSlots)

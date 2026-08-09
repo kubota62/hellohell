@@ -181,6 +181,17 @@ public partial struct HUDSystem : ISystem
             ecb.DestroyEntity(eventEntity);
         }
 
+        foreach (var (warningEvent, eventEntity) in
+                 SystemAPI.Query<RefRO<HordeSurgeWarningEvent>>()
+                     .WithEntityAccess())
+        {
+            hudBridge.ShowHordeWarning(
+                warningEvent.ValueRO.Wave,
+                warningEvent.ValueRO.SecondsUntilArrival,
+                warningEvent.ValueRO.ThreatLevel);
+            ecb.DestroyEntity(eventEntity);
+        }
+
         foreach (var (surgeEvent, eventEntity) in
                  SystemAPI.Query<RefRO<HordeSurgeEvent>>()
                      .WithEntityAccess())

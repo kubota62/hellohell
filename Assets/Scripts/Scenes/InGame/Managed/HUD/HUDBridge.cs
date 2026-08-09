@@ -203,6 +203,31 @@ public class HUDBridge : MonoBehaviour
             $"大群襲来 第{Mathf.Max(1, wave)}波！  " +
             $"敵 {Mathf.Max(0, enemyCount)}体  脅威度 {Mathf.Max(1, currentThreat)}";
         notificationRemaining = 4f;
+        unitCount.ShowThreatAnnouncement(
+            $"大群襲来 第{Mathf.Max(1, wave)}波！",
+            2.2f,
+            new Color(1f, 0.18f, 0.06f, 1f));
+        Refresh();
+    }
+
+    public void ShowHordeWarning(
+        int wave,
+        float secondsUntilArrival,
+        int currentThreat)
+    {
+        var seconds = Mathf.Max(
+            1,
+            Mathf.CeilToInt(secondsUntilArrival));
+        var message =
+            $"大群接近 第{Mathf.Max(1, wave)}波  " +
+            $"{seconds}秒後 襲来";
+        statusNotification =
+            $"{message}  脅威度 {Mathf.Max(1, currentThreat)}";
+        notificationRemaining = Mathf.Max(2.5f, secondsUntilArrival);
+        unitCount.ShowThreatAnnouncement(
+            message,
+            Mathf.Max(2.5f, secondsUntilArrival),
+            new Color(1f, 0.56f, 0.08f, 1f));
         Refresh();
     }
 
@@ -211,6 +236,10 @@ public class HUDBridge : MonoBehaviour
         statusNotification =
             $"最終ボス接近！  脅威度 {Mathf.Max(1, currentThreat)}";
         notificationRemaining = 6f;
+        unitCount.ShowThreatAnnouncement(
+            "最終ボス接近！",
+            4f,
+            new Color(1f, 0.08f, 0.14f, 1f));
         Refresh();
     }
 
@@ -218,6 +247,10 @@ public class HUDBridge : MonoBehaviour
     {
         statusNotification = "最終ボス激昂！  第2形態";
         notificationRemaining = 6f;
+        unitCount.ShowThreatAnnouncement(
+            "最終ボス激昂！  第2形態",
+            4f,
+            new Color(0.88f, 0.12f, 1f, 1f));
         Refresh();
     }
 
