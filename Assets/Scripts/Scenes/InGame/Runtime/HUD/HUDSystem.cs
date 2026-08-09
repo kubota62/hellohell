@@ -94,6 +94,17 @@ public partial struct HUDSystem : ISystem
                 upgradeChoice);
         }
 
+        var eliteCurrentHealth = 0;
+        var eliteMaxHealth = 0;
+        foreach (var eliteHealth in
+                 SystemAPI.Query<RefRO<Health>>()
+                     .WithAll<EliteEnemy, GameplayActive>()
+                     .WithNone<ChampionEnemy>())
+        {
+            eliteCurrentHealth += eliteHealth.ValueRO.Current;
+            eliteMaxHealth += eliteHealth.ValueRO.Max;
+        }
+
         var championCurrentHealth = 0;
         var championMaxHealth = 0;
         foreach (var championHealth in
@@ -116,6 +127,8 @@ public partial struct HUDSystem : ISystem
         }
 
         hudBridge.SetChampionState(
+            eliteCurrentHealth,
+            eliteMaxHealth,
             championCountQuery.CalculateEntityCount(),
             championCurrentHealth,
             championMaxHealth,

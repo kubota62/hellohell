@@ -10,6 +10,8 @@ public class HUDBridge : MonoBehaviour
     int actorCount;
     int projectileCount;
     int eliteCount;
+    int eliteCurrentHealth;
+    int eliteMaxHealth;
     int championCount;
     int championCurrentHealth;
     int championMaxHealth;
@@ -86,6 +88,8 @@ public class HUDBridge : MonoBehaviour
     }
 
     public void SetChampionState(
+        int nextEliteCurrentHealth,
+        int nextEliteMaxHealth,
         int count,
         int currentHealth,
         int maximumHealth,
@@ -99,6 +103,8 @@ public class HUDBridge : MonoBehaviour
             notificationRemaining = 4f;
         }
 
+        eliteCurrentHealth = Mathf.Max(0, nextEliteCurrentHealth);
+        eliteMaxHealth = Mathf.Max(0, nextEliteMaxHealth);
         championCount = count;
         championCurrentHealth = currentHealth;
         championMaxHealth = maximumHealth;
@@ -230,6 +236,8 @@ public class HUDBridge : MonoBehaviour
             actorCount,
             projectileCount,
             eliteCount,
+            eliteCurrentHealth,
+            eliteMaxHealth,
             championCount,
             championCurrentHealth,
             championMaxHealth,

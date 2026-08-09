@@ -73,6 +73,8 @@ public class HUDUnitCount : MonoBehaviour
         int unitNum,
         int bulletNum,
         int eliteNum,
+        int eliteCurrentHealth,
+        int eliteMaxHealth,
         int championNum,
         int championCurrentHealth,
         int championMaxHealth,
@@ -111,6 +113,9 @@ public class HUDUnitCount : MonoBehaviour
             experience,
             experienceToNextLevel);
         UpdateChampionHealthBar(
+            eliteNum,
+            eliteCurrentHealth,
+            eliteMaxHealth,
             championNum,
             championCurrentHealth,
             championMaxHealth,
@@ -833,6 +838,9 @@ public class HUDUnitCount : MonoBehaviour
     }
 
     void UpdateChampionHealthBar(
+        int eliteCount,
+        int eliteCurrentHealth,
+        int eliteMaximumHealth,
         int championCount,
         int currentHealth,
         int maximumHealth,
@@ -848,9 +856,16 @@ public class HUDUnitCount : MonoBehaviour
         var hasFinalBoss =
             finalBossCount > 0 &&
             finalBossMaximumHealth > 0;
+        var hasChampion =
+            championCount > 0 &&
+            maximumHealth > 0;
+        var hasElite =
+            eliteCount > 0 &&
+            eliteMaximumHealth > 0;
         var isVisible =
             hasFinalBoss ||
-            championCount > 0 && maximumHealth > 0;
+            hasChampion ||
+            hasElite;
         championHealthRoot.SetActive(isVisible);
         if (!isVisible)
         {
@@ -859,10 +874,14 @@ public class HUDUnitCount : MonoBehaviour
 
         var displayedCurrentHealth = hasFinalBoss
             ? finalBossCurrentHealth
-            : currentHealth;
+            : hasChampion
+                ? currentHealth
+                : eliteCurrentHealth;
         var displayedMaximumHealth = hasFinalBoss
             ? finalBossMaximumHealth
-            : maximumHealth;
+            : hasChampion
+                ? maximumHealth
+                : eliteMaximumHealth;
         var healthRatio = Mathf.Clamp01(
             (float)Mathf.Max(0, displayedCurrentHealth) /
             Mathf.Max(1, displayedMaximumHealth));
@@ -873,10 +892,15 @@ public class HUDUnitCount : MonoBehaviour
         {
             championHealthFillImage.color = hasFinalBoss
                 ? new Color(0.92f, 0.08f, 0.12f, 0.98f)
-                : new Color(0.72f, 0.08f, 1f, 0.95f);
+                : hasChampion
+                    ? new Color(0.72f, 0.08f, 1f, 0.95f)
+                    : new Color(1f, 0.36f, 0.06f, 0.95f);
         }
 
         championHealthLabel.text = FormatThreatHealthLabel(
+            eliteCount,
+            eliteCurrentHealth,
+            eliteMaximumHealth,
             championCount,
             currentHealth,
             maximumHealth,
@@ -886,6 +910,9 @@ public class HUDUnitCount : MonoBehaviour
     }
 
     public static string FormatThreatHealthLabel(
+        int eliteCount,
+        int eliteCurrentHealth,
+        int eliteMaximumHealth,
         int championCount,
         int championCurrentHealth,
         int championMaximumHealth,
@@ -900,12 +927,22 @@ public class HUDUnitCount : MonoBehaviour
                 $"{Mathf.Max(1, finalBossMaximumHealth)}";
         }
 
-        return championCount > 1
-            ? $"チャンピオン x{championCount}   " +
-                $"{Mathf.Max(0, championCurrentHealth)}/" +
-                $"{Mathf.Max(1, championMaximumHealth)}"
-            : $"チャンピオン   {Mathf.Max(0, championCurrentHealth)}/" +
-                $"{Mathf.Max(1, championMaximumHealth)}";
+        if (championCount > 0 && championMaximumHealth > 0)
+        {
+            return championCount > 1
+                ? $"チャンピオン x{championCount}   " +
+                    $"{Mathf.Max(0, championCurrentHealth)}/" +
+                    $"{Mathf.Max(1, championMaximumHealth)}"
+                : $"チャンピオン   {Mathf.Max(0, championCurrentHealth)}/" +
+                    $"{Mathf.Max(1, championMaximumHealth)}";
+        }
+
+        return eliteCount > 1
+            ? $"エリート x{eliteCount}   " +
+                $"{Mathf.Max(0, eliteCurrentHealth)}/" +
+                $"{Mathf.Max(1, eliteMaximumHealth)}"
+            : $"エリート   {Mathf.Max(0, eliteCurrentHealth)}/" +
+                $"{Mathf.Max(1, eliteMaximumHealth)}";
     }
 
     void ApplyJapaneseFont(TMP_Text text)
