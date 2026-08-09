@@ -1,6 +1,8 @@
 using Unity.Burst;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
+using Unity.Rendering;
 using Unity.Transforms;
 
 /// <summary>
@@ -98,6 +100,7 @@ public partial struct ActorDamageEventSystem : ISystem
                     Kind = VfxRequestKind.DamageDigit,
                     IntValue = resolvedDamage,
                     Position = pos,
+                    Target = actorEntity,
                     IsCritical = damage.IsCritical,
                     IsPlayerDamage = isPlayerDamage ? (byte)1 : (byte)0,
                 });
@@ -175,6 +178,7 @@ public struct VfxRequest : IComponentData
     public VfxRequestKind Kind;
     public int IntValue;
     public float3 Position;
+    public Entity Target;
     public byte IsCritical;
     public byte IsPlayerDamage;
 }
@@ -195,9 +199,14 @@ public enum VfxRequestKind : byte
 [UpdateAfter(typeof(ActorDamageEventSystem))]
 public partial struct VfxRequestSystem : ISystem
 {
+    private EntityQuery requestQuery;
+
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
+        requestQuery = SystemAPI.QueryBuilder()
+            .WithAll<VfxRequest>()
+            .Build();
         state.RequireForUpdate<Config>();
         state.RequireForUpdate<VfxRequest>();
         state.RequireForUpdate<EndSimulationEntityCommandBufferSystem.Singleton>();
@@ -209,6 +218,12 @@ public partial struct VfxRequestSystem : ISystem
         var config = SystemAPI.GetSingleton<Config>();
         var ecb = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>()
             .CreateCommandBuffer(state.WorldUnmanaged);
+        var colorLookup = SystemAPI.GetComponentLookup<
+            URPMaterialPropertyBaseColor>(true);
+        var hitFlashLookup = SystemAPI.GetComponentLookup<HitFlash>(true);
+        var queuedHitFlashes = new NativeParallelHashMap<Entity, HitFlash>(
+            math.max(1, requestQuery.CalculateEntityCount()),
+            Allocator.Temp);
 
         foreach (var (request, entity) in
                  SystemAPI.Query<RefRO<VfxRequest>>()
@@ -223,9 +238,166 @@ public partial struct VfxRequestSystem : ISystem
                     request.ValueRO.Position,
                     request.ValueRO.IsCritical != 0,
                     request.ValueRO.IsPlayerDamage != 0);
+                CollectHitFlash(
+                    state.EntityManager,
+                    colorLookup,
+                    hitFlashLookup,
+                    ref queuedHitFlashes,
+                    request.ValueRO);
             }
 
             ecb.DestroyEntity(entity);
+        }
+
+        foreach (var pair in queuedHitFlashes)
+        {
+            if (hitFlashLookup.HasComponent(pair.Key))
+            {
+                ecb.SetComponent(pair.Key, pair.Value);
+            }
+            else
+            {
+                ecb.AddComponent(pair.Key, pair.Value);
+            }
+
+            ecb.SetComponent(pair.Key, new URPMaterialPropertyBaseColor
+            {
+                Value = pair.Value.FlashColor,
+            });
+        }
+
+        queuedHitFlashes.Dispose();
+    }
+
+    private static void CollectHitFlash(
+        EntityManager entityManager,
+        ComponentLookup<URPMaterialPropertyBaseColor> colorLookup,
+        ComponentLookup<HitFlash> hitFlashLookup,
+        ref NativeParallelHashMap<Entity, HitFlash> queuedHitFlashes,
+        in VfxRequest request)
+    {
+        if (request.IntValue <= 0 ||
+            request.Target == Entity.Null ||
+            !entityManager.Exists(request.Target) ||
+            !colorLookup.HasComponent(request.Target))
+        {
+            return;
+        }
+
+        var hasExistingFlash = hitFlashLookup.HasComponent(request.Target);
+        var duration = ResolveHitFlashDuration(
+            request.IsCritical != 0,
+            request.IsPlayerDamage != 0);
+        if (queuedHitFlashes.TryGetValue(
+                request.Target,
+                out var queuedFlash))
+        {
+            queuedFlash.RemainingSeconds = math.max(
+                queuedFlash.RemainingSeconds,
+                duration);
+            queuedFlash.DurationSeconds = math.max(
+                queuedFlash.DurationSeconds,
+                duration);
+            if (duration >= queuedFlash.DurationSeconds)
+            {
+                queuedFlash.FlashColor = ResolveHitFlashColor(
+                    request.IsCritical != 0,
+                    request.IsPlayerDamage != 0);
+            }
+
+            queuedHitFlashes[request.Target] = queuedFlash;
+            return;
+        }
+
+        var originalColor = hasExistingFlash
+            ? hitFlashLookup[request.Target].OriginalColor
+            : colorLookup[request.Target].Value;
+        var flash = new HitFlash
+        {
+            OriginalColor = originalColor,
+            FlashColor = ResolveHitFlashColor(
+                request.IsCritical != 0,
+                request.IsPlayerDamage != 0),
+            RemainingSeconds = duration,
+            DurationSeconds = duration,
+        };
+        queuedHitFlashes.TryAdd(request.Target, flash);
+    }
+
+    public static float ResolveHitFlashDuration(
+        bool isCritical,
+        bool isPlayerDamage)
+    {
+        return isPlayerDamage ? 0.18f : isCritical ? 0.14f : 0.09f;
+    }
+
+    public static float4 ResolveHitFlashColor(
+        bool isCritical,
+        bool isPlayerDamage)
+    {
+        if (isPlayerDamage)
+        {
+            return new float4(1f, 0.16f, 0.12f, 1f);
+        }
+
+        return isCritical
+            ? new float4(1f, 0.72f, 0.08f, 1f)
+            : new float4(1f, 1f, 1f, 1f);
+    }
+}
+
+/// <summary>
+/// Actorの元色を保持し、被弾色から短時間で滑らかに復帰させる。
+/// </summary>
+public struct HitFlash : IComponentData
+{
+    public float4 OriginalColor;
+    public float4 FlashColor;
+    public float RemainingSeconds;
+    public float DurationSeconds;
+}
+
+[BurstCompile]
+[UpdateAfter(typeof(VfxRequestSystem))]
+public partial struct HitFlashSystem : ISystem
+{
+    [BurstCompile]
+    public void OnCreate(ref SystemState state)
+    {
+        state.RequireForUpdate<HitFlash>();
+        state.RequireForUpdate<
+            EndSimulationEntityCommandBufferSystem.Singleton>();
+    }
+
+    [BurstCompile]
+    public void OnUpdate(ref SystemState state)
+    {
+        var ecb = SystemAPI.GetSingleton<
+                EndSimulationEntityCommandBufferSystem.Singleton>()
+            .CreateCommandBuffer(state.WorldUnmanaged);
+        var deltaTime = SystemAPI.Time.DeltaTime;
+
+        foreach (var (flash, color, entity) in
+                 SystemAPI.Query<
+                         RefRW<HitFlash>,
+                         RefRW<URPMaterialPropertyBaseColor>>()
+                     .WithEntityAccess())
+        {
+            flash.ValueRW.RemainingSeconds -= deltaTime;
+            if (flash.ValueRO.RemainingSeconds <= 0f)
+            {
+                color.ValueRW.Value = flash.ValueRO.OriginalColor;
+                ecb.RemoveComponent<HitFlash>(entity);
+                continue;
+            }
+
+            var blend = math.saturate(
+                flash.ValueRO.RemainingSeconds /
+                math.max(0.01f, flash.ValueRO.DurationSeconds));
+            color.ValueRW.Value = math.lerp(
+                flash.ValueRO.OriginalColor,
+                flash.ValueRO.FlashColor,
+                blend);
         }
     }
 }
