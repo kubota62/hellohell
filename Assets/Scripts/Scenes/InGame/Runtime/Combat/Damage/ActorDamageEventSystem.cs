@@ -10,6 +10,8 @@ using Unity.Transforms;
 [BurstCompile]
 public partial struct ActorDamageEventSystem : ISystem
 {
+    public const float PlayerHitImmunitySeconds = 0.35f;
+
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
@@ -37,7 +39,9 @@ public partial struct ActorDamageEventSystem : ISystem
         {
             var isPlayerDamage =
                 SystemAPI.HasComponent<Player>(actorEntity);
-            if (SystemAPI.HasComponent<PlayerRevivalGrace>(actorEntity))
+            if (SystemAPI.HasComponent<PlayerRevivalGrace>(actorEntity) ||
+                isPlayerDamage &&
+                SystemAPI.HasComponent<PlayerDamageGrace>(actorEntity))
             {
                 damageEventBuffer.Clear();
                 continue;
@@ -45,6 +49,7 @@ public partial struct ActorDamageEventSystem : ISystem
 
             var pos = transform.ValueRO.Position + new float3(0f, 1f, 0f);
             var remainingHealth = health.ValueRO.Current;
+            var acceptedPlayerHit = false;
             var damageReduction =
                 SystemAPI.HasComponent<Player>(actorEntity) &&
                 SystemAPI.HasComponent<PlayerSkillStats>(actorEntity)
@@ -67,6 +72,11 @@ public partial struct ActorDamageEventSystem : ISystem
             // このフレームに溜まったダメージをまとめて減算し、各ヒットの表示だけ別リクエストへ逃がす。
             foreach (var damage in damageEventBuffer)
             {
+                if (isPlayerDamage && acceptedPlayerHit)
+                {
+                    continue;
+                }
+
                 var eliteDamage = ResolveBonusDamage(
                     damage.Damage,
                     eliteDamageBonus);
@@ -79,6 +89,8 @@ public partial struct ActorDamageEventSystem : ISystem
                     executionDamage,
                     damageReduction);
                 remainingHealth = math.max(0, remainingHealth - resolvedDamage);
+                acceptedPlayerHit =
+                    isPlayerDamage && resolvedDamage > 0;
 
                 var requestEntity = ecb.CreateEntity();
                 ecb.AddComponent(requestEntity, new VfxRequest
@@ -88,6 +100,14 @@ public partial struct ActorDamageEventSystem : ISystem
                     Position = pos,
                     IsCritical = damage.IsCritical,
                     IsPlayerDamage = isPlayerDamage ? (byte)1 : (byte)0,
+                });
+            }
+
+            if (acceptedPlayerHit)
+            {
+                ecb.AddComponent(actorEntity, new PlayerDamageGrace
+                {
+                    RemainingSeconds = PlayerHitImmunitySeconds,
                 });
             }
 

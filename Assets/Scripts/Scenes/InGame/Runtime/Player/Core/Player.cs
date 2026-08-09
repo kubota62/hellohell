@@ -21,6 +21,14 @@ public struct PlayerRevivalGrace : IComponentData
     public float RemainingSeconds;
 }
 
+/// <summary>
+/// 通常被弾後の短い無敵時間。同時多段ヒットによる瞬間的なHP消失を防ぐ。
+/// </summary>
+public struct PlayerDamageGrace : IComponentData
+{
+    public float RemainingSeconds;
+}
+
 public struct PlayerRevivedEvent : IComponentData
 {
     public int RestoredHealth;
@@ -49,6 +57,29 @@ public partial struct PlayerRevivalGraceSystem : ISystem
         ecb.Dispose();
     }
 
+}
+
+[UpdateBefore(typeof(ActorDamageEventSystem))]
+public partial struct PlayerDamageGraceSystem : ISystem
+{
+    public void OnUpdate(ref SystemState state)
+    {
+        var ecb = new EntityCommandBuffer(Unity.Collections.Allocator.Temp);
+        var deltaTime = SystemAPI.Time.DeltaTime;
+        foreach (var (grace, entity) in
+                 SystemAPI.Query<RefRW<PlayerDamageGrace>>()
+                     .WithEntityAccess())
+        {
+            grace.ValueRW.RemainingSeconds -= deltaTime;
+            if (grace.ValueRO.RemainingSeconds <= 0f)
+            {
+                ecb.RemoveComponent<PlayerDamageGrace>(entity);
+            }
+        }
+
+        ecb.Playback(state.EntityManager);
+        ecb.Dispose();
+    }
 }
 
 /// <summary>
