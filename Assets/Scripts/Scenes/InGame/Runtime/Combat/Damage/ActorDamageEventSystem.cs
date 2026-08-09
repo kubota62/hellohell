@@ -33,6 +33,8 @@ public partial struct ActorDamageEventSystem : ISystem
             .CreateCommandBuffer(state.WorldUnmanaged);
         var hasPlayerSkillStats = SystemAPI.TryGetSingleton<PlayerSkillStats>(
             out var playerSkillStats);
+        var cameraShakeAmplitude = 0f;
+        var cameraShakeDuration = 0f;
 
         foreach (var (transform, health, damageEventBuffer, actorEntity) in
                  SystemAPI.Query<RefRO<LocalTransform>, RefRW<Health>, DynamicBuffer<DamageEvent>>()
@@ -94,6 +96,18 @@ public partial struct ActorDamageEventSystem : ISystem
                 acceptedPlayerHit =
                     isPlayerDamage && resolvedDamage > 0;
 
+                var nextShakeAmplitude = ResolveCameraShakeAmplitude(
+                    resolvedDamage,
+                    damage.IsCritical != 0,
+                    isPlayerDamage);
+                if (nextShakeAmplitude > cameraShakeAmplitude)
+                {
+                    cameraShakeAmplitude = nextShakeAmplitude;
+                    cameraShakeDuration = ResolveCameraShakeDuration(
+                        damage.IsCritical != 0,
+                        isPlayerDamage);
+                }
+
                 var requestEntity = ecb.CreateEntity();
                 ecb.AddComponent(requestEntity, new VfxRequest
                 {
@@ -117,6 +131,43 @@ public partial struct ActorDamageEventSystem : ISystem
             health.ValueRW.Current = remainingHealth;
             damageEventBuffer.Clear();
         }
+
+        if (cameraShakeAmplitude > 0f)
+        {
+            var shakeEntity = ecb.CreateEntity();
+            ecb.AddComponent(shakeEntity, new CameraShakeRequest
+            {
+                Amplitude = cameraShakeAmplitude,
+                DurationSeconds = cameraShakeDuration,
+            });
+        }
+    }
+
+    public static float ResolveCameraShakeAmplitude(
+        int damage,
+        bool isCritical,
+        bool isPlayerDamage)
+    {
+        if (damage <= 0)
+        {
+            return 0f;
+        }
+
+        if (isPlayerDamage)
+        {
+            return math.clamp(0.18f + damage * 0.005f, 0.18f, 0.32f);
+        }
+
+        return isCritical
+            ? math.clamp(0.06f + damage * 0.002f, 0.06f, 0.14f)
+            : 0f;
+    }
+
+    public static float ResolveCameraShakeDuration(
+        bool isCritical,
+        bool isPlayerDamage)
+    {
+        return isPlayerDamage ? 0.16f : isCritical ? 0.09f : 0f;
     }
 
     public static int ResolveIncomingDamage(int damage, float reduction)
