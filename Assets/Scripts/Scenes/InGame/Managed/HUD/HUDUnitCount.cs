@@ -22,7 +22,8 @@ public class HUDUnitCount : MonoBehaviour
         "武器斬速射貫通槍爆裂球補助移動磁力英知遠幸運抽選候補除外使用済み" +
         "早業俊足広域化活力強靭剣術慧眼獰猛鉄壁人狩り剛力間隔最大吸引" +
         "解放強化被追加以下一度復活秒間無獲得飛び道具ごとの大群襲来第波" +
-        "体接近上昇回復欠片激昂形態生存時間残";
+        "体接近上昇回復欠片激昂形態生存時間残" +
+        "連続倍率最高";
 
     public TMP_Text unitText;
     public TMP_Text bulletText;
@@ -88,6 +89,10 @@ public class HUDUnitCount : MonoBehaviour
         float durationSeconds,
         int threatLevel,
         int enemiesDefeated,
+        int killStreak,
+        int bestKillStreak,
+        int killStreakScoreMultiplier,
+        float killStreakRemainingSeconds,
         bool isGameOver,
         bool isVictory,
         bool autoAttackEnabled,
@@ -138,11 +143,36 @@ public class HUDUnitCount : MonoBehaviour
             (string.IsNullOrEmpty(statusNotification)
                 ? string.Empty
                 : $"{statusNotification}\n") +
+            FormatKillStreak(
+                killStreak,
+                bestKillStreak,
+                killStreakScoreMultiplier,
+                killStreakRemainingSeconds) +
             $"敵 {Mathf.Max(0, unitNum - 1)}   エリート {Mathf.Max(0, eliteNum)}   " +
             $"チャンピオン {Mathf.Max(0, championNum)}   " +
             $"撃破 {Mathf.Max(0, enemiesDefeated)}   " +
             $"弾数 {bulletNum}   攻撃 {attackMode}\n" +
             FormatBuildStats(skillStats);
+    }
+
+    public static string FormatKillStreak(
+        int killStreak,
+        int bestKillStreak,
+        int scoreMultiplier,
+        float remainingSeconds)
+    {
+        var safeBest = Mathf.Max(0, bestKillStreak);
+        if (killStreak <= 0)
+        {
+            return safeBest > 0
+                ? $"最高連続撃破 {safeBest}\n"
+                : string.Empty;
+        }
+
+        return
+            $"連続撃破 {killStreak}   スコア x{Mathf.Clamp(scoreMultiplier, 1, 3)}   " +
+            $"残り {Mathf.Max(0f, remainingSeconds):0.0}秒   " +
+            $"最高 {Mathf.Max(safeBest, killStreak)}\n";
     }
 
     public static string FormatRunClock(

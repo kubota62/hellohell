@@ -14,6 +14,7 @@ public partial struct ActorDeathSystem : ISystem
 {
     private const int MaximumExperiencePickups = 500;
     private const int MaximumHealthPickups = 60;
+    public const float KillStreakDurationSeconds = 3f;
 
     private EntityQuery experiencePickupQuery;
     private EntityQuery healthPickupQuery;
@@ -46,6 +47,7 @@ public partial struct ActorDeathSystem : ISystem
         var experiencePickupCount = experiencePickupQuery.CalculateEntityCount();
         var healthPickupCount = healthPickupQuery.CalculateEntityCount();
         var defeatedEnemyCount = 0;
+        var hasRunState = SystemAPI.TryGetSingleton<RunState>(out var runState);
 
         foreach (var (health, transform, entity) in
                  SystemAPI.Query<RefRO<Health>, RefRO<LocalTransform>>()
@@ -61,6 +63,13 @@ public partial struct ActorDeathSystem : ISystem
             if (enemyLookup.HasComponent(entity))
             {
                 defeatedEnemyCount++;
+                if (hasRunState)
+                {
+                    RegisterKillStreak(
+                        ref runState,
+                        1,
+                        KillStreakDurationSeconds);
+                }
             }
 
             if (rewardLookup.HasComponent(entity))
@@ -72,13 +81,23 @@ public partial struct ActorDeathSystem : ISystem
                 var pickupReward = ResolvePickupReward(
                     reward,
                     isFinalBoss);
+                var scoreMultiplier = hasRunState
+                    ? ResolveKillStreakScoreMultiplier(runState.KillStreak)
+                    : 1;
+                pickupReward.Score = ApplyScoreMultiplier(
+                    pickupReward.Score,
+                    scoreMultiplier);
                 if (isFinalBoss)
                 {
+                    var immediateReward = ResolveImmediateReward(
+                        reward,
+                        isFinalBoss);
+                    immediateReward.Score = ApplyScoreMultiplier(
+                        immediateReward.Score,
+                        scoreMultiplier);
                     CreateRewardEvent(
                         ecb,
-                        ResolveImmediateReward(
-                            reward,
-                            isFinalBoss));
+                        immediateReward);
                 }
 
                 if (experiencePickupCount < MaximumExperiencePickups)
@@ -98,7 +117,11 @@ public partial struct ActorDeathSystem : ISystem
 
                 if (isChampion)
                 {
-                    CreateChampionDefeatedEvent(ecb, reward);
+                    var displayedReward = reward;
+                    displayedReward.Score = ApplyScoreMultiplier(
+                        displayedReward.Score,
+                        scoreMultiplier);
+                    CreateChampionDefeatedEvent(ecb, displayedReward);
                 }
 
                 var dropsHealth = isElite ||
@@ -119,14 +142,48 @@ public partial struct ActorDeathSystem : ISystem
             ecb.DestroyEntity(entity);
         }
 
-        if (defeatedEnemyCount > 0 &&
-            SystemAPI.TryGetSingleton<RunState>(out var runState))
+        if (defeatedEnemyCount > 0 && hasRunState)
         {
             runState.EnemiesDefeated = AccumulateDefeatedEnemies(
                 runState.EnemiesDefeated,
                 defeatedEnemyCount);
             SystemAPI.SetSingleton(runState);
         }
+    }
+
+    public static void RegisterKillStreak(
+        ref RunState runState,
+        int newlyDefeated,
+        float durationSeconds)
+    {
+        if (newlyDefeated <= 0)
+        {
+            return;
+        }
+
+        runState.KillStreak = AccumulateDefeatedEnemies(
+            runState.KillStreak,
+            newlyDefeated);
+        runState.BestKillStreak = math.max(
+            math.max(0, runState.BestKillStreak),
+            runState.KillStreak);
+        runState.KillStreakRemainingSeconds = math.max(
+            0.01f,
+            durationSeconds);
+    }
+
+    public static int ResolveKillStreakScoreMultiplier(int killStreak)
+    {
+        return 1 + math.clamp(math.max(0, killStreak) / 10, 0, 2);
+    }
+
+    public static int ApplyScoreMultiplier(int baseScore, int multiplier)
+    {
+        var safeScore = math.max(0, baseScore);
+        var safeMultiplier = math.clamp(multiplier, 1, 3);
+        return safeScore > int.MaxValue / safeMultiplier
+            ? int.MaxValue
+            : safeScore * safeMultiplier;
     }
 
     public static int AccumulateDefeatedEnemies(
@@ -254,5 +311,42 @@ public partial struct ActorDeathSystem : ISystem
             Experience = reward.Experience,
             Score = reward.Score,
         });
+    }
+}
+
+/// <summary>
+/// 撃破が途切れた時に連続撃破をリセットする。
+/// レベルアップ選択中と決着後はタイマーを停止する。
+/// </summary>
+[UpdateBefore(typeof(ActorDeathSystem))]
+public partial struct KillStreakDecaySystem : ISystem
+{
+    public void OnCreate(ref SystemState state)
+    {
+        state.RequireForUpdate<RunState>();
+    }
+
+    public void OnUpdate(ref SystemState state)
+    {
+        var runState = SystemAPI.GetSingleton<RunState>();
+        if (runState.KillStreak <= 0 ||
+            runState.IsGameOver != 0 ||
+            runState.IsChoosingUpgrade != 0)
+        {
+            return;
+        }
+
+        Advance(ref runState, SystemAPI.Time.DeltaTime);
+        SystemAPI.SetSingleton(runState);
+    }
+
+    public static void Advance(ref RunState runState, float deltaTime)
+    {
+        runState.KillStreakRemainingSeconds -= math.max(0f, deltaTime);
+        if (runState.KillStreakRemainingSeconds <= 0f)
+        {
+            runState.KillStreak = 0;
+            runState.KillStreakRemainingSeconds = 0f;
+        }
     }
 }

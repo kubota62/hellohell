@@ -17,6 +17,9 @@ public struct RunState : IComponentData
     public int ThreatLevel;
     public int EnemiesSpawned;
     public int EnemiesDefeated;
+    public int KillStreak;
+    public int BestKillStreak;
+    public float KillStreakRemainingSeconds;
     public byte IsGameOver;
     public byte IsVictory;
     public byte IsChoosingUpgrade;

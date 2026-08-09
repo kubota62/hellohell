@@ -79,6 +79,11 @@ public partial struct HUDSystem : ISystem
                 runState.DurationSeconds,
                 runState.ThreatLevel,
                 runState.EnemiesDefeated,
+                runState.KillStreak,
+                runState.BestKillStreak,
+                ActorDeathSystem.ResolveKillStreakScoreMultiplier(
+                    runState.KillStreak),
+                runState.KillStreakRemainingSeconds,
                 runState.IsGameOver != 0,
                 runState.IsVictory != 0,
                 autoAttackEnabled,
