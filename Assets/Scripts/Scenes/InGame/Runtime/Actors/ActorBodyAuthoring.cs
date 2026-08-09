@@ -30,6 +30,7 @@ public class ActorBodyAuthoring : MonoBehaviour
             AddComponent<SpatialHashTarget>(actorEntity);
             AddComponent<GameplayActive>(actorEntity);
             AddComponent<MoveIntent>(actorEntity);
+            AddComponent<EnemyKnockback>(actorEntity);
             AddComponent(actorEntity, new AttackLoadout
             {
                 PrimaryAttack = AttackMasterId.BasicMeleeArc,

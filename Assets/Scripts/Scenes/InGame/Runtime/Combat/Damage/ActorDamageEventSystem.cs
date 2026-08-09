@@ -33,11 +33,17 @@ public partial struct ActorDamageEventSystem : ISystem
             .CreateCommandBuffer(state.WorldUnmanaged);
         var hasPlayerSkillStats = SystemAPI.TryGetSingleton<PlayerSkillStats>(
             out var playerSkillStats);
+        var attackerTransformLookup = SystemAPI.GetComponentLookup<
+            LocalTransform>(true);
         var cameraShakeAmplitude = 0f;
         var cameraShakeDuration = 0f;
 
-        foreach (var (transform, health, damageEventBuffer, actorEntity) in
-                 SystemAPI.Query<RefRO<LocalTransform>, RefRW<Health>, DynamicBuffer<DamageEvent>>()
+        foreach (var (transform, health, knockback, damageEventBuffer, actorEntity) in
+                 SystemAPI.Query<
+                         RefRO<LocalTransform>,
+                         RefRW<Health>,
+                         RefRW<EnemyKnockback>,
+                         DynamicBuffer<DamageEvent>>()
                      .WithAll<ActorBody>()
                      .WithEntityAccess())
         {
@@ -54,6 +60,7 @@ public partial struct ActorDamageEventSystem : ISystem
             var pos = transform.ValueRO.Position + new float3(0f, 1f, 0f);
             var remainingHealth = health.ValueRO.Current;
             var acceptedPlayerHit = false;
+            var accumulatedKnockback = float3.zero;
             var damageReduction =
                 SystemAPI.HasComponent<Player>(actorEntity) &&
                 SystemAPI.HasComponent<PlayerSkillStats>(actorEntity)
@@ -96,6 +103,22 @@ public partial struct ActorDamageEventSystem : ISystem
                 acceptedPlayerHit =
                     isPlayerDamage && resolvedDamage > 0;
 
+                if (!isPlayerDamage &&
+                    resolvedDamage > 0 &&
+                    attackerTransformLookup.HasComponent(damage.Attacker))
+                {
+                    var direction = transform.ValueRO.Position -
+                        attackerTransformLookup[damage.Attacker].Position;
+                    direction.y = 0f;
+                    direction = math.normalizesafe(direction);
+                    accumulatedKnockback += direction * ResolveKnockbackImpulse(
+                        resolvedDamage,
+                        damage.IsCritical != 0,
+                        SystemAPI.HasComponent<EliteEnemy>(actorEntity),
+                        SystemAPI.HasComponent<ChampionEnemy>(actorEntity),
+                        SystemAPI.HasComponent<FinalBossEnemy>(actorEntity));
+                }
+
                 var nextShakeAmplitude = ResolveCameraShakeAmplitude(
                     resolvedDamage,
                     damage.IsCritical != 0,
@@ -126,6 +149,13 @@ public partial struct ActorDamageEventSystem : ISystem
                 {
                     RemainingSeconds = PlayerHitImmunitySeconds,
                 });
+            }
+
+            if (!isPlayerDamage &&
+                math.lengthsq(accumulatedKnockback) > 0.0001f)
+            {
+                knockback.ValueRW.Velocity = ClampKnockbackVelocity(
+                    knockback.ValueRO.Velocity + accumulatedKnockback);
             }
 
             health.ValueRW.Current = remainingHealth;
@@ -168,6 +198,41 @@ public partial struct ActorDamageEventSystem : ISystem
         bool isPlayerDamage)
     {
         return isPlayerDamage ? 0.16f : isCritical ? 0.09f : 0f;
+    }
+
+    public static float ResolveKnockbackImpulse(
+        int damage,
+        bool isCritical,
+        bool isElite,
+        bool isChampion,
+        bool isFinalBoss)
+    {
+        if (damage <= 0)
+        {
+            return 0f;
+        }
+
+        var resistance = isFinalBoss
+            ? 0.9f
+            : isChampion
+                ? 0.7f
+                : isElite ? 0.45f : 0f;
+        var impulse = 1.8f + math.sqrt(damage) * 0.18f;
+        if (isCritical)
+        {
+            impulse *= 1.35f;
+        }
+
+        return impulse * (1f - resistance);
+    }
+
+    public static float3 ClampKnockbackVelocity(float3 velocity)
+    {
+        velocity.y = 0f;
+        var speedSq = math.lengthsq(velocity);
+        return speedSq > 100f
+            ? math.normalizesafe(velocity) * 10f
+            : velocity;
     }
 
     public static int ResolveIncomingDamage(int damage, float reduction)
