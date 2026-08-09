@@ -10,6 +10,7 @@ public class HUDUnitCount : MonoBehaviour
 {
     const float ChampionBarWidth = 720f;
     const float ExperienceBarWidth = 920f;
+    const float PlayerHealthBarWidth = 420f;
     const string JapaneseFontResourcePath =
         "Fonts/noto-sans-jp/NotoSansJP-Medium SDF";
     const string RequiredHudCharacters =
@@ -33,6 +34,10 @@ public class HUDUnitCount : MonoBehaviour
     GameObject experienceProgressRoot;
     RectTransform experienceProgressFill;
     TMP_Text experienceProgressLabel;
+    GameObject playerHealthRoot;
+    RectTransform playerHealthFill;
+    Image playerHealthFillImage;
+    TMP_Text playerHealthLabel;
     GameObject runResultRoot;
     TMP_Text runResultLabel;
     GameObject upgradeChoiceRoot;
@@ -56,6 +61,7 @@ public class HUDUnitCount : MonoBehaviour
             new Vector2(24f, 194f),
             new Vector2(1600f, 210f),
             20f);
+        CreatePlayerHealthBar();
         CreateExperienceProgressBar();
         CreateChampionHealthBar();
         CreateRunResultOverlay();
@@ -94,6 +100,7 @@ public class HUDUnitCount : MonoBehaviour
         var minutes = totalSeconds / 60;
         var seconds = totalSeconds % 60;
         var attackMode = autoAttackEnabled ? "自動" : "手動";
+        UpdatePlayerHealthBar(health, maxHealth);
         UpdateExperienceProgressBar(
             level,
             experience,
@@ -120,7 +127,7 @@ public class HUDUnitCount : MonoBehaviour
             skillStats);
 
         unitText.text =
-            $"HP {Mathf.Max(0, health)}/{Mathf.Max(1, maxHealth)}   スコア {score}\n" +
+            $"スコア {score}\n" +
             $"{FormatRunClock(elapsedSeconds, durationSeconds, isGameOver)}   脅威度 {threatLevel}" +
             (isGameOver
                 ? isVictory
@@ -690,6 +697,109 @@ public class HUDUnitCount : MonoBehaviour
         return Mathf.Clamp01(
             (float)Mathf.Max(0, experience) /
             Mathf.Max(1, experienceToNextLevel));
+    }
+
+    void CreatePlayerHealthBar()
+    {
+        playerHealthRoot = new GameObject(
+            "Player Health Bar",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(Image));
+        playerHealthRoot.layer = gameObject.layer;
+        playerHealthRoot.transform.SetParent(transform, false);
+
+        var rootRect = playerHealthRoot.GetComponent<RectTransform>();
+        rootRect.anchorMin = new Vector2(0f, 1f);
+        rootRect.anchorMax = new Vector2(0f, 1f);
+        rootRect.pivot = new Vector2(0f, 1f);
+        rootRect.anchoredPosition = new Vector2(24f, -24f);
+        rootRect.sizeDelta = new Vector2(PlayerHealthBarWidth, 30f);
+
+        var background = playerHealthRoot.GetComponent<Image>();
+        background.color = new Color(0.07f, 0.015f, 0.02f, 0.92f);
+        background.raycastTarget = false;
+
+        var fillObject = new GameObject(
+            "Fill",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(Image));
+        fillObject.layer = gameObject.layer;
+        fillObject.transform.SetParent(playerHealthRoot.transform, false);
+        playerHealthFill = fillObject.GetComponent<RectTransform>();
+        playerHealthFill.anchorMin = new Vector2(0f, 0f);
+        playerHealthFill.anchorMax = new Vector2(0f, 1f);
+        playerHealthFill.pivot = new Vector2(0f, 0.5f);
+        playerHealthFill.anchoredPosition = new Vector2(3f, 0f);
+
+        playerHealthFillImage = fillObject.GetComponent<Image>();
+        playerHealthFillImage.raycastTarget = false;
+
+        var labelObject = new GameObject(
+            "Label",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(TextMeshProUGUI));
+        labelObject.layer = gameObject.layer;
+        labelObject.transform.SetParent(playerHealthRoot.transform, false);
+
+        var labelRect = labelObject.GetComponent<RectTransform>();
+        labelRect.anchorMin = Vector2.zero;
+        labelRect.anchorMax = Vector2.one;
+        labelRect.offsetMin = Vector2.zero;
+        labelRect.offsetMax = Vector2.zero;
+
+        playerHealthLabel = labelObject.GetComponent<TextMeshProUGUI>();
+        ApplyJapaneseFont(playerHealthLabel);
+        playerHealthLabel.fontSize = 19f;
+        playerHealthLabel.fontStyle = FontStyles.Bold;
+        playerHealthLabel.alignment = TextAlignmentOptions.Center;
+        playerHealthLabel.color = Color.white;
+        playerHealthLabel.raycastTarget = false;
+    }
+
+    void UpdatePlayerHealthBar(int health, int maximumHealth)
+    {
+        if (playerHealthRoot == null)
+        {
+            return;
+        }
+
+        var safeHealth = Mathf.Max(0, health);
+        var safeMaximumHealth = Mathf.Max(1, maximumHealth);
+        var healthRatio = CalculatePlayerHealthRatio(
+            safeHealth,
+            safeMaximumHealth);
+        playerHealthFill.sizeDelta = new Vector2(
+            (PlayerHealthBarWidth - 6f) * healthRatio,
+            -6f);
+        playerHealthFillImage.color = GetPlayerHealthColor(healthRatio);
+        playerHealthLabel.text = $"HP {safeHealth}/{safeMaximumHealth}";
+    }
+
+    public static float CalculatePlayerHealthRatio(
+        int health,
+        int maximumHealth)
+    {
+        return Mathf.Clamp01(
+            (float)Mathf.Max(0, health) /
+            Mathf.Max(1, maximumHealth));
+    }
+
+    public static Color GetPlayerHealthColor(float healthRatio)
+    {
+        if (healthRatio <= 0.25f)
+        {
+            return new Color(0.95f, 0.12f, 0.12f, 0.98f);
+        }
+
+        if (healthRatio <= 0.5f)
+        {
+            return new Color(1f, 0.5f, 0.08f, 0.98f);
+        }
+
+        return new Color(0.12f, 0.82f, 0.32f, 0.98f);
     }
 
     void UpdateChampionHealthBar(
