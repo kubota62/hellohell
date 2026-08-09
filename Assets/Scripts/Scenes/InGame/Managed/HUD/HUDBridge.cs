@@ -91,7 +91,7 @@ public class HUDBridge : MonoBehaviour
     {
         if (count > championCount)
         {
-            statusNotification = "CHAMPION APPROACHES!";
+            statusNotification = "チャンピオン接近！";
             notificationRemaining = 4f;
         }
 
@@ -130,7 +130,7 @@ public class HUDBridge : MonoBehaviour
         durationSeconds = nextDurationSeconds;
         if (nextThreatLevel > threatLevel)
         {
-            statusNotification = $"THREAT RISING!  LEVEL {nextThreatLevel}";
+            statusNotification = $"脅威度上昇！  レベル {nextThreatLevel}";
             notificationRemaining = 3f;
         }
 
@@ -145,7 +145,7 @@ public class HUDBridge : MonoBehaviour
 
     public void ShowSkillApplied(PlayerSkillKind kind, int newLevel)
     {
-        statusNotification = $"LEVEL UP!  {GetSkillName(kind)} -> L{newLevel}";
+        statusNotification = $"レベルアップ！  {GetSkillName(kind)} → Lv{newLevel}";
         notificationRemaining = 2.5f;
         Refresh();
     }
@@ -153,14 +153,14 @@ public class HUDBridge : MonoBehaviour
     public void ShowChampionDefeated(int experience, int scoreReward)
     {
         statusNotification =
-            $"CHAMPION DEFEATED!  +{experience} XP  +{scoreReward} SCORE";
+            $"チャンピオン撃破！  経験値 +{experience}  スコア +{scoreReward}";
         notificationRemaining = 4f;
         Refresh();
     }
 
     public void ShowPlayerHealed(int amount)
     {
-        statusNotification = $"RESTORATIVE SHARD  +{Mathf.Max(0, amount)} HP";
+        statusNotification = $"回復の欠片  HP +{Mathf.Max(0, amount)}";
         notificationRemaining = 2.5f;
         Refresh();
     }
@@ -168,8 +168,8 @@ public class HUDBridge : MonoBehaviour
     public void ShowPlayerRevived(int restoredHealth, int chargesRemaining)
     {
         statusNotification =
-            $"SECOND WIND!  {Mathf.Max(1, restoredHealth)} HP  " +
-            $"{Mathf.Max(0, chargesRemaining)} CHARGES LEFT";
+            $"起死回生！  HP {Mathf.Max(1, restoredHealth)}  " +
+            $"残り{Mathf.Max(0, chargesRemaining)}回";
         notificationRemaining = 4f;
         Refresh();
     }
@@ -177,8 +177,8 @@ public class HUDBridge : MonoBehaviour
     public void ShowHordeSurge(int wave, int enemyCount, int currentThreat)
     {
         statusNotification =
-            $"HORDE SURGE {Mathf.Max(1, wave)}!  " +
-            $"{Mathf.Max(0, enemyCount)} ENEMIES  THREAT {Mathf.Max(1, currentThreat)}";
+            $"大群襲来 第{Mathf.Max(1, wave)}波！  " +
+            $"敵 {Mathf.Max(0, enemyCount)}体  脅威度 {Mathf.Max(1, currentThreat)}";
         notificationRemaining = 4f;
         Refresh();
     }
@@ -186,14 +186,14 @@ public class HUDBridge : MonoBehaviour
     public void ShowFinalBossSpawned(int currentThreat)
     {
         statusNotification =
-            $"FINAL BOSS APPROACHES!  THREAT {Mathf.Max(1, currentThreat)}";
+            $"最終ボス接近！  脅威度 {Mathf.Max(1, currentThreat)}";
         notificationRemaining = 6f;
         Refresh();
     }
 
     public void ShowFinalBossEnraged()
     {
-        statusNotification = "FINAL BOSS ENRAGED!  PHASE II";
+        statusNotification = "最終ボス激昂！  第2形態";
         notificationRemaining = 6f;
         Refresh();
     }
@@ -243,74 +243,74 @@ public class HUDBridge : MonoBehaviour
         switch (kind)
         {
             case PlayerSkillKind.AttackSpeed:
-                return "HASTE";
+                return "早業";
 
             case PlayerSkillKind.MoveSpeed:
-                return "MOVE";
+                return "俊足";
 
             case PlayerSkillKind.Area:
-                return "AREA";
+                return "広域化";
 
             case PlayerSkillKind.Regeneration:
-                return "REGEN";
+                return "活力";
 
             case PlayerSkillKind.MaxHealth:
-                return "FORTITUDE";
+                return "強靭";
 
             case PlayerSkillKind.PickupRange:
-                return "MAGNET";
+                return "磁力";
 
             case PlayerSkillKind.MeleeArc:
-                return "BLADE";
+                return "剣術";
 
             case PlayerSkillKind.RapidBolt:
-                return "BOLT";
+                return "速射弾";
 
             case PlayerSkillKind.PiercingLance:
-                return "LANCE";
+                return "貫通槍";
 
             case PlayerSkillKind.ExplosiveOrb:
-                return "ORB";
+                return "爆裂球";
 
             case PlayerSkillKind.CriticalChance:
-                return "CRIT";
+                return "慧眼";
 
             case PlayerSkillKind.CriticalDamage:
-                return "FEROCITY";
+                return "獰猛";
 
             case PlayerSkillKind.Armor:
-                return "ARMOR";
+                return "鉄壁";
 
             case PlayerSkillKind.Multistrike:
-                return "MULTISTRIKE";
+                return "連撃";
 
             case PlayerSkillKind.Executioner:
-                return "EXECUTIONER";
+                return "処刑人";
 
             case PlayerSkillKind.SecondWind:
-                return "SECOND WIND";
+                return "起死回生";
 
             case PlayerSkillKind.Wisdom:
-                return "WISDOM";
+                return "英知";
 
             case PlayerSkillKind.Longshot:
-                return "LONGSHOT";
+                return "遠射";
 
             case PlayerSkillKind.BossHunter:
-                return "BOSS HUNTER";
+                return "強敵狩り";
 
             case PlayerSkillKind.Penetration:
-                return "PENETRATION";
+                return "貫通";
 
             case PlayerSkillKind.Fortune:
-                return "FORTUNE";
+                return "幸運";
 
             case PlayerSkillKind.Berserker:
-                return "BERSERKER";
+                return "狂戦士";
 
             case PlayerSkillKind.Damage:
             default:
-                return "DAMAGE";
+                return "剛力";
         }
     }
 }

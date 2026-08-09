@@ -9,6 +9,18 @@ using UnityEngine.UI;
 public class HUDUnitCount : MonoBehaviour
 {
     const float ChampionBarWidth = 720f;
+    const string JapaneseFontResourcePath =
+        "Fonts/noto-sans-jp/NotoSansJP-Medium SDF";
+    const string RequiredHudCharacters =
+        " 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" +
+        "!！#%()+,-./:→—、" +
+        "レベルアップキーでもう一度勝利敗北再挑戦経験値スコア脅威度" +
+        "経過残り最終ボス戦敵エリートチャンピオン撃破弾数攻撃自動手動" +
+        "特殊威力速度範囲会心連撃処刑強敵狂戦士防御装甲再生生命起死回生" +
+        "武器斬速射貫通槍爆裂球補助移動磁力英知遠幸運抽選候補除外使用済み" +
+        "早業俊足広域化活力強靭剣術慧眼獰猛鉄壁人狩り剛力間隔最大吸引" +
+        "解放強化被追加以下一度復活秒間無獲得飛び道具ごとの大群襲来第波" +
+        "体接近上昇回復欠片激昂形態生存時間残";
 
     public TMP_Text unitText;
     public TMP_Text bulletText;
@@ -21,9 +33,15 @@ public class HUDUnitCount : MonoBehaviour
     TMP_Text runResultLabel;
     GameObject upgradeChoiceRoot;
     TMP_Text upgradeChoiceLabel;
+    TMP_FontAsset japaneseFont;
 
     void Awake()
     {
+        japaneseFont = Resources.Load<TMP_FontAsset>(
+            JapaneseFontResourcePath);
+        PrepareJapaneseFont();
+        ApplyJapaneseFont(unitText);
+        ApplyJapaneseFont(bulletText);
         ConfigureText(
             unitText,
             new Vector2(24f, 24f),
@@ -70,7 +88,7 @@ public class HUDUnitCount : MonoBehaviour
         var totalSeconds = Mathf.Max(0, Mathf.FloorToInt(elapsedSeconds));
         var minutes = totalSeconds / 60;
         var seconds = totalSeconds % 60;
-        var attackMode = autoAttackEnabled ? "AUTO" : "MANUAL";
+        var attackMode = autoAttackEnabled ? "自動" : "手動";
         UpdateChampionHealthBar(
             championNum,
             championCurrentHealth,
@@ -93,22 +111,22 @@ public class HUDUnitCount : MonoBehaviour
             skillStats);
 
         unitText.text =
-            $"LV {level}   XP {experience}/{experienceToNextLevel}\n" +
-            $"HP {Mathf.Max(0, health)}/{Mathf.Max(1, maxHealth)}   SCORE {score}\n" +
-            $"{FormatRunClock(elapsedSeconds, durationSeconds, isGameOver)}   THREAT {threatLevel}" +
+            $"Lv {level}   経験値 {experience}/{experienceToNextLevel}\n" +
+            $"HP {Mathf.Max(0, health)}/{Mathf.Max(1, maxHealth)}   スコア {score}\n" +
+            $"{FormatRunClock(elapsedSeconds, durationSeconds, isGameOver)}   脅威度 {threatLevel}" +
             (isGameOver
                 ? isVictory
-                    ? "\nVICTORY!   PRESS R TO REPLAY"
-                    : "\nDEFEATED   PRESS R TO RETRY"
+                    ? "\n勝利！   Rキーでもう一度"
+                    : "\n敗北   Rキーで再挑戦"
                 : string.Empty);
         bulletText.text =
             (string.IsNullOrEmpty(statusNotification)
                 ? string.Empty
                 : $"{statusNotification}\n") +
-            $"ENEMIES {Mathf.Max(0, unitNum - 1)}   ELITES {Mathf.Max(0, eliteNum)}   " +
-            $"CHAMPIONS {Mathf.Max(0, championNum)}   " +
-            $"KILLS {Mathf.Max(0, enemiesDefeated)}   " +
-            $"SHOTS {bulletNum}   ATTACK {attackMode}\n" +
+            $"敵 {Mathf.Max(0, unitNum - 1)}   エリート {Mathf.Max(0, eliteNum)}   " +
+            $"チャンピオン {Mathf.Max(0, championNum)}   " +
+            $"撃破 {Mathf.Max(0, enemiesDefeated)}   " +
+            $"弾数 {bulletNum}   攻撃 {attackMode}\n" +
             FormatBuildStats(skillStats);
     }
 
@@ -126,7 +144,7 @@ public class HUDUnitCount : MonoBehaviour
             safeDurationSeconds > 0f &&
             safeElapsedSeconds >= safeDurationSeconds)
         {
-            return $"TIME {minutes:00}:{seconds:00}   FINAL BOSS OVERTIME";
+            return $"経過 {minutes:00}:{seconds:00}   最終ボス戦";
         }
 
         var remainingTotalSeconds = Mathf.Max(
@@ -136,41 +154,41 @@ public class HUDUnitCount : MonoBehaviour
         var remainingMinutes = remainingTotalSeconds / 60;
         var remainingSeconds = remainingTotalSeconds % 60;
         return
-            $"TIME {minutes:00}:{seconds:00}   " +
-            $"LEFT {remainingMinutes:00}:{remainingSeconds:00}";
+            $"経過 {minutes:00}:{seconds:00}   " +
+            $"残り {remainingMinutes:00}:{remainingSeconds:00}";
     }
 
     public static string FormatBuildStats(PlayerSkillStats skillStats)
     {
         return
-            $"OFFENSE  DMG L{skillStats.DamageLevel} x{1f + skillStats.DamageMultiplierAdd:0.00}   " +
-            $"HASTE L{skillStats.AttackSpeedLevel} +{skillStats.CooldownMultiplierReduction * 100f:0}%   " +
-            $"AREA L{skillStats.AreaLevel} x{1f + skillStats.AreaMultiplierAdd:0.00}\n" +
-            $"SPECIAL  CRIT L{skillStats.CriticalChanceLevel} {skillStats.CriticalChance * 100f:0}%   " +
-            $"FEROCITY L{skillStats.CriticalDamageLevel} " +
+            $"攻撃  威力 Lv{skillStats.DamageLevel} x{1f + skillStats.DamageMultiplierAdd:0.00}   " +
+            $"速度 Lv{skillStats.AttackSpeedLevel} +{skillStats.CooldownMultiplierReduction * 100f:0}%   " +
+            $"範囲 Lv{skillStats.AreaLevel} x{1f + skillStats.AreaMultiplierAdd:0.00}\n" +
+            $"特殊  会心 Lv{skillStats.CriticalChanceLevel} {skillStats.CriticalChance * 100f:0}%   " +
+            $"会心威力 Lv{skillStats.CriticalDamageLevel} " +
             $"x{1.5f + skillStats.CriticalDamageMultiplierAdd:0.00}   " +
-            $"MULTI L{skillStats.MultistrikeLevel} {skillStats.MultistrikeChance * 100f:0}%   " +
-            $"EXEC L{skillStats.ExecutionerLevel} +{skillStats.ExecutionDamageMultiplierAdd * 100f:0}%   " +
-            $"HUNTER L{skillStats.BossHunterLevel} +{skillStats.EliteDamageMultiplierAdd * 100f:0}%   " +
-            $"BERSERK L{skillStats.BerserkerLevel} +{skillStats.LowHealthDamageMultiplierAdd * 100f:0}%\n" +
-            $"DEFENSE  ARMOR L{skillStats.ArmorLevel} -{skillStats.DamageReduction * 100f:0}%   " +
-            $"REGEN L{skillStats.RegenerationLevel} {skillStats.HealthRegenerationPerSecond:0.0}/s   " +
-            $"FORT L{skillStats.MaxHealthLevel} +{skillStats.MaxHealthAdd:0} HP   " +
-            $"SECOND WIND L{skillStats.SecondWindLevel} READY {skillStats.SecondWindChargesRemaining}\n" +
-            $"WEAPONS  BLADE L{skillStats.MeleeArcLevel}   " +
-            $"BOLT L{skillStats.RapidBoltLevel}   " +
-            $"LANCE L{skillStats.PiercingLanceLevel}   " +
-            $"ORB L{skillStats.ExplosiveOrbLevel}\n" +
-            $"UTILITY  MOVE L{skillStats.MoveSpeedLevel} x{1f + skillStats.MoveSpeedMultiplierAdd:0.00}   " +
-            $"MAGNET L{skillStats.PickupRangeLevel} +{skillStats.PickupRadiusAdd:0.0}m   " +
-            $"WISDOM L{skillStats.WisdomLevel} " +
+            $"連撃 Lv{skillStats.MultistrikeLevel} {skillStats.MultistrikeChance * 100f:0}%   " +
+            $"処刑 Lv{skillStats.ExecutionerLevel} +{skillStats.ExecutionDamageMultiplierAdd * 100f:0}%   " +
+            $"強敵 Lv{skillStats.BossHunterLevel} +{skillStats.EliteDamageMultiplierAdd * 100f:0}%   " +
+            $"狂戦士 Lv{skillStats.BerserkerLevel} +{skillStats.LowHealthDamageMultiplierAdd * 100f:0}%\n" +
+            $"防御  装甲 Lv{skillStats.ArmorLevel} -{skillStats.DamageReduction * 100f:0}%   " +
+            $"再生 Lv{skillStats.RegenerationLevel} {skillStats.HealthRegenerationPerSecond:0.0}/秒   " +
+            $"生命 Lv{skillStats.MaxHealthLevel} +{skillStats.MaxHealthAdd:0} HP   " +
+            $"起死回生 Lv{skillStats.SecondWindLevel} 残り {skillStats.SecondWindChargesRemaining}\n" +
+            $"武器  斬撃 Lv{skillStats.MeleeArcLevel}   " +
+            $"速射 Lv{skillStats.RapidBoltLevel}   " +
+            $"貫通槍 Lv{skillStats.PiercingLanceLevel}   " +
+            $"爆裂球 Lv{skillStats.ExplosiveOrbLevel}\n" +
+            $"補助  移動 Lv{skillStats.MoveSpeedLevel} x{1f + skillStats.MoveSpeedMultiplierAdd:0.00}   " +
+            $"磁力 Lv{skillStats.PickupRangeLevel} +{skillStats.PickupRadiusAdd:0.0}m   " +
+            $"英知 Lv{skillStats.WisdomLevel} " +
             $"x{1f + skillStats.ExperienceMultiplierAdd:0.00} XP   " +
-            $"LONGSHOT L{skillStats.LongshotLevel} " +
+            $"遠射 Lv{skillStats.LongshotLevel} " +
             $"x{1f + skillStats.ProjectileLifetimeMultiplierAdd:0.00}   " +
-            $"PEN L{skillStats.PenetrationLevel} " +
+            $"貫通 Lv{skillStats.PenetrationLevel} " +
             $"+{PlayerAutoSkillSystem.GetProjectilePierceAdd(skillStats)}   " +
-            $"FORTUNE L{skillStats.FortuneLevel} " +
-            $"{PlayerAutoSkillSystem.GetUpgradeRerollCount(skillStats)}R";
+            $"幸運 Lv{skillStats.FortuneLevel} " +
+            $"再抽選{PlayerAutoSkillSystem.GetUpgradeRerollCount(skillStats)}回";
     }
 
     void CreateUpgradeChoiceOverlay()
@@ -209,10 +227,7 @@ public class HUDUnitCount : MonoBehaviour
         labelRect.offsetMax = new Vector2(-48f, -34f);
 
         upgradeChoiceLabel = labelObject.GetComponent<TextMeshProUGUI>();
-        if (unitText != null)
-        {
-            upgradeChoiceLabel.font = unitText.font;
-        }
+        ApplyJapaneseFont(upgradeChoiceLabel);
         upgradeChoiceLabel.alignment = TextAlignmentOptions.Center;
         upgradeChoiceLabel.fontStyle = FontStyles.Bold;
         upgradeChoiceLabel.fontSize = 27f;
@@ -240,17 +255,17 @@ public class HUDUnitCount : MonoBehaviour
         }
 
         var queuedLevels = choice.PendingLevels > 1
-            ? $"  <size=22>({choice.PendingLevels} PICKS)</size>"
+            ? $"  <size=22>(残り{choice.PendingLevels}回)</size>"
             : string.Empty;
         var rerollHint = choice.RerollsRemaining > 0
-            ? $"<color=#7ED8FF>[R] REROLL</color>  <size=20>{choice.RerollsRemaining} LEFT</size>"
-            : "<color=#777788>[R] REROLL USED</color>";
+            ? $"<color=#7ED8FF>[R] 再抽選</color>  <size=20>残り{choice.RerollsRemaining}回</size>"
+            : "<color=#777788>[R] 再抽選 使用済み</color>";
         var banishHint = choice.BanishesRemaining > 0
-            ? $"<color=#FF9E7A>[Q/W/E] BANISH 1/2/3</color>  <size=20>{choice.BanishesRemaining} LEFT</size>"
-            : "<color=#777788>[Q/W/E] BANISH USED</color>";
+            ? $"<color=#FF9E7A>[Q/W/E] 候補を除外 1/2/3</color>  <size=20>残り{choice.BanishesRemaining}回</size>"
+            : "<color=#777788>[Q/W/E] 除外 使用済み</color>";
         upgradeChoiceLabel.text =
-            $"<color=#FFD75A><size=48>LEVEL UP!</size></color>{queuedLevels}\n" +
-            "<size=22>CHOOSE AN UPGRADE — PRESS 1, 2 OR 3</size>\n\n" +
+            $"<color=#FFD75A><size=48>レベルアップ！</size></color>{queuedLevels}\n" +
+            "<size=22>強化を選択 — 1、2、3キー</size>\n\n" +
             rerollHint + "     " + banishHint + "\n\n" +
             FormatUpgradeOption(1, choice.First, stats) + "\n\n" +
             FormatUpgradeOption(2, choice.Second, stats) + "\n\n" +
@@ -270,7 +285,7 @@ public class HUDUnitCount : MonoBehaviour
         return
             $"<color=#FFD75A>[{index}]</color>  " +
             $"<size=34>{GetUpgradeName(skill.Kind)}</size>  " +
-            $"<color=#B7B7C8>L{currentLevel} → L{nextLevel}</color>\n" +
+            $"<color=#B7B7C8>Lv{currentLevel} → Lv{nextLevel}</color>\n" +
             $"<size=22>{effect}</size>";
     }
 
@@ -333,52 +348,52 @@ public class HUDUnitCount : MonoBehaviour
         switch (kind)
         {
             case PlayerSkillKind.AttackSpeed:
-                return "QUICK HANDS";
+                return "早業";
             case PlayerSkillKind.MoveSpeed:
-                return "SWIFT FEET";
+                return "俊足";
             case PlayerSkillKind.Area:
-                return "REACH";
+                return "広域化";
             case PlayerSkillKind.Regeneration:
-                return "VITALITY";
+                return "活力";
             case PlayerSkillKind.MaxHealth:
-                return "FORTITUDE";
+                return "強靭";
             case PlayerSkillKind.PickupRange:
-                return "MAGNETISM";
+                return "磁力";
             case PlayerSkillKind.MeleeArc:
-                return "BLADE MASTERY";
+                return "剣術";
             case PlayerSkillKind.RapidBolt:
-                return "RAPID BOLT";
+                return "速射弾";
             case PlayerSkillKind.PiercingLance:
-                return "PIERCING LANCE";
+                return "貫通槍";
             case PlayerSkillKind.ExplosiveOrb:
-                return "EXPLOSIVE ORB";
+                return "爆裂球";
             case PlayerSkillKind.CriticalChance:
-                return "KEEN EYE";
+                return "慧眼";
             case PlayerSkillKind.CriticalDamage:
-                return "FEROCITY";
+                return "獰猛";
             case PlayerSkillKind.Armor:
-                return "IRON SKIN";
+                return "鉄壁";
             case PlayerSkillKind.Multistrike:
-                return "MULTISTRIKE";
+                return "連撃";
             case PlayerSkillKind.Executioner:
-                return "EXECUTIONER";
+                return "処刑人";
             case PlayerSkillKind.SecondWind:
-                return "SECOND WIND";
+                return "起死回生";
             case PlayerSkillKind.Wisdom:
-                return "WISDOM";
+                return "英知";
             case PlayerSkillKind.Longshot:
-                return "LONGSHOT";
+                return "遠射";
             case PlayerSkillKind.BossHunter:
-                return "BOSS HUNTER";
+                return "強敵狩り";
             case PlayerSkillKind.Penetration:
-                return "PENETRATION";
+                return "貫通";
             case PlayerSkillKind.Fortune:
-                return "FORTUNE";
+                return "幸運";
             case PlayerSkillKind.Berserker:
-                return "BERSERKER";
+                return "狂戦士";
             case PlayerSkillKind.Damage:
             default:
-                return "MIGHT";
+                return "剛力";
         }
     }
 
@@ -387,49 +402,49 @@ public class HUDUnitCount : MonoBehaviour
         switch (skill.Kind)
         {
             case PlayerSkillKind.AttackSpeed:
-                return $"Attack cooldown -{skill.EffectPerLevel * 100f:0}%";
+                return $"攻撃間隔 -{skill.EffectPerLevel * 100f:0}%";
             case PlayerSkillKind.MoveSpeed:
-                return $"Movement speed +{skill.EffectPerLevel * 100f:0}%";
+                return $"移動速度 +{skill.EffectPerLevel * 100f:0}%";
             case PlayerSkillKind.Area:
-                return $"Attack area +{skill.EffectPerLevel * 100f:0}%";
+                return $"攻撃範囲 +{skill.EffectPerLevel * 100f:0}%";
             case PlayerSkillKind.Regeneration:
-                return $"Health regeneration +{skill.EffectPerLevel:0.0}/s";
+                return $"HP再生 +{skill.EffectPerLevel:0.0}/秒";
             case PlayerSkillKind.MaxHealth:
-                return $"Maximum health +{skill.EffectPerLevel:0}";
+                return $"最大HP +{skill.EffectPerLevel:0}";
             case PlayerSkillKind.PickupRange:
-                return $"Experience attraction +{skill.EffectPerLevel:0.0}m";
+                return $"経験値の吸引範囲 +{skill.EffectPerLevel:0.0}m";
             case PlayerSkillKind.MeleeArc:
             case PlayerSkillKind.RapidBolt:
             case PlayerSkillKind.PiercingLance:
             case PlayerSkillKind.ExplosiveOrb:
-                return $"Unlock or strengthen weapon; damage +{skill.EffectPerLevel * 100f:0}%";
+                return $"武器を解放または強化・威力 +{skill.EffectPerLevel * 100f:0}%";
             case PlayerSkillKind.CriticalChance:
-                return $"Critical chance +{skill.EffectPerLevel * 100f:0}%";
+                return $"会心率 +{skill.EffectPerLevel * 100f:0}%";
             case PlayerSkillKind.CriticalDamage:
-                return $"Critical damage +{skill.EffectPerLevel * 100f:0}%";
+                return $"会心威力 +{skill.EffectPerLevel * 100f:0}%";
             case PlayerSkillKind.Armor:
-                return $"Damage taken -{skill.EffectPerLevel * 100f:0}%";
+                return $"被ダメージ -{skill.EffectPerLevel * 100f:0}%";
             case PlayerSkillKind.Multistrike:
-                return $"Repeat attack chance +{skill.EffectPerLevel * 100f:0}%";
+                return $"追加攻撃率 +{skill.EffectPerLevel * 100f:0}%";
             case PlayerSkillKind.Executioner:
-                return $"Damage vs enemies below 30% HP +{skill.EffectPerLevel * 100f:0}%";
+                return $"HP30%以下の敵へのダメージ +{skill.EffectPerLevel * 100f:0}%";
             case PlayerSkillKind.SecondWind:
-                return $"Revive once at {skill.EffectPerLevel * 100f:0}% HP with 2s invulnerability";
+                return $"一度だけHP{skill.EffectPerLevel * 100f:0}%で復活・2秒間無敵";
             case PlayerSkillKind.Wisdom:
-                return $"Experience gained +{skill.EffectPerLevel * 100f:0}%";
+                return $"獲得経験値 +{skill.EffectPerLevel * 100f:0}%";
             case PlayerSkillKind.Longshot:
-                return $"Projectile travel range +{skill.EffectPerLevel * 100f:0}%";
+                return $"飛び道具の射程 +{skill.EffectPerLevel * 100f:0}%";
             case PlayerSkillKind.BossHunter:
-                return $"Damage vs Elite and Champion enemies +{skill.EffectPerLevel * 100f:0}%";
+                return $"エリート・チャンピオンへのダメージ +{skill.EffectPerLevel * 100f:0}%";
             case PlayerSkillKind.Penetration:
-                return $"Projectile pierce +{skill.EffectPerLevel:0}";
+                return $"飛び道具の貫通数 +{skill.EffectPerLevel:0}";
             case PlayerSkillKind.Fortune:
-                return $"Rerolls per upgrade +{skill.EffectPerLevel:0}";
+                return $"強化選択ごとの再抽選 +{skill.EffectPerLevel:0}回";
             case PlayerSkillKind.Berserker:
-                return $"Damage at or below 50% HP +{skill.EffectPerLevel * 100f:0}%";
+                return $"HP50%以下でダメージ +{skill.EffectPerLevel * 100f:0}%";
             case PlayerSkillKind.Damage:
             default:
-                return $"Damage +{skill.EffectPerLevel * 100f:0}%";
+                return $"ダメージ +{skill.EffectPerLevel * 100f:0}%";
         }
     }
 
@@ -469,10 +484,7 @@ public class HUDUnitCount : MonoBehaviour
         labelRect.offsetMax = new Vector2(-28f, -24f);
 
         runResultLabel = labelObject.GetComponent<TextMeshProUGUI>();
-        if (unitText != null)
-        {
-            runResultLabel.font = unitText.font;
-        }
+        ApplyJapaneseFont(runResultLabel);
         runResultLabel.alignment = TextAlignmentOptions.Center;
         runResultLabel.fontStyle = FontStyles.Bold;
         runResultLabel.fontSize = 30f;
@@ -504,14 +516,14 @@ public class HUDUnitCount : MonoBehaviour
             return;
         }
 
-        var title = isVictory ? "VICTORY" : "DEFEATED";
+        var title = isVictory ? "勝利" : "敗北";
         var titleColor = isVictory ? "#FFD75A" : "#FF6767";
         runResultLabel.text =
             $"<color={titleColor}><size=52>{title}</size></color>\n" +
-            $"SURVIVED  {minutes:00}:{seconds:00}    LEVEL  {level}\n" +
-            $"SCORE  {score}    KILLS  {Mathf.Max(0, enemiesDefeated)}    " +
-            $"THREAT  {threatLevel}\n" +
-            "<size=24>PRESS R TO PLAY AGAIN</size>";
+            $"生存時間  {minutes:00}:{seconds:00}    レベル  {level}\n" +
+            $"スコア  {score}    撃破  {Mathf.Max(0, enemiesDefeated)}    " +
+            $"脅威度  {threatLevel}\n" +
+            "<size=24>Rキーでもう一度</size>";
     }
 
     void CreateChampionHealthBar()
@@ -567,10 +579,7 @@ public class HUDUnitCount : MonoBehaviour
         labelRect.offsetMax = Vector2.zero;
 
         championHealthLabel = labelObject.GetComponent<TextMeshProUGUI>();
-        if (unitText != null)
-        {
-            championHealthLabel.font = unitText.font;
-        }
+        ApplyJapaneseFont(championHealthLabel);
         championHealthLabel.fontSize = 18f;
         championHealthLabel.fontStyle = FontStyles.Bold;
         championHealthLabel.alignment = TextAlignmentOptions.Center;
@@ -644,16 +653,56 @@ public class HUDUnitCount : MonoBehaviour
         if (finalBossCount > 0 && finalBossMaximumHealth > 0)
         {
             return
-                $"FINAL BOSS   {Mathf.Max(0, finalBossCurrentHealth)}/" +
+                $"最終ボス   {Mathf.Max(0, finalBossCurrentHealth)}/" +
                 $"{Mathf.Max(1, finalBossMaximumHealth)}";
         }
 
         return championCount > 1
-            ? $"CHAMPIONS x{championCount}   " +
+            ? $"チャンピオン x{championCount}   " +
                 $"{Mathf.Max(0, championCurrentHealth)}/" +
                 $"{Mathf.Max(1, championMaximumHealth)}"
-            : $"CHAMPION   {Mathf.Max(0, championCurrentHealth)}/" +
+            : $"チャンピオン   {Mathf.Max(0, championCurrentHealth)}/" +
                 $"{Mathf.Max(1, championMaximumHealth)}";
+    }
+
+    void ApplyJapaneseFont(TMP_Text text)
+    {
+        if (text == null)
+        {
+            return;
+        }
+
+        if (japaneseFont != null)
+        {
+            text.font = japaneseFont;
+        }
+        else if (unitText != null && unitText.font != null)
+        {
+            text.font = unitText.font;
+        }
+    }
+
+    void PrepareJapaneseFont()
+    {
+        if (japaneseFont == null)
+        {
+            Debug.LogWarning(
+                $"HUD用フォントが見つかりません: {JapaneseFontResourcePath}",
+                this);
+            return;
+        }
+
+        japaneseFont.isMultiAtlasTexturesEnabled = true;
+        if (!japaneseFont.TryAddCharacters(
+                RequiredHudCharacters,
+                out var missingCharacters,
+                true) &&
+            !string.IsNullOrEmpty(missingCharacters))
+        {
+            Debug.LogWarning(
+                $"HUD用フォントに追加できない文字があります: {missingCharacters}",
+                this);
+        }
     }
 
     static void ConfigureText(
