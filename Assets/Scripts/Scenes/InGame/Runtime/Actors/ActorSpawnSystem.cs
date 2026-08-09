@@ -4,6 +4,13 @@ using Unity.Rendering;
 using Unity.Transforms;
 using Random = Unity.Mathematics.Random;
 
+public enum UpcomingThreatEventKind : byte
+{
+    None,
+    HordeSurge,
+    FinalBoss,
+}
+
 /// <summary>
 /// 共通Actor PrefabからPlayerとEnemyを生成し、マスター設定を適用する。
 /// </summary>
@@ -12,9 +19,9 @@ public partial struct ActorSpawnSystem : ISystem
 {
     private const int MaximumActiveEnemies = 350;
     private const float ChampionSpawnInterval = 90f;
-    private const float HordeSurgeInterval = 60f;
+    public const float HordeSurgeIntervalSeconds = 60f;
     private const float HordeWarningLeadTime = 3f;
-    private const float FinalBossSpawnTime = 540f;
+    public const float FinalBossSpawnTimeSeconds = 540f;
     private const float RunDurationSeconds = 600f;
 
     private Random random;
@@ -98,7 +105,7 @@ public partial struct ActorSpawnSystem : ISystem
                     Wave = warningWave,
                     SecondsUntilArrival = math.max(
                         0f,
-                        warningWave * HordeSurgeInterval -
+                        warningWave * HordeSurgeIntervalSeconds -
                             runState.ElapsedSeconds),
                     ThreatLevel = runState.ThreatLevel,
                 });
@@ -127,7 +134,7 @@ public partial struct ActorSpawnSystem : ISystem
             hordeWavesSpawned = math.max(
                 hordeWavesSpawned,
                 (int)math.floor(
-                    runState.ElapsedSeconds / HordeSurgeInterval));
+                    runState.ElapsedSeconds / HordeSurgeIntervalSeconds));
             hordeWarningsIssued = math.max(
                 hordeWarningsIssued,
                 hordeWavesSpawned);
@@ -189,7 +196,7 @@ public partial struct ActorSpawnSystem : ISystem
         }
 
         var hordeWave = (int)math.floor(
-            runState.ElapsedSeconds / HordeSurgeInterval);
+            runState.ElapsedSeconds / HordeSurgeIntervalSeconds);
         if (hordeWave > hordeWavesSpawned && availableSlots > 0)
         {
             var hordeSize = CalculateHordeSize(
@@ -256,6 +263,31 @@ public partial struct ActorSpawnSystem : ISystem
         return math.clamp(desiredSize, 0, math.max(0, availableSlots));
     }
 
+    public static UpcomingThreatEventKind ResolveUpcomingThreatEvent(
+        float elapsedSeconds,
+        out float remainingSeconds)
+    {
+        var safeElapsedSeconds = math.max(0f, elapsedSeconds);
+        if (safeElapsedSeconds >= FinalBossSpawnTimeSeconds)
+        {
+            remainingSeconds = 0f;
+            return UpcomingThreatEventKind.None;
+        }
+
+        var nextHordeTime =
+            (math.floor(safeElapsedSeconds / HordeSurgeIntervalSeconds) + 1f) *
+            HordeSurgeIntervalSeconds;
+        var eventTime = math.min(
+            nextHordeTime,
+            FinalBossSpawnTimeSeconds);
+        remainingSeconds = math.max(
+            0f,
+            eventTime - safeElapsedSeconds);
+        return nextHordeTime >= FinalBossSpawnTimeSeconds
+            ? UpcomingThreatEventKind.FinalBoss
+            : UpcomingThreatEventKind.HordeSurge;
+    }
+
     public static int ResolveHordeWarningWave(
         float elapsedSeconds,
         int warningsIssued)
@@ -263,14 +295,14 @@ public partial struct ActorSpawnSystem : ISystem
         var safeElapsed = math.max(0f, elapsedSeconds);
         var candidateWave = (int)math.floor(
             (safeElapsed + HordeWarningLeadTime) /
-            HordeSurgeInterval);
+            HordeSurgeIntervalSeconds);
         if (candidateWave <= math.max(0, warningsIssued))
         {
             return 0;
         }
 
-        var arrivalTime = candidateWave * HordeSurgeInterval;
-        if (arrivalTime >= FinalBossSpawnTime ||
+        var arrivalTime = candidateWave * HordeSurgeIntervalSeconds;
+        if (arrivalTime >= FinalBossSpawnTimeSeconds ||
             safeElapsed < arrivalTime - HordeWarningLeadTime ||
             safeElapsed >= arrivalTime)
         {
@@ -297,7 +329,7 @@ public partial struct ActorSpawnSystem : ISystem
         bool hasSpawned)
     {
         return !hasSpawned &&
-            elapsedSeconds >= FinalBossSpawnTime;
+            elapsedSeconds >= FinalBossSpawnTimeSeconds;
     }
 
     public static bool CanClaimVictory(

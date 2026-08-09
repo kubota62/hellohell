@@ -91,6 +91,16 @@ public partial struct HUDSystem : ISystem
                 autoAttackEnabled,
                 skillStats);
 
+            var upcomingThreat =
+                ActorSpawnSystem.ResolveUpcomingThreatEvent(
+                    runState.ElapsedSeconds,
+                    out var upcomingThreatRemainingSeconds);
+            hudBridge.SetUpcomingThreat(
+                runState.IsGameOver == 0
+                    ? upcomingThreat
+                    : UpcomingThreatEventKind.None,
+                upcomingThreatRemainingSeconds);
+
             hudBridge.SetUpgradeChoice(
                 SystemAPI.TryGetSingleton<PlayerUpgradeChoice>(out var upgradeChoice),
                 upgradeChoice);

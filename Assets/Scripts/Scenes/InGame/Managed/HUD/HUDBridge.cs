@@ -102,6 +102,13 @@ public class HUDBridge : MonoBehaviour
                 worldPosition.z));
     }
 
+    public void SetUpcomingThreat(
+        UpcomingThreatEventKind kind,
+        float remainingSeconds)
+    {
+        unitCount.SetUpcomingThreat(kind, remainingSeconds);
+    }
+
     public void SetChampionState(
         int nextEliteCurrentHealth,
         int nextEliteMaxHealth,

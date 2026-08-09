@@ -25,7 +25,7 @@ public class HUDUnitCount : MonoBehaviour
         "早業俊足広域化活力強靭剣術慧眼獰猛鉄壁人狩り剛力間隔最大吸引" +
         "解放強化被追加以下一度復活秒間無獲得飛び道具ごとの大群襲来第波" +
         "体接近上昇回復欠片激昂形態生存時間残" +
-        "連続倍率最高後";
+        "連続倍率最高後次まで";
 
     public TMP_Text unitText;
     public TMP_Text bulletText;
@@ -58,6 +58,9 @@ public class HUDUnitCount : MonoBehaviour
     bool threatIndicatorActive;
     int threatIndicatorRank;
     Vector3 threatIndicatorWorldPosition;
+    GameObject upcomingThreatRoot;
+    Image upcomingThreatBackground;
+    TMP_Text upcomingThreatLabel;
     GameObject runResultRoot;
     TMP_Text runResultLabel;
     GameObject upgradeChoiceRoot;
@@ -87,6 +90,7 @@ public class HUDUnitCount : MonoBehaviour
         CreateChampionHealthBar();
         CreateThreatAnnouncement();
         CreateThreatIndicator();
+        CreateUpcomingThreatCountdown();
         CreateRunResultOverlay();
         CreateUpgradeChoiceOverlay();
     }
@@ -850,6 +854,108 @@ public class HUDUnitCount : MonoBehaviour
         return direction * Mathf.Min(
             horizontalDistance,
             verticalDistance);
+    }
+
+    void CreateUpcomingThreatCountdown()
+    {
+        upcomingThreatRoot = new GameObject(
+            "Upcoming Threat Countdown",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(Image));
+        upcomingThreatRoot.layer = gameObject.layer;
+        upcomingThreatRoot.transform.SetParent(transform, false);
+
+        var rootRect = upcomingThreatRoot.GetComponent<RectTransform>();
+        rootRect.anchorMin = new Vector2(0.5f, 1f);
+        rootRect.anchorMax = new Vector2(0.5f, 1f);
+        rootRect.pivot = new Vector2(0.5f, 1f);
+        rootRect.anchoredPosition = new Vector2(0f, -44f);
+        rootRect.sizeDelta = new Vector2(440f, 58f);
+
+        upcomingThreatBackground = upcomingThreatRoot.GetComponent<Image>();
+        upcomingThreatBackground.raycastTarget = false;
+
+        var labelObject = new GameObject(
+            "Label",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(TextMeshProUGUI));
+        labelObject.layer = gameObject.layer;
+        labelObject.transform.SetParent(upcomingThreatRoot.transform, false);
+        var labelRect = labelObject.GetComponent<RectTransform>();
+        labelRect.anchorMin = Vector2.zero;
+        labelRect.anchorMax = Vector2.one;
+        labelRect.offsetMin = new Vector2(16f, 4f);
+        labelRect.offsetMax = new Vector2(-16f, -4f);
+
+        upcomingThreatLabel = labelObject.GetComponent<TextMeshProUGUI>();
+        ApplyJapaneseFont(upcomingThreatLabel);
+        upcomingThreatLabel.alignment = TextAlignmentOptions.Center;
+        upcomingThreatLabel.fontStyle = FontStyles.Bold;
+        upcomingThreatLabel.fontSize = 25f;
+        upcomingThreatLabel.textWrappingMode = TextWrappingModes.NoWrap;
+        upcomingThreatLabel.raycastTarget = false;
+        upcomingThreatRoot.SetActive(false);
+    }
+
+    public void SetUpcomingThreat(
+        UpcomingThreatEventKind kind,
+        float remainingSeconds)
+    {
+        if (upcomingThreatRoot == null)
+        {
+            return;
+        }
+
+        var message = FormatUpcomingThreat(kind, remainingSeconds);
+        var isActive = !string.IsNullOrEmpty(message);
+        upcomingThreatRoot.SetActive(isActive);
+        if (!isActive)
+        {
+            upcomingThreatRoot.transform.localScale = Vector3.one;
+            return;
+        }
+
+        var isImminent = remainingSeconds <= 10f;
+        var accent = kind == UpcomingThreatEventKind.FinalBoss
+            ? new Color(1f, 0.16f, 0.22f, 1f)
+            : new Color(1f, 0.62f, 0.12f, 1f);
+        var pulse = isImminent
+            ? 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 8f)
+            : 0f;
+        upcomingThreatLabel.text = message;
+        upcomingThreatLabel.color = Color.Lerp(
+            Color.white,
+            accent,
+            isImminent ? 0.45f + pulse * 0.45f : 0.28f);
+        upcomingThreatBackground.color = new Color(
+            accent.r * 0.12f,
+            accent.g * 0.09f,
+            accent.b * 0.07f,
+            isImminent ? 0.92f : 0.78f);
+        upcomingThreatRoot.transform.localScale = Vector3.one *
+            (isImminent ? Mathf.Lerp(1f, 1.045f, pulse) : 1f);
+    }
+
+    public static string FormatUpcomingThreat(
+        UpcomingThreatEventKind kind,
+        float remainingSeconds)
+    {
+        if (kind == UpcomingThreatEventKind.None)
+        {
+            return string.Empty;
+        }
+
+        var totalSeconds = Mathf.Max(
+            0,
+            Mathf.CeilToInt(remainingSeconds));
+        var minutes = totalSeconds / 60;
+        var seconds = totalSeconds % 60;
+        var eventName = kind == UpcomingThreatEventKind.FinalBoss
+            ? "最終ボス"
+            : "次の大群";
+        return $"{eventName}まで  {minutes:00}:{seconds:00}";
     }
 
     void CreateRunResultOverlay()
