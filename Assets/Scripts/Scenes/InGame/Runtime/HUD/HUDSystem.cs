@@ -1,6 +1,8 @@
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Mathematics;
+using Unity.Transforms;
 
 /// <summary>
 /// 現在生存している ActorBody、active な Projectile、PlayerProgressを集計し、Managed 側の HUD へ渡す。
@@ -94,36 +96,74 @@ public partial struct HUDSystem : ISystem
                 upgradeChoice);
         }
 
+        var playerPosition = float3.zero;
+        var hasPlayerPosition =
+            SystemAPI.TryGetSingletonEntity<Player>(out var threatPlayerEntity) &&
+            SystemAPI.HasComponent<LocalTransform>(threatPlayerEntity);
+        if (hasPlayerPosition)
+        {
+            playerPosition = SystemAPI
+                .GetComponent<LocalTransform>(threatPlayerEntity)
+                .Position;
+        }
+
         var eliteCurrentHealth = 0;
         var eliteMaxHealth = 0;
-        foreach (var eliteHealth in
-                 SystemAPI.Query<RefRO<Health>>()
+        var nearestElitePosition = float3.zero;
+        var nearestEliteDistanceSq = float.MaxValue;
+        var hasElitePosition = false;
+        foreach (var (eliteHealth, eliteTransform) in
+                 SystemAPI.Query<RefRO<Health>, RefRO<LocalTransform>>()
                      .WithAll<EliteEnemy, GameplayActive>()
                      .WithNone<ChampionEnemy>())
         {
             eliteCurrentHealth += eliteHealth.ValueRO.Current;
             eliteMaxHealth += eliteHealth.ValueRO.Max;
+            SelectNearestThreat(
+                playerPosition,
+                eliteTransform.ValueRO.Position,
+                ref hasElitePosition,
+                ref nearestEliteDistanceSq,
+                ref nearestElitePosition);
         }
 
         var championCurrentHealth = 0;
         var championMaxHealth = 0;
-        foreach (var championHealth in
-                 SystemAPI.Query<RefRO<Health>>()
+        var nearestChampionPosition = float3.zero;
+        var nearestChampionDistanceSq = float.MaxValue;
+        var hasChampionPosition = false;
+        foreach (var (championHealth, championTransform) in
+                 SystemAPI.Query<RefRO<Health>, RefRO<LocalTransform>>()
                      .WithAll<ChampionEnemy, GameplayActive>()
                      .WithNone<FinalBossEnemy>())
         {
             championCurrentHealth += championHealth.ValueRO.Current;
             championMaxHealth += championHealth.ValueRO.Max;
+            SelectNearestThreat(
+                playerPosition,
+                championTransform.ValueRO.Position,
+                ref hasChampionPosition,
+                ref nearestChampionDistanceSq,
+                ref nearestChampionPosition);
         }
 
         var finalBossCurrentHealth = 0;
         var finalBossMaxHealth = 0;
-        foreach (var finalBossHealth in
-                 SystemAPI.Query<RefRO<Health>>()
+        var nearestFinalBossPosition = float3.zero;
+        var nearestFinalBossDistanceSq = float.MaxValue;
+        var hasFinalBossPosition = false;
+        foreach (var (finalBossHealth, finalBossTransform) in
+                 SystemAPI.Query<RefRO<Health>, RefRO<LocalTransform>>()
                      .WithAll<FinalBossEnemy, GameplayActive>())
         {
             finalBossCurrentHealth += finalBossHealth.ValueRO.Current;
             finalBossMaxHealth += finalBossHealth.ValueRO.Max;
+            SelectNearestThreat(
+                playerPosition,
+                finalBossTransform.ValueRO.Position,
+                ref hasFinalBossPosition,
+                ref nearestFinalBossDistanceSq,
+                ref nearestFinalBossPosition);
         }
 
         hudBridge.SetChampionState(
@@ -135,7 +175,42 @@ public partial struct HUDSystem : ISystem
             finalBossCountQuery.CalculateEntityCount(),
             finalBossCurrentHealth,
             finalBossMaxHealth);
+        if (hasPlayerPosition && hasFinalBossPosition)
+        {
+            hudBridge.SetThreatIndicator(true, 3, nearestFinalBossPosition);
+        }
+        else if (hasPlayerPosition && hasChampionPosition)
+        {
+            hudBridge.SetThreatIndicator(true, 2, nearestChampionPosition);
+        }
+        else if (hasPlayerPosition && hasElitePosition)
+        {
+            hudBridge.SetThreatIndicator(true, 1, nearestElitePosition);
+        }
+        else
+        {
+            hudBridge.SetThreatIndicator(false, 0, float3.zero);
+        }
+
         ConsumeFinalBossEvents(ref state, hudBridge);
+    }
+
+    static void SelectNearestThreat(
+        float3 playerPosition,
+        float3 candidatePosition,
+        ref bool hasSelection,
+        ref float nearestDistanceSq,
+        ref float3 nearestPosition)
+    {
+        var distanceSq = math.distancesq(playerPosition, candidatePosition);
+        if (hasSelection && distanceSq >= nearestDistanceSq)
+        {
+            return;
+        }
+
+        hasSelection = true;
+        nearestDistanceSq = distanceSq;
+        nearestPosition = candidatePosition;
     }
 
     private void ConsumeFeedbackEvents(

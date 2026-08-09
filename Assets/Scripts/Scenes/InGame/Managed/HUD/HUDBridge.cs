@@ -1,4 +1,5 @@
 using Unity.Entities;
+using Unity.Mathematics;
 using UnityEngine;
 
 public class HUDBridge : MonoBehaviour
@@ -85,6 +86,20 @@ public class HUDBridge : MonoBehaviour
     {
         eliteCount = count;
         Refresh();
+    }
+
+    public void SetThreatIndicator(
+        bool isActive,
+        int threatRank,
+        float3 worldPosition)
+    {
+        unitCount.SetThreatIndicator(
+            isActive,
+            threatRank,
+            new Vector3(
+                worldPosition.x,
+                worldPosition.y,
+                worldPosition.z));
     }
 
     public void SetChampionState(

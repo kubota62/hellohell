@@ -49,6 +49,15 @@ public class HUDUnitCount : MonoBehaviour
     TMP_Text threatAnnouncementLabel;
     float threatAnnouncementRemaining;
     Color threatAnnouncementAccent;
+    GameObject threatIndicatorRoot;
+    RectTransform threatIndicatorRect;
+    RectTransform threatIndicatorArrowRect;
+    TMP_Text threatIndicatorArrow;
+    TMP_Text threatIndicatorLabel;
+    Camera threatIndicatorCamera;
+    bool threatIndicatorActive;
+    int threatIndicatorRank;
+    Vector3 threatIndicatorWorldPosition;
     GameObject runResultRoot;
     TMP_Text runResultLabel;
     GameObject upgradeChoiceRoot;
@@ -77,6 +86,7 @@ public class HUDUnitCount : MonoBehaviour
         CreateExperienceProgressBar();
         CreateChampionHealthBar();
         CreateThreatAnnouncement();
+        CreateThreatIndicator();
         CreateRunResultOverlay();
         CreateUpgradeChoiceOverlay();
     }
@@ -85,6 +95,7 @@ public class HUDUnitCount : MonoBehaviour
     {
         UpdateLowHealthWarning();
         UpdateThreatAnnouncement();
+        UpdateThreatIndicator();
     }
 
     void UpdateLowHealthWarning()
@@ -643,6 +654,202 @@ public class HUDUnitCount : MonoBehaviour
         threatAnnouncementLabel.text = message;
         threatAnnouncementRoot.transform.localScale = Vector3.one;
         threatAnnouncementRoot.SetActive(true);
+    }
+
+    void CreateThreatIndicator()
+    {
+        threatIndicatorRoot = new GameObject(
+            "Threat Indicator",
+            typeof(RectTransform));
+        threatIndicatorRoot.layer = gameObject.layer;
+        threatIndicatorRoot.transform.SetParent(transform, false);
+
+        threatIndicatorRect =
+            threatIndicatorRoot.GetComponent<RectTransform>();
+        threatIndicatorRect.anchorMin = new Vector2(0.5f, 0.5f);
+        threatIndicatorRect.anchorMax = new Vector2(0.5f, 0.5f);
+        threatIndicatorRect.pivot = new Vector2(0.5f, 0.5f);
+        threatIndicatorRect.sizeDelta = new Vector2(190f, 92f);
+
+        var arrowObject = new GameObject(
+            "Arrow",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(TextMeshProUGUI));
+        arrowObject.layer = gameObject.layer;
+        arrowObject.transform.SetParent(threatIndicatorRoot.transform, false);
+        threatIndicatorArrowRect =
+            arrowObject.GetComponent<RectTransform>();
+        threatIndicatorArrowRect.anchorMin = new Vector2(0.5f, 0.5f);
+        threatIndicatorArrowRect.anchorMax = new Vector2(0.5f, 0.5f);
+        threatIndicatorArrowRect.pivot = new Vector2(0.5f, 0.5f);
+        threatIndicatorArrowRect.anchoredPosition = new Vector2(0f, 12f);
+        threatIndicatorArrowRect.sizeDelta = new Vector2(80f, 64f);
+
+        threatIndicatorArrow = arrowObject.GetComponent<TextMeshProUGUI>();
+        ApplyJapaneseFont(threatIndicatorArrow);
+        threatIndicatorArrow.text = "→";
+        threatIndicatorArrow.alignment = TextAlignmentOptions.Center;
+        threatIndicatorArrow.fontStyle = FontStyles.Bold;
+        threatIndicatorArrow.fontSize = 54f;
+        threatIndicatorArrow.raycastTarget = false;
+
+        var labelObject = new GameObject(
+            "Label",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(TextMeshProUGUI));
+        labelObject.layer = gameObject.layer;
+        labelObject.transform.SetParent(threatIndicatorRoot.transform, false);
+        var labelRect = labelObject.GetComponent<RectTransform>();
+        labelRect.anchorMin = new Vector2(0.5f, 0.5f);
+        labelRect.anchorMax = new Vector2(0.5f, 0.5f);
+        labelRect.pivot = new Vector2(0.5f, 0.5f);
+        labelRect.anchoredPosition = new Vector2(0f, -31f);
+        labelRect.sizeDelta = new Vector2(190f, 32f);
+
+        threatIndicatorLabel = labelObject.GetComponent<TextMeshProUGUI>();
+        ApplyJapaneseFont(threatIndicatorLabel);
+        threatIndicatorLabel.alignment = TextAlignmentOptions.Center;
+        threatIndicatorLabel.fontStyle = FontStyles.Bold;
+        threatIndicatorLabel.fontSize = 20f;
+        threatIndicatorLabel.textWrappingMode = TextWrappingModes.NoWrap;
+        threatIndicatorLabel.raycastTarget = false;
+        threatIndicatorRoot.SetActive(false);
+    }
+
+    public void SetThreatIndicator(
+        bool isActive,
+        int rank,
+        Vector3 worldPosition)
+    {
+        threatIndicatorActive = isActive;
+        threatIndicatorWorldPosition = worldPosition;
+        if (rank != threatIndicatorRank)
+        {
+            threatIndicatorRank = rank;
+            ApplyThreatIndicatorRank();
+        }
+
+        if (!isActive && threatIndicatorRoot != null)
+        {
+            threatIndicatorRoot.SetActive(false);
+        }
+    }
+
+    void UpdateThreatIndicator()
+    {
+        if (!threatIndicatorActive || threatIndicatorRoot == null)
+        {
+            return;
+        }
+
+        if (threatIndicatorCamera == null)
+        {
+            threatIndicatorCamera = Camera.main;
+        }
+
+        var canvasRect = transform as RectTransform;
+        if (threatIndicatorCamera == null || canvasRect == null)
+        {
+            threatIndicatorRoot.SetActive(false);
+            return;
+        }
+
+        var viewportPosition = threatIndicatorCamera.WorldToViewportPoint(
+            threatIndicatorWorldPosition);
+        if (IsThreatInsideViewport(viewportPosition))
+        {
+            threatIndicatorRoot.SetActive(false);
+            return;
+        }
+
+        threatIndicatorRoot.SetActive(true);
+        threatIndicatorRect.anchoredPosition =
+            CalculateThreatIndicatorPosition(
+                viewportPosition,
+                canvasRect.rect.size,
+                new Vector2(110f, 82f));
+
+        var direction = threatIndicatorRect.anchoredPosition.normalized;
+        threatIndicatorArrowRect.localRotation = Quaternion.Euler(
+            0f,
+            0f,
+            Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg);
+        var pulse = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 6f);
+        threatIndicatorArrowRect.localScale =
+            Vector3.one * Mathf.Lerp(1f, 1.12f, pulse);
+    }
+
+    void ApplyThreatIndicatorRank()
+    {
+        if (threatIndicatorLabel == null || threatIndicatorArrow == null)
+        {
+            return;
+        }
+
+        Color accent;
+        switch (threatIndicatorRank)
+        {
+            case 3:
+                threatIndicatorLabel.text = "最終ボス";
+                accent = new Color(1f, 0.1f, 0.16f, 1f);
+                break;
+            case 2:
+                threatIndicatorLabel.text = "チャンピオン";
+                accent = new Color(0.78f, 0.28f, 1f, 1f);
+                break;
+            default:
+                threatIndicatorLabel.text = "エリート";
+                accent = new Color(1f, 0.58f, 0.12f, 1f);
+                break;
+        }
+
+        threatIndicatorArrow.color = accent;
+        threatIndicatorLabel.color = accent;
+    }
+
+    public static bool IsThreatInsideViewport(Vector3 viewportPosition)
+    {
+        return viewportPosition.z > 0f &&
+               viewportPosition.x >= 0.06f &&
+               viewportPosition.x <= 0.94f &&
+               viewportPosition.y >= 0.08f &&
+               viewportPosition.y <= 0.92f;
+    }
+
+    public static Vector2 CalculateThreatIndicatorPosition(
+        Vector3 viewportPosition,
+        Vector2 canvasSize,
+        Vector2 edgePadding)
+    {
+        var centered = new Vector2(
+            viewportPosition.x - 0.5f,
+            viewportPosition.y - 0.5f);
+        if (viewportPosition.z < 0f)
+        {
+            centered = -centered;
+        }
+
+        var pixelDirection = new Vector2(
+            centered.x * canvasSize.x,
+            centered.y * canvasSize.y);
+        if (pixelDirection.sqrMagnitude < 0.0001f)
+        {
+            pixelDirection = Vector2.up;
+        }
+
+        var direction = pixelDirection.normalized;
+        var halfSize = Vector2.Max(
+            Vector2.zero,
+            canvasSize * 0.5f - edgePadding);
+        var horizontalDistance = halfSize.x /
+            Mathf.Max(Mathf.Abs(direction.x), 0.0001f);
+        var verticalDistance = halfSize.y /
+            Mathf.Max(Mathf.Abs(direction.y), 0.0001f);
+        return direction * Mathf.Min(
+            horizontalDistance,
+            verticalDistance);
     }
 
     void CreateRunResultOverlay()
