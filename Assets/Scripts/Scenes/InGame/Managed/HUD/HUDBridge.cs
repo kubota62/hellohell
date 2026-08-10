@@ -11,6 +11,8 @@ public class HUDBridge : MonoBehaviour
     int actorCount;
     int projectileCount;
     int eliteCount;
+    int swiftEliteCount;
+    int juggernautEliteCount;
     int eliteCurrentHealth;
     int eliteMaxHealth;
     int championCount;
@@ -87,7 +89,19 @@ public class HUDBridge : MonoBehaviour
 
     public void SetEliteCount(int count)
     {
-        eliteCount = count;
+        SetEliteCount(count, 0, 0);
+    }
+
+    public void SetEliteCount(
+        int count,
+        int nextSwiftEliteCount,
+        int nextJuggernautEliteCount)
+    {
+        eliteCount = Mathf.Max(0, count);
+        swiftEliteCount = Mathf.Max(0, nextSwiftEliteCount);
+        juggernautEliteCount = Mathf.Max(
+            0,
+            nextJuggernautEliteCount);
         Refresh();
     }
 
@@ -340,6 +354,8 @@ public class HUDBridge : MonoBehaviour
             actorCount,
             projectileCount,
             eliteCount,
+            swiftEliteCount,
+            juggernautEliteCount,
             eliteCurrentHealth,
             eliteMaxHealth,
             championCount,

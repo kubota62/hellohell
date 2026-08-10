@@ -25,7 +25,7 @@ public class HUDUnitCount : MonoBehaviour
         "早業俊足広域化活力強靭剣術慧眼獰猛鉄壁人狩り剛力間隔最大吸引" +
         "解放強化被追加以下一度復活秒間無獲得飛び道具ごとの大群襲来第波" +
         "体接近上昇回復欠片激昂形態生存時間残" +
-        "連続倍率最高後次まで＋与平均ダメージ戦闘";
+        "連続倍率最高後次まで＋与平均ダメージ戦闘俊敏巨躯／（）";
 
     public TMP_Text unitText;
     public TMP_Text bulletText;
@@ -167,6 +167,8 @@ public class HUDUnitCount : MonoBehaviour
         int unitNum,
         int bulletNum,
         int eliteNum,
+        int swiftEliteNum,
+        int juggernautEliteNum,
         int eliteCurrentHealth,
         int eliteMaxHealth,
         int championNum,
@@ -252,7 +254,11 @@ public class HUDUnitCount : MonoBehaviour
                 bestKillStreak,
                 killStreakScoreMultiplier,
                 killStreakRemainingSeconds) +
-            $"敵 {Mathf.Max(0, unitNum - 1)}   エリート {Mathf.Max(0, eliteNum)}   " +
+            $"敵 {Mathf.Max(0, unitNum - 1)}   " +
+            FormatEliteSummary(
+                eliteNum,
+                swiftEliteNum,
+                juggernautEliteNum) + "   " +
             $"チャンピオン {Mathf.Max(0, championNum)}   " +
             $"撃破 {Mathf.Max(0, enemiesDefeated)}   " +
             $"弾数 {bulletNum}   攻撃 {attackMode}\n" +
@@ -261,6 +267,23 @@ public class HUDUnitCount : MonoBehaviour
                 currentDps,
                 peakDps) + "\n" +
             FormatBuildStats(skillStats);
+    }
+
+    public static string FormatEliteSummary(
+        int eliteNum,
+        int swiftEliteNum,
+        int juggernautEliteNum)
+    {
+        var safeTotal = Mathf.Max(0, eliteNum);
+        var safeSwift = Mathf.Max(0, swiftEliteNum);
+        var safeJuggernaut = Mathf.Max(0, juggernautEliteNum);
+        if (safeSwift <= 0 && safeJuggernaut <= 0)
+        {
+            return $"エリート {safeTotal}";
+        }
+
+        return
+            $"エリート {safeTotal}（俊敏 {safeSwift}／巨躯 {safeJuggernaut}）";
     }
 
     public static string FormatCombatStats(

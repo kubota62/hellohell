@@ -19,6 +19,78 @@ public struct EliteEnemy : IComponentData
 {
 }
 
+public enum EliteAffixKind : byte
+{
+    None,
+    Swift,
+    Juggernaut,
+}
+
+/// <summary>
+/// 通常エリートへ付与する戦闘特性。チャンピオンと最終ボスは
+/// 固有の能力曲線を持つため、この特性の対象外とする。
+/// </summary>
+public struct EliteAffix : IComponentData
+{
+    public EliteAffixKind Kind;
+}
+
+public static class EliteAffixUtility
+{
+    public static EliteAffixKind ResolveForSpawn(
+        int spawnOrdinal,
+        bool isElite,
+        bool isChampion,
+        bool isFinalBoss)
+    {
+        if (!isElite || isChampion || isFinalBoss)
+        {
+            return EliteAffixKind.None;
+        }
+
+        return math.abs(spawnOrdinal) % 2 == 0
+            ? EliteAffixKind.Swift
+            : EliteAffixKind.Juggernaut;
+    }
+
+    public static float ResolveHealthMultiplier(EliteAffixKind kind)
+    {
+        return kind == EliteAffixKind.Juggernaut
+            ? 1.6f
+            : kind == EliteAffixKind.Swift ? 0.8f : 1f;
+    }
+
+    public static float ResolveSpeedMultiplier(EliteAffixKind kind)
+    {
+        return kind == EliteAffixKind.Swift
+            ? 1.4f
+            : kind == EliteAffixKind.Juggernaut ? 0.72f : 1f;
+    }
+
+    public static float ResolveScaleMultiplier(EliteAffixKind kind)
+    {
+        return kind == EliteAffixKind.Juggernaut
+            ? 1.22f
+            : kind == EliteAffixKind.Swift ? 0.92f : 1f;
+    }
+
+    public static float ResolveRewardMultiplier(EliteAffixKind kind)
+    {
+        return kind == EliteAffixKind.Juggernaut
+            ? 1.4f
+            : kind == EliteAffixKind.Swift ? 1.15f : 1f;
+    }
+
+    public static float4 ResolveColor(EliteAffixKind kind)
+    {
+        return kind == EliteAffixKind.Swift
+            ? new float4(0.06f, 0.72f, 1f, 1f)
+            : kind == EliteAffixKind.Juggernaut
+                ? new float4(1f, 0.58f, 0.04f, 1f)
+                : new float4(1f, 0.22f, 0.04f, 1f);
+    }
+}
+
 /// <summary>
 /// 一定時間ごとに出現する中ボス級の強敵。
 /// EliteEnemyも併せて持ち、既存の強敵向け処理へ参加する。

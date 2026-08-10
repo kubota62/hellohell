@@ -507,6 +507,11 @@ public partial struct ActorSpawnSystem : ISystem
         }
         else
         {
+            var eliteAffix = EliteAffixUtility.ResolveForSpawn(
+                spawnedActorCount,
+                isElite,
+                isChampion,
+                isFinalBoss);
             ConfigureEnemy(
                 entityManager,
                 actorEntity,
@@ -514,14 +519,16 @@ public partial struct ActorSpawnSystem : ISystem
                 elapsedSeconds,
                 isElite,
                 isChampion,
-                isFinalBoss);
+                isFinalBoss,
+                eliteAffix);
             ThreatAuraSpawnUtility.Spawn(
                 entityManager,
                 config.ProjectilePrefab,
                 actorEntity,
                 isElite,
                 isChampion,
-                isFinalBoss);
+                isFinalBoss,
+                eliteAffix);
         }
 
         ApplyActorColorToChildren(entityManager, actorEntity);
@@ -616,19 +623,36 @@ public partial struct ActorSpawnSystem : ISystem
         float elapsedSeconds,
         bool isElite,
         bool isChampion,
-        bool isFinalBoss)
+        bool isFinalBoss,
+        EliteAffixKind eliteAffix)
     {
         isChampion |= isFinalBoss;
         isElite |= isChampion;
+        if (!isElite || isChampion)
+        {
+            eliteAffix = EliteAffixKind.None;
+        }
+
+        var affixHealthMultiplier =
+            EliteAffixUtility.ResolveHealthMultiplier(eliteAffix);
+        var affixSpeedMultiplier =
+            EliteAffixUtility.ResolveSpeedMultiplier(eliteAffix);
+        var affixScaleMultiplier =
+            EliteAffixUtility.ResolveScaleMultiplier(eliteAffix);
+        var affixRewardMultiplier =
+            EliteAffixUtility.ResolveRewardMultiplier(eliteAffix);
         var minAttackRange = math.max(0f, definition.Combat.MinAttackRange);
         var healthMultiplier =
             (1f + math.min(4f, elapsedSeconds / 150f)) *
-            (isFinalBoss ? 25f : isChampion ? 10f : isElite ? 4f : 1f);
+            (isFinalBoss ? 25f : isChampion ? 10f : isElite ? 4f : 1f) *
+            affixHealthMultiplier;
         var speedMultiplier =
             (1f + math.min(0.55f, elapsedSeconds / 900f)) *
-            (isFinalBoss ? 0.72f : isChampion ? 0.8f : isElite ? 0.9f : 1f);
+            (isFinalBoss ? 0.72f : isChampion ? 0.8f : isElite ? 0.9f : 1f) *
+            affixSpeedMultiplier;
         var rewardMultiplier =
-            isFinalBoss ? 40 : isChampion ? 15 : isElite ? 5 : 1;
+            (isFinalBoss ? 40f : isChampion ? 15f : isElite ? 5f : 1f) *
+            affixRewardMultiplier;
         var scaledHealth = (int)math.ceil(
             math.max(1, definition.Stats.MaxHealth) * healthMultiplier);
 
@@ -636,6 +660,13 @@ public partial struct ActorSpawnSystem : ISystem
         if (isElite)
         {
             EnsureTag<EliteEnemy>(entityManager, actorEntity);
+            if (eliteAffix != EliteAffixKind.None)
+            {
+                SetOrAddComponent(
+                    entityManager,
+                    actorEntity,
+                    new EliteAffix { Kind = eliteAffix });
+            }
         }
         if (isChampion)
         {
@@ -674,7 +705,8 @@ public partial struct ActorSpawnSystem : ISystem
             new Hitbox
             {
                 Radius = definition.Stats.HitRadius *
-                    (isFinalBoss ? 2.1f : isChampion ? 1.75f : isElite ? 1.35f : 1f),
+                    (isFinalBoss ? 2.1f : isChampion ? 1.75f : isElite ? 1.35f : 1f) *
+                    affixScaleMultiplier,
             });
         SetOrAddComponent(
             entityManager,
@@ -714,10 +746,12 @@ public partial struct ActorSpawnSystem : ISystem
             {
                 Experience = math.max(
                     0,
-                    definition.Reward.Experience * rewardMultiplier),
+                    (int)math.ceil(
+                        definition.Reward.Experience * rewardMultiplier)),
                 Score = math.max(
                     0,
-                    definition.Reward.Score * rewardMultiplier),
+                    (int)math.ceil(
+                        definition.Reward.Score * rewardMultiplier)),
             });
         SetOrAddComponent(
             entityManager,
@@ -729,7 +763,7 @@ public partial struct ActorSpawnSystem : ISystem
                     : isChampion
                     ? new float4(0.72f, 0.08f, 1f, 1f)
                     : isElite
-                    ? new float4(1f, 0.22f, 0.04f, 1f)
+                    ? EliteAffixUtility.ResolveColor(eliteAffix)
                     : definition.Visual.Color,
             });
 
@@ -737,7 +771,8 @@ public partial struct ActorSpawnSystem : ISystem
         transform.Scale = math.max(
             0.01f,
             definition.Stats.BodyScale *
-            (isFinalBoss ? 2.7f : isChampion ? 2.1f : isElite ? 1.45f : 1f));
+            (isFinalBoss ? 2.7f : isChampion ? 2.1f : isElite ? 1.45f : 1f) *
+            affixScaleMultiplier);
         entityManager.SetComponentData(actorEntity, transform);
     }
 

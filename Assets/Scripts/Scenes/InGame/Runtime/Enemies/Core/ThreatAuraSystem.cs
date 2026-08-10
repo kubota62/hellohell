@@ -39,13 +39,16 @@ public static class ThreatAuraSpawnUtility
 
     public static float4 ResolveColor(
         bool isChampion,
-        bool isFinalBoss)
+        bool isFinalBoss,
+        EliteAffixKind eliteAffix = EliteAffixKind.None)
     {
         return isFinalBoss
             ? new float4(1f, 0.04f, 0.16f, 0.9f)
             : isChampion
                 ? new float4(0.78f, 0.12f, 1f, 0.82f)
-                : new float4(1f, 0.3f, 0.04f, 0.76f);
+                : WithAlpha(
+                    EliteAffixUtility.ResolveColor(eliteAffix),
+                    0.76f);
     }
 
     public static ThreatAuraSegment CreateSegment(
@@ -54,7 +57,8 @@ public static class ThreatAuraSpawnUtility
         int segmentCount,
         float radius,
         bool isChampion,
-        bool isFinalBoss)
+        bool isFinalBoss,
+        EliteAffixKind eliteAffix = EliteAffixKind.None)
     {
         var safeCount = math.max(1, segmentCount);
         return new ThreatAuraSegment
@@ -69,7 +73,10 @@ public static class ThreatAuraSpawnUtility
                 ? 0.34f
                 : isChampion ? 0.27f : 0.21f,
             Phase = 2f * math.PI * index / safeCount,
-            BaseColor = ResolveColor(isChampion, isFinalBoss),
+            BaseColor = ResolveColor(
+                isChampion,
+                isFinalBoss,
+                eliteAffix),
         };
     }
 
@@ -79,7 +86,8 @@ public static class ThreatAuraSpawnUtility
         Entity owner,
         bool isElite,
         bool isChampion,
-        bool isFinalBoss)
+        bool isFinalBoss,
+        EliteAffixKind eliteAffix = EliteAffixKind.None)
     {
         var segmentCount = ResolveSegmentCount(
             isElite,
@@ -109,7 +117,8 @@ public static class ThreatAuraSpawnUtility
                 segmentCount,
                 radius,
                 isChampion,
-                isFinalBoss);
+                isFinalBoss,
+                eliteAffix);
             EvaluateVisual(
                 aura,
                 ownerPosition,
@@ -137,6 +146,12 @@ public static class ThreatAuraSpawnUtility
         }
 
         return segmentCount;
+    }
+
+    static float4 WithAlpha(float4 color, float alpha)
+    {
+        color.w = alpha;
+        return color;
     }
 
     public static void EvaluateVisual(

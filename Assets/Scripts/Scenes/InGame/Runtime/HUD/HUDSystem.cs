@@ -46,7 +46,6 @@ public partial struct HUDSystem : ISystem
 
         hudBridge.SetActorCount(actorCountQuery.CalculateEntityCount());
         hudBridge.SetProjectileCount(projectileCountQuery.CalculateEntityCount());
-        hudBridge.SetEliteCount(eliteCountQuery.CalculateEntityCount());
         ConsumeFeedbackEvents(ref state, hudBridge);
 
         if (SystemAPI.TryGetSingleton<PlayerProgress>(out var progress))
@@ -132,13 +131,25 @@ public partial struct HUDSystem : ISystem
         var nearestElitePosition = float3.zero;
         var nearestEliteDistanceSq = float.MaxValue;
         var hasElitePosition = false;
-        foreach (var (eliteHealth, eliteTransform) in
+        var swiftEliteCount = 0;
+        var juggernautEliteCount = 0;
+        var eliteAffixLookup =
+            SystemAPI.GetComponentLookup<EliteAffix>(true);
+        foreach (var (eliteHealth, eliteTransform, eliteEntity) in
                  SystemAPI.Query<RefRO<Health>, RefRO<LocalTransform>>()
                      .WithAll<EliteEnemy, GameplayActive>()
-                     .WithNone<ChampionEnemy>())
+                     .WithNone<ChampionEnemy>()
+                     .WithEntityAccess())
         {
             eliteCurrentHealth += eliteHealth.ValueRO.Current;
             eliteMaxHealth += eliteHealth.ValueRO.Max;
+            if (eliteAffixLookup.HasComponent(eliteEntity))
+            {
+                var affix = eliteAffixLookup[eliteEntity].Kind;
+                swiftEliteCount += affix == EliteAffixKind.Swift ? 1 : 0;
+                juggernautEliteCount +=
+                    affix == EliteAffixKind.Juggernaut ? 1 : 0;
+            }
             SelectNearestThreat(
                 playerPosition,
                 eliteTransform.ValueRO.Position,
@@ -146,6 +157,11 @@ public partial struct HUDSystem : ISystem
                 ref nearestEliteDistanceSq,
                 ref nearestElitePosition);
         }
+
+        hudBridge.SetEliteCount(
+            eliteCountQuery.CalculateEntityCount(),
+            swiftEliteCount,
+            juggernautEliteCount);
 
         var championCurrentHealth = 0;
         var championMaxHealth = 0;
