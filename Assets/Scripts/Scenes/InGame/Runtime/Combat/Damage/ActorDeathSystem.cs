@@ -16,6 +16,7 @@ public partial struct ActorDeathSystem : ISystem
     private const int MaximumHealthPickups = 60;
     private const int MaximumDeathBurstParticles = 700;
     public const float KillStreakDurationSeconds = 3f;
+    public const int SlaughterMilestoneInterval = 100;
 
     private EntityQuery experiencePickupQuery;
     private EntityQuery healthPickupQuery;
@@ -177,9 +178,14 @@ public partial struct ActorDeathSystem : ISystem
 
         if (defeatedEnemyCount > 0 && hasRunState)
         {
+            var previousDefeatedEnemies = runState.EnemiesDefeated;
             runState.EnemiesDefeated = AccumulateDefeatedEnemies(
                 runState.EnemiesDefeated,
                 defeatedEnemyCount);
+            CreateSlaughterMilestoneEvents(
+                ecb,
+                previousDefeatedEnemies,
+                runState.EnemiesDefeated);
             SystemAPI.SetSingleton(runState);
         }
     }
@@ -232,6 +238,36 @@ public partial struct ActorDeathSystem : ISystem
         return newlyDefeated > int.MaxValue - safeCurrent
             ? int.MaxValue
             : safeCurrent + newlyDefeated;
+    }
+
+    public static int ResolveSlaughterMilestoneRank(int defeatedEnemies)
+    {
+        return math.max(0, defeatedEnemies) /
+            SlaughterMilestoneInterval;
+    }
+
+    public static int ResolveSlaughterMilestoneExperience(int milestone)
+    {
+        var rank = ResolveSlaughterMilestoneRank(milestone);
+        if (rank <= 0)
+        {
+            return 0;
+        }
+
+        return 20 + math.min(
+            rank,
+            (int.MaxValue - 20) / 5) * 5;
+    }
+
+    public static int ResolveSlaughterMilestoneScore(int milestone)
+    {
+        var rank = ResolveSlaughterMilestoneRank(milestone);
+        if (rank <= 0)
+        {
+            return 0;
+        }
+
+        return math.min(rank, int.MaxValue / 500) * 500;
     }
 
     public static EnemyReward ResolvePickupReward(
@@ -295,6 +331,36 @@ public partial struct ActorDeathSystem : ISystem
         ecb.RemoveComponent<Projectile>(pickupEntity);
         ecb.RemoveComponent<Lifetime>(pickupEntity);
         ecb.RemoveComponent<GameplayActive>(pickupEntity);
+    }
+
+    private static void CreateSlaughterMilestoneEvents(
+        EntityCommandBuffer ecb,
+        int previousDefeatedEnemies,
+        int currentDefeatedEnemies)
+    {
+        var previousRank = ResolveSlaughterMilestoneRank(
+            previousDefeatedEnemies);
+        var currentRank = ResolveSlaughterMilestoneRank(
+            currentDefeatedEnemies);
+        for (var rank = previousRank + 1; rank <= currentRank; rank++)
+        {
+            var milestone = rank * SlaughterMilestoneInterval;
+            var experience = ResolveSlaughterMilestoneExperience(milestone);
+            var score = ResolveSlaughterMilestoneScore(milestone);
+            CreateRewardEvent(ecb, new EnemyReward
+            {
+                Experience = experience,
+                Score = score,
+            });
+
+            var eventEntity = ecb.CreateEntity();
+            ecb.AddComponent(eventEntity, new SlaughterMilestoneEvent
+            {
+                Milestone = milestone,
+                Experience = experience,
+                Score = score,
+            });
+        }
     }
 
     private static void CreateExperiencePickup(
@@ -363,6 +429,13 @@ public partial struct ActorDeathSystem : ISystem
             Score = reward.Score,
         });
     }
+}
+
+public struct SlaughterMilestoneEvent : IComponentData
+{
+    public int Milestone;
+    public int Experience;
+    public int Score;
 }
 
 /// <summary>

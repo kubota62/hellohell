@@ -274,6 +274,17 @@ public partial struct HUDSystem : ISystem
             ecb.DestroyEntity(eventEntity);
         }
 
+        foreach (var (milestoneEvent, eventEntity) in
+                 SystemAPI.Query<RefRO<SlaughterMilestoneEvent>>()
+                     .WithEntityAccess())
+        {
+            hudBridge.ShowSlaughterMilestone(
+                milestoneEvent.ValueRO.Milestone,
+                milestoneEvent.ValueRO.Experience,
+                milestoneEvent.ValueRO.Score);
+            ecb.DestroyEntity(eventEntity);
+        }
+
         foreach (var (healedEvent, eventEntity) in
                  SystemAPI.Query<RefRO<PlayerHealedEvent>>()
                      .WithEntityAccess())
