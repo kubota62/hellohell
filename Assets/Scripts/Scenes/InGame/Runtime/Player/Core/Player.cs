@@ -1,4 +1,7 @@
+using Unity.Burst;
 using Unity.Entities;
+using Unity.Mathematics;
+using Unity.Rendering;
 
 /// <summary>
 /// Player/Core の共通タグ。
@@ -27,6 +30,9 @@ public struct PlayerRevivalGrace : IComponentData
 public struct PlayerDamageGrace : IComponentData
 {
     public float RemainingSeconds;
+    public float DurationSeconds;
+    public float4 OriginalColor;
+    public byte HasOriginalColor;
 }
 
 public struct PlayerRevivedEvent : IComponentData
@@ -41,7 +47,11 @@ public partial struct PlayerRevivalGraceSystem : ISystem
     public void OnUpdate(ref SystemState state)
     {
         var ecb = new EntityCommandBuffer(Unity.Collections.Allocator.Temp);
-        var deltaTime = SystemAPI.Time.DeltaTime;
+        var isPaused =
+            SystemAPI.TryGetSingleton<RunState>(out var runState) &&
+            (runState.IsGameOver != 0 ||
+             runState.IsChoosingUpgrade != 0);
+        var deltaTime = isPaused ? 0f : SystemAPI.Time.DeltaTime;
         foreach (var (grace, entity) in
                  SystemAPI.Query<RefRW<PlayerRevivalGrace>>()
                      .WithEntityAccess())
@@ -56,7 +66,6 @@ public partial struct PlayerRevivalGraceSystem : ISystem
         ecb.Playback(state.EntityManager);
         ecb.Dispose();
     }
-
 }
 
 [UpdateBefore(typeof(ActorDamageEventSystem))]
@@ -65,7 +74,11 @@ public partial struct PlayerDamageGraceSystem : ISystem
     public void OnUpdate(ref SystemState state)
     {
         var ecb = new EntityCommandBuffer(Unity.Collections.Allocator.Temp);
-        var deltaTime = SystemAPI.Time.DeltaTime;
+        var isPaused =
+            SystemAPI.TryGetSingleton<RunState>(out var runState) &&
+            (runState.IsGameOver != 0 ||
+             runState.IsChoosingUpgrade != 0);
+        var deltaTime = isPaused ? 0f : SystemAPI.Time.DeltaTime;
         foreach (var (grace, entity) in
                  SystemAPI.Query<RefRW<PlayerDamageGrace>>()
                      .WithEntityAccess())
@@ -73,12 +86,71 @@ public partial struct PlayerDamageGraceSystem : ISystem
             grace.ValueRW.RemainingSeconds -= deltaTime;
             if (grace.ValueRO.RemainingSeconds <= 0f)
             {
+                if (grace.ValueRO.HasOriginalColor != 0 &&
+                    state.EntityManager.HasComponent<
+                        URPMaterialPropertyBaseColor>(entity))
+                {
+                    state.EntityManager.SetComponentData(
+                        entity,
+                        new URPMaterialPropertyBaseColor
+                        {
+                            Value = grace.ValueRO.OriginalColor,
+                        });
+                }
                 ecb.RemoveComponent<PlayerDamageGrace>(entity);
             }
         }
 
         ecb.Playback(state.EntityManager);
         ecb.Dispose();
+    }
+}
+
+/// <summary>通常被弾無敵中を青白い脈動で知らせる。</summary>
+[BurstCompile]
+[UpdateAfter(typeof(HitFlashSystem))]
+public partial struct PlayerDamageGraceVisualSystem : ISystem
+{
+    [BurstCompile]
+    public void OnCreate(ref SystemState state)
+    {
+        state.RequireForUpdate<PlayerDamageGrace>();
+    }
+
+    [BurstCompile]
+    public void OnUpdate(ref SystemState state)
+    {
+        foreach (var (grace, color) in
+                 SystemAPI.Query<
+                         RefRO<PlayerDamageGrace>,
+                         RefRW<URPMaterialPropertyBaseColor>>()
+                     .WithAll<Player>()
+                     .WithNone<HitFlash, PlayerDefeated>())
+        {
+            if (grace.ValueRO.HasOriginalColor == 0)
+            {
+                continue;
+            }
+
+            color.ValueRW.Value = EvaluateGraceColor(grace.ValueRO);
+        }
+    }
+
+    public static float4 EvaluateGraceColor(in PlayerDamageGrace grace)
+    {
+        var duration = math.max(0.01f, grace.DurationSeconds);
+        var elapsed = math.max(
+            0f,
+            duration - grace.RemainingSeconds);
+        var pulse = 0.5f + 0.5f * math.sin(elapsed * 26f);
+        var shieldColor = new float4(0.2f, 0.72f, 1f, 1f);
+        var blend = math.lerp(0.18f, 0.5f, pulse);
+        var result = math.lerp(
+            grace.OriginalColor,
+            shieldColor,
+            blend);
+        result.w = grace.OriginalColor.w;
+        return result;
     }
 }
 

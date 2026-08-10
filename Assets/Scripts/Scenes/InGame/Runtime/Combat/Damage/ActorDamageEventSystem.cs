@@ -12,7 +12,7 @@ using Unity.Transforms;
 [BurstCompile]
 public partial struct ActorDamageEventSystem : ISystem
 {
-    public const float PlayerHitImmunitySeconds = 0.35f;
+    public const float PlayerHitImmunitySeconds = 0.55f;
 
     [BurstCompile]
     public void OnCreate(ref SystemState state)
@@ -177,9 +177,18 @@ public partial struct ActorDamageEventSystem : ISystem
 
             if (acceptedPlayerHit)
             {
+                var hasOriginalColor =
+                    SystemAPI.HasComponent<URPMaterialPropertyBaseColor>(
+                        actorEntity);
                 ecb.AddComponent(actorEntity, new PlayerDamageGrace
                 {
                     RemainingSeconds = PlayerHitImmunitySeconds,
+                    DurationSeconds = PlayerHitImmunitySeconds,
+                    OriginalColor = hasOriginalColor
+                        ? SystemAPI.GetComponent<URPMaterialPropertyBaseColor>(
+                            actorEntity).Value
+                        : new float4(1f, 1f, 1f, 1f),
+                    HasOriginalColor = hasOriginalColor ? (byte)1 : (byte)0,
                 });
             }
 
