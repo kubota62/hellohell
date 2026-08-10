@@ -24,6 +24,14 @@ public struct PlayerCombatStats : IComponentData
     public float PeakDps;
 }
 
+/// <summary>
+/// 撃破節目の直後、散らばった経験値を短時間だけ全域から吸引する。
+/// </summary>
+public struct PickupVacuumPulse : IComponentData
+{
+    public float RemainingSeconds;
+}
+
 [BurstCompile]
 [UpdateAfter(typeof(ActorDamageEventSystem))]
 public partial struct PlayerCombatStatsSystem : ISystem

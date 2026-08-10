@@ -26,7 +26,7 @@ public class HUDUnitCount : MonoBehaviour
         "解放強化被追加以下一度復活秒間無獲得飛び道具ごとの大群襲来第波" +
         "体接近上昇回復欠片激昂形態生存時間残" +
         "連続倍率最高後次まで＋与平均ダメージ戦闘俊敏巨躯／（）" +
-        "節目達成討伐報酬";
+        "節目達成討伐報酬一斉収";
 
     public TMP_Text unitText;
     public TMP_Text bulletText;

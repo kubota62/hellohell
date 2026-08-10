@@ -111,6 +111,80 @@ public partial struct HealthPickupSystem : ISystem
     }
 }
 
+[UpdateBefore(typeof(ExperiencePickupSystem))]
+public partial struct SlaughterMilestoneVacuumSystem : ISystem
+{
+    public const float PulseDurationSeconds = 3.5f;
+
+    public void OnCreate(ref SystemState state)
+    {
+        state.RequireForUpdate<Player>();
+    }
+
+    public void OnUpdate(ref SystemState state)
+    {
+        var playerEntity = SystemAPI.GetSingletonEntity<Player>();
+        var triggered = false;
+        foreach (var _ in SystemAPI.Query<RefRO<SlaughterMilestoneEvent>>())
+        {
+            triggered = true;
+        }
+
+        var hasPulse = SystemAPI.HasComponent<PickupVacuumPulse>(playerEntity);
+        var currentRemaining = hasPulse
+            ? SystemAPI.GetComponent<PickupVacuumPulse>(playerEntity)
+                .RemainingSeconds
+            : 0f;
+        var isPaused =
+            SystemAPI.TryGetSingleton<RunState>(out var runState) &&
+            (runState.IsGameOver != 0 ||
+             runState.IsChoosingUpgrade != 0);
+        var remaining = ResolveRemainingSeconds(
+            currentRemaining,
+            triggered,
+            SystemAPI.Time.DeltaTime,
+            isPaused);
+
+        if (remaining > 0f)
+        {
+            var pulse = new PickupVacuumPulse
+            {
+                RemainingSeconds = remaining,
+            };
+            if (hasPulse)
+            {
+                SystemAPI.SetComponent(playerEntity, pulse);
+            }
+            else
+            {
+                state.EntityManager.AddComponentData(playerEntity, pulse);
+            }
+        }
+        else if (hasPulse)
+        {
+            state.EntityManager.RemoveComponent<PickupVacuumPulse>(
+                playerEntity);
+        }
+    }
+
+    public static float ResolveRemainingSeconds(
+        float currentRemaining,
+        bool triggered,
+        float deltaTime,
+        bool isPaused)
+    {
+        var safeCurrent = math.max(0f, currentRemaining);
+        if (triggered)
+        {
+            return math.max(safeCurrent, PulseDurationSeconds);
+        }
+
+        return isPaused
+            ? safeCurrent
+            : math.max(0f, safeCurrent - math.max(0f, deltaTime));
+    }
+}
+
 /// <summary>
 /// 経験値ドロップをプレイヤーへ吸引し、接触時に報酬イベントへ変換する。
 /// </summary>
@@ -123,6 +197,9 @@ public partial struct ExperiencePickupSystem : ISystem
     private const float CollectRadius = 1.2f;
     private const float MinimumMoveSpeed = 5f;
     private const float MaximumMoveSpeed = 14f;
+    private const float VacuumAttractionRadius = 10000f;
+    private const float VacuumMinimumMoveSpeed = 18f;
+    private const float VacuumMaximumMoveSpeed = 30f;
 
     public void OnCreate(ref SystemState state)
     {
@@ -153,6 +230,13 @@ public partial struct ExperiencePickupSystem : ISystem
             BaseAttractionRadius +
             (playerLevel - 1) * AttractionRadiusPerLevel +
             pickupRadiusAdd);
+        var vacuumActive =
+            SystemAPI.HasComponent<PickupVacuumPulse>(playerEntity) &&
+            SystemAPI.GetComponent<PickupVacuumPulse>(playerEntity)
+                .RemainingSeconds > 0f;
+        attractionRadius = ResolveAttractionRadius(
+            attractionRadius,
+            vacuumActive);
         var attractionRadiusSq = attractionRadius * attractionRadius;
         var deltaTime = SystemAPI.Time.DeltaTime;
         var ecb = new EntityCommandBuffer(Allocator.Temp);
@@ -183,7 +267,9 @@ public partial struct ExperiencePickupSystem : ISystem
 
             var distance = math.sqrt(distanceSq);
             var attraction = 1f - math.saturate(distance / attractionRadius);
-            var speed = math.lerp(MinimumMoveSpeed, MaximumMoveSpeed, attraction);
+            var speed = ResolveAttractionSpeed(
+                attraction,
+                vacuumActive);
             transform.ValueRW.Position += math.normalizesafe(toPlayer) * speed * deltaTime;
             transform.ValueRW.Rotation = math.mul(
                 quaternion.RotateY(deltaTime * 5f),
@@ -192,6 +278,31 @@ public partial struct ExperiencePickupSystem : ISystem
 
         ecb.Playback(state.EntityManager);
         ecb.Dispose();
+    }
+
+    public static float ResolveAttractionRadius(
+        float naturalRadius,
+        bool vacuumActive)
+    {
+        return vacuumActive
+            ? VacuumAttractionRadius
+            : math.max(0f, naturalRadius);
+    }
+
+    public static float ResolveAttractionSpeed(
+        float attraction,
+        bool vacuumActive)
+    {
+        var safeAttraction = math.saturate(attraction);
+        return vacuumActive
+            ? math.lerp(
+                VacuumMinimumMoveSpeed,
+                VacuumMaximumMoveSpeed,
+                safeAttraction)
+            : math.lerp(
+                MinimumMoveSpeed,
+                MaximumMoveSpeed,
+                safeAttraction);
     }
 }
 

@@ -238,10 +238,11 @@ public class HUDBridge : MonoBehaviour
         var safeScore = Mathf.Max(0, scoreReward);
         statusNotification =
             $"撃破節目 {safeMilestone}体！  " +
-            $"経験値 +{safeExperience}  スコア +{safeScore}";
+            $"経験値 +{safeExperience}  スコア +{safeScore}  " +
+            "経験値を一斉回収！";
         notificationRemaining = 5f;
         unitCount.ShowThreatAnnouncement(
-            $"{safeMilestone}体撃破！\n討伐報酬を獲得",
+            $"{safeMilestone}体撃破！\n討伐報酬＋経験値一斉回収",
             4.2f,
             new Color(1f, 0.68f, 0.08f, 1f));
         Refresh();

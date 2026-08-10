@@ -438,6 +438,25 @@ public struct SlaughterMilestoneEvent : IComponentData
     public int Score;
 }
 
+[UpdateInGroup(typeof(LateSimulationSystemGroup))]
+public partial struct SlaughterMilestoneEventCleanupSystem : ISystem
+{
+    public void OnUpdate(ref SystemState state)
+    {
+        var ecb = new EntityCommandBuffer(
+            Unity.Collections.Allocator.Temp);
+        foreach (var (_, entity) in
+                 SystemAPI.Query<RefRO<SlaughterMilestoneEvent>>()
+                     .WithEntityAccess())
+        {
+            ecb.DestroyEntity(entity);
+        }
+
+        ecb.Playback(state.EntityManager);
+        ecb.Dispose();
+    }
+}
+
 /// <summary>
 /// 撃破が途切れた時に連続撃破をリセットする。
 /// レベルアップ選択中と決着後はタイマーを停止する。
