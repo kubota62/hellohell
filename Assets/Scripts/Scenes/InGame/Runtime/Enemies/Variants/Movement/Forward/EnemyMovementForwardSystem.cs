@@ -44,7 +44,7 @@ public partial struct EnemyMovementSystem : ISystem
 
 [BurstCompile]
 [WithAll(typeof(Enemy), typeof(ActorBody), typeof(EnemyMovementPattern))]
-[WithNone(typeof(Player))]
+[WithNone(typeof(Player), typeof(EnemyAttackWindup))]
 public partial struct EnemyMovementJob : IJobEntity
 {
     public float3 PlayerPosition;

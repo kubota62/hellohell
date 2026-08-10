@@ -28,6 +28,7 @@ public partial struct AttackRequestSystem : ISystem
         var hasAttackMasters = SystemAPI.TryGetSingletonBuffer<AttackMasterElement>(
             out var attackMasters,
             true);
+        var config = SystemAPI.GetSingleton<Config>();
         var ecb = new EntityCommandBuffer(Unity.Collections.Allocator.Temp);
         var deltaTime = SystemAPI.Time.DeltaTime;
 
@@ -42,7 +43,8 @@ public partial struct AttackRequestSystem : ISystem
             ecb,
             hasAttackMasters,
             attackMasters,
-            deltaTime);
+            deltaTime,
+            config.ProjectilePrefab);
 
         ecb.Playback(state.EntityManager);
         ecb.Dispose();
@@ -125,7 +127,8 @@ public partial struct AttackRequestSystem : ISystem
         EntityCommandBuffer ecb,
         bool hasAttackMasters,
         DynamicBuffer<AttackMasterElement> attackMasters,
-        float deltaTime)
+        float deltaTime,
+        Entity telegraphPrefab)
     {
         var entityManager = state.EntityManager;
         var hasPlayer = SystemAPI.TryGetSingletonEntity<Player>(out var playerEntity) &&
@@ -139,6 +142,48 @@ public partial struct AttackRequestSystem : ISystem
                      .WithAll<Enemy>()
                      .WithEntityAccess())
         {
+            if (entityManager.HasComponent<EnemyAttackWindup>(actorEntity))
+            {
+                var windup = entityManager.GetComponentData<EnemyAttackWindup>(
+                    actorEntity);
+                windup.Remaining = TickCooldown(
+                    windup.Remaining,
+                    deltaTime);
+                if (windup.Remaining > 0f)
+                {
+                    entityManager.SetComponentData(actorEntity, windup);
+                    continue;
+                }
+
+                ecb.RemoveComponent<EnemyAttackWindup>(actorEntity);
+                if (!hasPlayer || windup.AttackMasterId == AttackMasterId.None)
+                {
+                    continue;
+                }
+
+                var chargedDefinition = ResolveDefinition(
+                    hasAttackMasters,
+                    attackMasters,
+                    windup.AttackMasterId);
+                ApplyEnemyModifiers(
+                    entityManager,
+                    actorEntity,
+                    ref chargedDefinition);
+                if (CreateAttackRequest(
+                        entityManager,
+                        actorEntity,
+                        chargedDefinition,
+                        true,
+                        windup.Direction,
+                        ecb))
+                {
+                    cooldown.ValueRW.Remaining = math.max(
+                        0.01f,
+                        chargedDefinition.Cooldown);
+                }
+                continue;
+            }
+
             cooldown.ValueRW.Remaining = TickCooldown(
                 cooldown.ValueRO.Remaining,
                 deltaTime);
@@ -163,21 +208,13 @@ public partial struct AttackRequestSystem : ISystem
                 continue;
             }
 
-            var definition = ResolveDefinition(
-                hasAttackMasters,
-                attackMasters,
-                attackMasterId);
-            ApplyEnemyModifiers(entityManager, actorEntity, ref definition);
-            if (CreateAttackRequest(
-                    entityManager,
-                    actorEntity,
-                    definition,
-                    true,
-                    playerPosition - transform.ValueRO.Position,
-                    ecb))
-            {
-                cooldown.ValueRW.Remaining = math.max(0.01f, definition.Cooldown);
-            }
+            EnemyAttackTelegraphUtility.Begin(
+                entityManager,
+                ecb,
+                telegraphPrefab,
+                actorEntity,
+                attackMasterId,
+                playerPosition - transform.ValueRO.Position);
         }
     }
 
