@@ -240,7 +240,9 @@ public class HUDUnitCount : MonoBehaviour
 
         unitText.text =
             $"スコア {score}\n" +
-            $"{FormatRunClock(elapsedSeconds, durationSeconds, isGameOver)}   脅威度 {threatLevel}" +
+            $"{FormatRunClock(elapsedSeconds, durationSeconds, isGameOver)}   " +
+            $"脅威度 {threatLevel}   " +
+            $"敵攻撃 x{EnemyDamageScaling.Resolve(elapsedSeconds, false, false, EliteAffixKind.None):0.00}" +
             (isGameOver
                 ? isVictory
                     ? "\n勝利！   Rキーでもう一度"

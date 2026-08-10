@@ -698,6 +698,17 @@ public partial struct ActorSpawnSystem : ISystem
         SetOrAddComponent(
             entityManager,
             actorEntity,
+            new EnemyDamageMultiplier
+            {
+                Value = EnemyDamageScaling.Resolve(
+                    elapsedSeconds,
+                    isChampion,
+                    isFinalBoss,
+                    eliteAffix),
+            });
+        SetOrAddComponent(
+            entityManager,
+            actorEntity,
             Health.FromMax(scaledHealth));
         SetOrAddComponent(
             entityManager,

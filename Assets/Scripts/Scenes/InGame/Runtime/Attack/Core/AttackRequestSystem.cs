@@ -344,6 +344,16 @@ public partial struct AttackRequestSystem : ISystem
         Entity actorEntity,
         ref AttackMasterData definition)
     {
+        if (entityManager.HasComponent<EnemyDamageMultiplier>(actorEntity))
+        {
+            var multiplier = entityManager
+                .GetComponentData<EnemyDamageMultiplier>(actorEntity)
+                .Value;
+            definition.Damage = EnemyDamageScaling.Apply(
+                definition.Damage,
+                multiplier);
+        }
+
         if (entityManager.HasComponent<FinalBossEnemy>(actorEntity))
         {
             var isEnraged =

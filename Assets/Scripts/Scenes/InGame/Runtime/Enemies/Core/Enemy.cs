@@ -13,6 +13,49 @@ public struct Enemy : IComponentData
 }
 
 /// <summary>
+/// 敵が出現した時点の脅威度に応じた攻撃威力倍率。
+/// 生存中に威力が突然変化しないよう、スポーン時に固定する。
+/// </summary>
+public struct EnemyDamageMultiplier : IComponentData
+{
+    public float Value;
+}
+
+public static class EnemyDamageScaling
+{
+    const float MaximumTimeBonus = 0.75f;
+    const float SecondsToMaximumBonus = 600f;
+
+    public static float Resolve(
+        float elapsedSeconds,
+        bool isChampion,
+        bool isFinalBoss,
+        EliteAffixKind eliteAffix)
+    {
+        var timeBonus = math.min(
+            MaximumTimeBonus,
+            math.max(0f, elapsedSeconds) /
+            SecondsToMaximumBonus * MaximumTimeBonus);
+        var roleScale = isFinalBoss
+            ? 0.45f
+            : isChampion ? 0.65f : 1f;
+        var affixMultiplier = eliteAffix == EliteAffixKind.Swift
+            ? 1.15f
+            : 1f;
+        return (1f + timeBonus * roleScale) * affixMultiplier;
+    }
+
+    public static int Apply(int baseDamage, float multiplier)
+    {
+        return math.max(
+            1,
+            (int)math.round(
+                math.max(1, baseDamage) *
+                math.max(1f, multiplier)));
+    }
+}
+
+/// <summary>
 /// 通常敵より高い能力と報酬を持つ、ラン中の節目となる強敵。
 /// </summary>
 public struct EliteEnemy : IComponentData
