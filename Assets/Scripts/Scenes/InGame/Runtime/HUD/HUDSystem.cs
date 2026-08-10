@@ -53,13 +53,20 @@ public partial struct HUDSystem : ISystem
         {
             var health = new Health { Max = 1, Current = 1 };
             var skillStats = new PlayerSkillStats();
+            var combatStats = new PlayerCombatStats();
             if (SystemAPI.TryGetSingletonEntity<Player>(out var playerEntity) &&
                 SystemAPI.HasComponent<Health>(playerEntity))
             {
                 health = SystemAPI.GetComponent<Health>(playerEntity);
                 if (SystemAPI.HasComponent<PlayerSkillStats>(playerEntity))
                 {
-                    skillStats = SystemAPI.GetComponent<PlayerSkillStats>(playerEntity);
+                    skillStats = SystemAPI.GetComponent<PlayerSkillStats>(
+                        playerEntity);
+                }
+                if (SystemAPI.HasComponent<PlayerCombatStats>(playerEntity))
+                {
+                    combatStats = SystemAPI.GetComponent<PlayerCombatStats>(
+                        playerEntity);
                 }
             }
 
@@ -86,6 +93,9 @@ public partial struct HUDSystem : ISystem
                 ActorDeathSystem.ResolveKillStreakScoreMultiplier(
                     runState.KillStreak),
                 runState.KillStreakRemainingSeconds,
+                combatStats.TotalDamageDealt,
+                combatStats.CurrentDps,
+                combatStats.PeakDps,
                 runState.IsGameOver != 0,
                 runState.IsVictory != 0,
                 autoAttackEnabled,

@@ -33,6 +33,9 @@ public class HUDBridge : MonoBehaviour
     int bestKillStreak;
     int killStreakScoreMultiplier = 1;
     float killStreakRemainingSeconds;
+    long totalDamageDealt;
+    float currentDps;
+    float peakDps;
     bool isGameOver;
     bool isVictory;
     bool autoAttackEnabled;
@@ -151,6 +154,9 @@ public class HUDBridge : MonoBehaviour
         int nextBestKillStreak,
         int nextKillStreakScoreMultiplier,
         float nextKillStreakRemainingSeconds,
+        long nextTotalDamageDealt,
+        float nextCurrentDps,
+        float nextPeakDps,
         bool nextIsGameOver,
         bool nextIsVictory,
         bool nextAutoAttackEnabled,
@@ -181,6 +187,11 @@ public class HUDBridge : MonoBehaviour
         killStreakRemainingSeconds = Mathf.Max(
             0f,
             nextKillStreakRemainingSeconds);
+        totalDamageDealt = nextTotalDamageDealt < 0
+            ? 0
+            : nextTotalDamageDealt;
+        currentDps = Mathf.Max(0f, nextCurrentDps);
+        peakDps = Mathf.Max(0f, nextPeakDps);
         isGameOver = nextIsGameOver;
         isVictory = nextIsVictory;
         autoAttackEnabled = nextAutoAttackEnabled;
@@ -351,6 +362,9 @@ public class HUDBridge : MonoBehaviour
             bestKillStreak,
             killStreakScoreMultiplier,
             killStreakRemainingSeconds,
+            totalDamageDealt,
+            currentDps,
+            peakDps,
             isGameOver,
             isVictory,
             autoAttackEnabled,

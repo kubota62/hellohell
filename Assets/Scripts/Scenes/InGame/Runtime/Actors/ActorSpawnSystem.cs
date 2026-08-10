@@ -576,6 +576,10 @@ public partial struct ActorSpawnSystem : ISystem
         SetOrAddComponent(
             entityManager,
             actorEntity,
+            new PlayerCombatStats());
+        SetOrAddComponent(
+            entityManager,
+            actorEntity,
             new PlayerSkillStats
             {
                 // A run begins with one signature weapon. The remaining slots

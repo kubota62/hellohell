@@ -25,7 +25,7 @@ public class HUDUnitCount : MonoBehaviour
         "早業俊足広域化活力強靭剣術慧眼獰猛鉄壁人狩り剛力間隔最大吸引" +
         "解放強化被追加以下一度復活秒間無獲得飛び道具ごとの大群襲来第波" +
         "体接近上昇回復欠片激昂形態生存時間残" +
-        "連続倍率最高後次まで＋";
+        "連続倍率最高後次まで＋与平均ダメージ戦闘";
 
     public TMP_Text unitText;
     public TMP_Text bulletText;
@@ -189,6 +189,9 @@ public class HUDUnitCount : MonoBehaviour
         int bestKillStreak,
         int killStreakScoreMultiplier,
         float killStreakRemainingSeconds,
+        long totalDamageDealt,
+        float currentDps,
+        float peakDps,
         bool isGameOver,
         bool isVictory,
         bool autoAttackEnabled,
@@ -224,7 +227,9 @@ public class HUDUnitCount : MonoBehaviour
             level,
             score,
             threatLevel,
-            enemiesDefeated);
+            enemiesDefeated,
+            totalDamageDealt,
+            peakDps);
         UpdateUpgradeChoiceOverlay(
             hasUpgradeChoice,
             upgradeChoice,
@@ -251,7 +256,23 @@ public class HUDUnitCount : MonoBehaviour
             $"チャンピオン {Mathf.Max(0, championNum)}   " +
             $"撃破 {Mathf.Max(0, enemiesDefeated)}   " +
             $"弾数 {bulletNum}   攻撃 {attackMode}\n" +
+            FormatCombatStats(
+                totalDamageDealt,
+                currentDps,
+                peakDps) + "\n" +
             FormatBuildStats(skillStats);
+    }
+
+    public static string FormatCombatStats(
+        long totalDamageDealt,
+        float currentDps,
+        float peakDps)
+    {
+        var safeTotal = totalDamageDealt < 0 ? 0 : totalDamageDealt;
+        return
+            $"戦闘  与ダメージ {safeTotal:N0}   " +
+            $"DPS {Mathf.Max(0f, currentDps):0}   " +
+            $"最高DPS {Mathf.Max(0f, peakDps):0}";
     }
 
     public static string FormatKillStreak(
@@ -1001,7 +1022,7 @@ public class HUDUnitCount : MonoBehaviour
         rootRect.anchorMax = new Vector2(0.5f, 0.5f);
         rootRect.pivot = new Vector2(0.5f, 0.5f);
         rootRect.anchoredPosition = Vector2.zero;
-        rootRect.sizeDelta = new Vector2(680f, 280f);
+        rootRect.sizeDelta = new Vector2(680f, 330f);
 
         var background = runResultRoot.GetComponent<Image>();
         background.color = new Color(0.025f, 0.02f, 0.035f, 0.92f);
@@ -1041,7 +1062,9 @@ public class HUDUnitCount : MonoBehaviour
         int level,
         int score,
         int threatLevel,
-        int enemiesDefeated)
+        int enemiesDefeated,
+        long totalDamageDealt,
+        float peakDps)
     {
         if (runResultRoot == null)
         {
@@ -1061,6 +1084,8 @@ public class HUDUnitCount : MonoBehaviour
             $"生存時間  {minutes:00}:{seconds:00}    レベル  {level}\n" +
             $"スコア  {score}    撃破  {Mathf.Max(0, enemiesDefeated)}    " +
             $"脅威度  {threatLevel}\n" +
+            $"与ダメージ  {(totalDamageDealt < 0 ? 0 : totalDamageDealt):N0}    " +
+            $"最高DPS  {Mathf.Max(0f, peakDps):0}\n" +
             "<size=24>Rキーでもう一度</size>";
     }
 

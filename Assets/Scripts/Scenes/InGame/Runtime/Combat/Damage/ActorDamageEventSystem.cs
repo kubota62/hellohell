@@ -35,10 +35,12 @@ public partial struct ActorDamageEventSystem : ISystem
             out var playerSkillStats);
         var attackerTransformLookup = SystemAPI.GetComponentLookup<
             LocalTransform>(true);
+        var playerLookup = SystemAPI.GetComponentLookup<Player>(true);
         var cameraShakeAmplitude = 0f;
         var cameraShakeDuration = 0f;
         var hitStopDuration = 0f;
         var hitStopTimeScale = 1f;
+        long playerDamageThisFrame = 0;
 
         foreach (var (transform, health, knockback, damageEventBuffer, actorEntity) in
                  SystemAPI.Query<
@@ -101,9 +103,20 @@ public partial struct ActorDamageEventSystem : ISystem
                 var resolvedDamage = ResolveIncomingDamage(
                     executionDamage,
                     damageReduction);
-                remainingHealth = math.max(0, remainingHealth - resolvedDamage);
+                var appliedDamage = ResolveAppliedDamage(
+                    remainingHealth,
+                    resolvedDamage);
+                remainingHealth -= appliedDamage;
+                if (!isPlayerDamage &&
+                    appliedDamage > 0 &&
+                    damage.Attacker != Entity.Null &&
+                    playerLookup.HasComponent(damage.Attacker))
+                {
+                    playerDamageThisFrame += appliedDamage;
+                }
+
                 acceptedPlayerHit =
-                    isPlayerDamage && resolvedDamage > 0;
+                    isPlayerDamage && appliedDamage > 0;
 
                 if (!isPlayerDamage &&
                     resolvedDamage > 0 &&
@@ -200,6 +213,28 @@ public partial struct ActorDamageEventSystem : ISystem
                 TimeScale = hitStopTimeScale,
             });
         }
+
+        if (playerDamageThisFrame > 0 &&
+            SystemAPI.TryGetSingletonEntity<Player>(out var playerEntity) &&
+            SystemAPI.HasComponent<PlayerCombatStats>(playerEntity))
+        {
+            var stats = SystemAPI.GetComponentRW<PlayerCombatStats>(
+                playerEntity);
+            var value = stats.ValueRO;
+            PlayerCombatStatsSystem.RecordDamage(
+                ref value,
+                playerDamageThisFrame);
+            stats.ValueRW = value;
+        }
+    }
+
+    public static int ResolveAppliedDamage(
+        int remainingHealth,
+        int resolvedDamage)
+    {
+        return math.min(
+            math.max(0, remainingHealth),
+            math.max(0, resolvedDamage));
     }
 
     public static float ResolveCameraShakeAmplitude(
