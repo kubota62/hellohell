@@ -271,21 +271,44 @@ public class HUDBridge : MonoBehaviour
 
     public void ShowSkillApplied(PlayerSkillKind kind, int newLevel)
     {
+        ShowSkillApplied(
+            kind,
+            newLevel,
+            PlayerUpgradeQuality.Normal);
+    }
+
+    public void ShowSkillApplied(
+        PlayerSkillKind kind,
+        int newLevel,
+        PlayerUpgradeQuality quality)
+    {
         var evolutionName =
             PlayerWeaponEvolutionUtility.GetEvolutionName(kind);
         var evolved =
             newLevel >= PlayerWeaponEvolutionUtility.EvolutionLevel &&
             !string.IsNullOrEmpty(evolutionName);
+        var qualityPrefix = quality == PlayerUpgradeQuality.Normal
+            ? string.Empty
+            : HUDUnitCount.GetUpgradeQualityName(quality) + " ";
         statusNotification = evolved
-            ? $"武器進化！  {evolutionName}"
-            : $"レベルアップ！  {GetSkillName(kind)} → Lv{newLevel}";
-        notificationRemaining = evolved ? 4f : 2.5f;
+            ? $"{qualityPrefix}武器進化！  {evolutionName}"
+            : $"{qualityPrefix}強化！  {GetSkillName(kind)} → Lv{newLevel}";
+        notificationRemaining = evolved
+            ? 4f
+            : quality == PlayerUpgradeQuality.Rare ? 3.5f : 2.5f;
         if (evolved)
         {
             unitCount.ShowThreatAnnouncement(
-                $"武器進化！\n{evolutionName}",
+                $"{qualityPrefix}武器進化！\n{evolutionName}",
                 3.5f,
                 new Color(1f, 0.72f, 0.12f, 1f));
+        }
+        else if (quality == PlayerUpgradeQuality.Rare)
+        {
+            unitCount.ShowThreatAnnouncement(
+                $"希少強化！\n{GetSkillName(kind)} Lv{newLevel}",
+                2.5f,
+                new Color(0.78f, 0.42f, 1f, 1f));
         }
         Refresh();
     }

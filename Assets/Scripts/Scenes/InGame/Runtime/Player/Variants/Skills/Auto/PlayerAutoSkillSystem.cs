@@ -199,6 +199,9 @@ public partial struct PlayerAutoSkillSystem : ISystem
             {
                 var stats = SystemAPI.GetComponent<PlayerSkillStats>(choice.Player);
                 var skill = ResolveSelectedSkill(choice, selection.ValueRO.ChoiceIndex);
+                var quality = ResolveSelectedQuality(
+                    choice,
+                    selection.ValueRO.ChoiceIndex);
                 var appliedLevel = ApplySkill(ref stats, skill);
                 if (appliedLevel > 0)
                 {
@@ -213,6 +216,7 @@ public partial struct PlayerAutoSkillSystem : ISystem
                         skill,
                         appliedLevel,
                         GetCurrentSkillLevel(stats, skill.Kind),
+                        quality,
                         ecb);
                 }
 
@@ -261,9 +265,12 @@ public partial struct PlayerAutoSkillSystem : ISystem
         int rerollGeneration = 0)
     {
         var generationOffset = math.max(0, rerollGeneration) * 101;
+        var firstSeed = newLevel + pendingLevels * 11 + generationOffset;
+        var secondSeed = newLevel + pendingLevels * 23 + generationOffset;
+        var thirdSeed = newLevel + pendingLevels * 37 + generationOffset;
         var first = PickDistinctSkill(
             stats,
-            newLevel + pendingLevels * 11 + generationOffset,
+            firstSeed,
             default,
             default,
             hasSkillMasters,
@@ -271,7 +278,7 @@ public partial struct PlayerAutoSkillSystem : ISystem
             source);
         var second = PickDistinctSkill(
             stats,
-            newLevel + pendingLevels * 23 + generationOffset,
+            secondSeed,
             first.Id,
             default,
             hasSkillMasters,
@@ -279,12 +286,27 @@ public partial struct PlayerAutoSkillSystem : ISystem
             source);
         var third = PickDistinctSkill(
             stats,
-            newLevel + pendingLevels * 37 + generationOffset,
+            thirdSeed,
             first.Id,
             second.Id,
             hasSkillMasters,
             skillMasters,
             source);
+        var firstQuality = PlayerUpgradeQualityUtility.Resolve(
+            firstSeed + 7919,
+            newLevel,
+            source);
+        var secondQuality = PlayerUpgradeQualityUtility.Resolve(
+            secondSeed + 15401,
+            newLevel,
+            source);
+        var thirdQuality = PlayerUpgradeQualityUtility.Resolve(
+            thirdSeed + 23819,
+            newLevel,
+            source);
+        first = PlayerUpgradeQualityUtility.Apply(first, firstQuality);
+        second = PlayerUpgradeQualityUtility.Apply(second, secondQuality);
+        third = PlayerUpgradeQualityUtility.Apply(third, thirdQuality);
 
         return new PlayerUpgradeChoice
         {
@@ -292,6 +314,9 @@ public partial struct PlayerAutoSkillSystem : ISystem
             First = first,
             Second = second,
             Third = third,
+            FirstQuality = firstQuality,
+            SecondQuality = secondQuality,
+            ThirdQuality = thirdQuality,
             NewLevel = newLevel,
             PendingLevels = math.max(1, pendingLevels),
             RerollsRemaining = GetUpgradeRerollCount(stats),
@@ -398,6 +423,23 @@ public partial struct PlayerAutoSkillSystem : ISystem
 
             default:
                 return choice.First;
+        }
+    }
+
+    public static PlayerUpgradeQuality ResolveSelectedQuality(
+        PlayerUpgradeChoice choice,
+        int choiceIndex)
+    {
+        switch (math.clamp(choiceIndex, 0, 2))
+        {
+            case 1:
+                return choice.SecondQuality;
+
+            case 2:
+                return choice.ThirdQuality;
+
+            default:
+                return choice.FirstQuality;
         }
     }
 
@@ -657,6 +699,7 @@ public partial struct PlayerAutoSkillSystem : ISystem
         PlayerSkillMasterData skill,
         int addedLevel,
         int newSkillLevel,
+        PlayerUpgradeQuality quality,
         EntityCommandBuffer ecb)
     {
         var eventEntity = ecb.CreateEntity();
@@ -665,6 +708,7 @@ public partial struct PlayerAutoSkillSystem : ISystem
             Player = playerEntity,
             SkillId = skill.Id,
             Kind = skill.Kind,
+            Quality = quality,
             AddedLevel = addedLevel,
             NewSkillLevel = newSkillLevel,
         });

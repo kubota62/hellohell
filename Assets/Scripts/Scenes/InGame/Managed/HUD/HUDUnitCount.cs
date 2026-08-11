@@ -28,7 +28,8 @@ public class HUDUnitCount : MonoBehaviour
         "解放強化被追加以下一度復活秒間無獲得飛び道具ごとの大群襲来第波" +
         "体接近上昇回復欠片激昂形態生存時間残結界壊直可能" +
         "連続倍率最高後次まで＋与平均ダメージ戦闘俊敏巨躯／（）" +
-        "節目達成討伐報酬一斉収進化血月雷雨破城煉獄宝箱祝福優先血潮";
+        "節目達成討伐報酬一斉収進化血月雷雨破城煉獄宝箱祝福優先血潮" +
+        "通常上質希少品質";
 
     public TMP_Text unitText;
     public TMP_Text bulletText;
@@ -559,14 +560,27 @@ public class HUDUnitCount : MonoBehaviour
             $"<color={titleColor}><size=48>{title}</size></color>{queuedLevels}\n" +
             $"<size=22>{instruction}</size>\n\n" +
             rerollHint + "     " + banishHint + "\n\n" +
-            FormatUpgradeOption(1, choice.First, stats) + "\n\n" +
-            FormatUpgradeOption(2, choice.Second, stats) + "\n\n" +
-            FormatUpgradeOption(3, choice.Third, stats);
+            FormatUpgradeOption(
+                1,
+                choice.First,
+                choice.FirstQuality,
+                stats) + "\n\n" +
+            FormatUpgradeOption(
+                2,
+                choice.Second,
+                choice.SecondQuality,
+                stats) + "\n\n" +
+            FormatUpgradeOption(
+                3,
+                choice.Third,
+                choice.ThirdQuality,
+                stats);
     }
 
-    static string FormatUpgradeOption(
+    public static string FormatUpgradeOption(
         int index,
         PlayerSkillMasterData skill,
+        PlayerUpgradeQuality quality,
         PlayerSkillStats stats)
     {
         var currentLevel = GetSkillLevel(skill.Kind, stats);
@@ -582,11 +596,30 @@ public class HUDUnitCount : MonoBehaviour
             !string.IsNullOrEmpty(evolutionName)
                 ? $"\n<color=#FFD75A>武器進化：{evolutionName}</color>"
                 : string.Empty;
+        var qualityColor = GetUpgradeQualityColor(quality);
         return
-            $"<color=#FFD75A>[{index}]</color>  " +
+            $"<color={qualityColor}>[{index}]  " +
+            $"{GetUpgradeQualityName(quality)} " +
+            $"x{PlayerUpgradeQualityUtility.ResolveEffectMultiplier(quality):0.##}</color>  " +
             $"<size=34>{GetUpgradeName(skill.Kind)}</size>  " +
             $"<color=#B7B7C8>Lv{currentLevel} → Lv{nextLevel}</color>\n" +
             $"<size=22>{effect}{evolution}</size>";
+    }
+
+    public static string GetUpgradeQualityName(PlayerUpgradeQuality quality)
+    {
+        return quality == PlayerUpgradeQuality.Rare
+            ? "希少"
+            : quality == PlayerUpgradeQuality.Fine ? "上質" : "通常";
+    }
+
+    public static string GetUpgradeQualityColor(PlayerUpgradeQuality quality)
+    {
+        return quality == PlayerUpgradeQuality.Rare
+            ? "#C78CFF"
+            : quality == PlayerUpgradeQuality.Fine
+                ? "#69E59B"
+                : "#B7B7C8";
     }
 
     static int GetSkillLevel(PlayerSkillKind kind, PlayerSkillStats stats)

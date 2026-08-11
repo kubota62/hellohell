@@ -290,7 +290,8 @@ public partial struct HUDSystem : ISystem
         {
             hudBridge.ShowSkillApplied(
                 skillEvent.ValueRO.Kind,
-                skillEvent.ValueRO.NewSkillLevel);
+                skillEvent.ValueRO.NewSkillLevel,
+                skillEvent.ValueRO.Quality);
             ecb.DestroyEntity(eventEntity);
         }
 

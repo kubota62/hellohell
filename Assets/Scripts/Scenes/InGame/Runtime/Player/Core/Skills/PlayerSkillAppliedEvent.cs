@@ -10,6 +10,7 @@ public struct PlayerSkillAppliedEvent : IComponentData
     public Entity Player;
     public PlayerSkillMasterId SkillId;
     public PlayerSkillKind Kind;
+    public PlayerUpgradeQuality Quality;
     public int AddedLevel;
     public int NewSkillLevel;
 }
