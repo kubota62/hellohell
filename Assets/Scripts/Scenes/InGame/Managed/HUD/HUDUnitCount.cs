@@ -29,7 +29,7 @@ public class HUDUnitCount : MonoBehaviour
         "体接近上昇回復欠片激昂形態生存時間残結界壊直可能" +
         "連続倍率最高後次まで＋与平均ダメージ戦闘俊敏巨躯／（）" +
         "節目達成討伐報酬一斉収進化血月雷雨破城煉獄宝箱祝福優先血潮" +
-        "通常上質希少品質発動激化極致愛用新殺到増援";
+        "通常上質希少品質発動激化極致愛用新殺到増援引猶予";
 
     public TMP_Text unitText;
     public TMP_Text bulletText;
@@ -396,7 +396,9 @@ public class HUDUnitCount : MonoBehaviour
               $"攻撃間隔 -{Mathf.RoundToInt((1f - AttackRequestSystem.ResolveKillStreakCooldownMultiplier(killStreak)) * 100f)}%  " +
               $"経験値 +{Mathf.RoundToInt((ActorDeathSystem.ResolveKillStreakExperienceMultiplier(killStreak) - 1f) * 100f)}%  " +
               $"殺到 増援+{ActorSpawnSystem.ResolveKillStreakSpawnBatchBonus(killStreak)}  " +
-              $"出現+{ActorSpawnSystem.ResolveKillStreakSpawnRateBonusPercent(killStreak)}%   "
+              $"出現+{ActorSpawnSystem.ResolveKillStreakSpawnRateBonusPercent(killStreak)}%  " +
+              $"吸引+{ExperiencePickupSystem.ResolveBloodTideAttractionRadiusBonus(killStreak):0.00}m  " +
+              $"猶予 {ActorDeathSystem.ResolveKillStreakDurationSeconds(killStreak):0.0}秒   "
             : string.Empty;
         return
             $"連続撃破 {killStreak}   スコア x{Mathf.Clamp(scoreMultiplier, 1, 3)}   " +

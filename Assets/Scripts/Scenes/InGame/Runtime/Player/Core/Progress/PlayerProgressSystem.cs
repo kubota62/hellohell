@@ -262,11 +262,15 @@ public partial struct ExperiencePickupSystem : ISystem
                 0f,
                 SystemAPI.GetComponent<PlayerSkillStats>(playerEntity).PickupRadiusAdd)
             : 0f;
-        var attractionRadius = math.min(
-            MaximumAttractionRadius,
+        var killStreak = SystemAPI.TryGetSingleton<RunState>(
+            out var runState)
+                ? runState.KillStreak
+                : 0;
+        var attractionRadius = ResolveBloodTideAttractionRadius(
             BaseAttractionRadius +
             (playerLevel - 1) * AttractionRadiusPerLevel +
-            pickupRadiusAdd);
+            pickupRadiusAdd,
+            killStreak);
         var vacuumActive =
             SystemAPI.HasComponent<PickupVacuumPulse>(playerEntity) &&
             SystemAPI.GetComponent<PickupVacuumPulse>(playerEntity)
@@ -340,6 +344,23 @@ public partial struct ExperiencePickupSystem : ISystem
         return vacuumActive
             ? VacuumAttractionRadius
             : math.max(0f, naturalRadius);
+    }
+
+    public static float ResolveBloodTideAttractionRadiusBonus(
+        int killStreak)
+    {
+        return AttackRequestSystem.ResolveKillStreakMomentumTier(
+            killStreak) * 1.25f;
+    }
+
+    public static float ResolveBloodTideAttractionRadius(
+        float naturalRadius,
+        int killStreak)
+    {
+        var bonus = ResolveBloodTideAttractionRadiusBonus(killStreak);
+        return math.min(
+            MaximumAttractionRadius + bonus,
+            math.max(0f, naturalRadius) + bonus);
     }
 
     public static float ResolveAttractionSpeed(

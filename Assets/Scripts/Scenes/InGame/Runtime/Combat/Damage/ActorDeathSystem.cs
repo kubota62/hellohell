@@ -114,7 +114,10 @@ public partial struct ActorDeathSystem : ISystem
                     RegisterKillStreak(
                         ref runState,
                         1,
-                        KillStreakDurationSeconds);
+                        ResolveKillStreakDurationSeconds(
+                            AccumulateDefeatedEnemies(
+                                runState.KillStreak,
+                                1)));
                     var currentTier =
                         AttackRequestSystem.ResolveKillStreakMomentumTier(
                             runState.KillStreak);
@@ -299,6 +302,13 @@ public partial struct ActorDeathSystem : ISystem
     public static int ResolveKillStreakScoreMultiplier(int killStreak)
     {
         return 1 + math.clamp(math.max(0, killStreak) / 10, 0, 2);
+    }
+
+    public static float ResolveKillStreakDurationSeconds(int killStreak)
+    {
+        return KillStreakDurationSeconds +
+            AttackRequestSystem.ResolveKillStreakMomentumTier(killStreak) *
+            0.5f;
     }
 
     public static float ResolveKillStreakExperienceMultiplier(

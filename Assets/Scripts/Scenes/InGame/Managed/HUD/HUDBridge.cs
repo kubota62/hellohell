@@ -386,15 +386,25 @@ public class HUDBridge : MonoBehaviour
         var spawnRateBonus =
             ActorSpawnSystem.ResolveKillStreakSpawnRateBonusPercent(
                 safeKillStreak);
+        var attractionRadiusBonus =
+            ExperiencePickupSystem.ResolveBloodTideAttractionRadiusBonus(
+                safeKillStreak);
+        var streakDuration =
+            ActorDeathSystem.ResolveKillStreakDurationSeconds(
+                safeKillStreak);
         statusNotification =
             $"{title}  連続撃破 {safeKillStreak}  " +
             $"威力 +{damageBonus}%  攻撃間隔 -{cooldownBonus}%  " +
             $"経験値 +{experienceBonus}%  " +
-            $"増援 +{spawnBatchBonus}  出現 +{spawnRateBonus}%";
+            $"増援 +{spawnBatchBonus}  出現 +{spawnRateBonus}%  " +
+            $"吸引 +{attractionRadiusBonus:0.00}m  " +
+            $"猶予 {streakDuration:0.0}秒";
         notificationRemaining = safeTier >= 3 ? 4f : 3f;
         unitCount.ShowThreatAnnouncement(
             $"{title}\n威力 +{damageBonus}%  経験値 +{experienceBonus}%" +
-            $"\n増援 +{spawnBatchBonus}  出現 +{spawnRateBonus}%",
+            $"\n増援 +{spawnBatchBonus}  出現 +{spawnRateBonus}%" +
+            $"\n吸引 +{attractionRadiusBonus:0.00}m  " +
+            $"猶予 {streakDuration:0.0}秒",
             safeTier >= 3 ? 3.5f : 2.5f,
             safeTier >= 3
                 ? new Color(1f, 0.12f, 0.62f, 1f)
