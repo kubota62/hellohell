@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Text;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -1676,16 +1678,54 @@ public class HUDUnitCount : MonoBehaviour
         }
 
         japaneseFont.isMultiAtlasTexturesEnabled = true;
-        if (!japaneseFont.TryAddCharacters(
-                RequiredHudCharacters,
-                out var missingCharacters,
-                true) &&
-            !string.IsNullOrEmpty(missingCharacters))
+        var charactersToAdd = FindMissingCharacters(
+            japaneseFont,
+            RequiredHudCharacters);
+        if (string.IsNullOrEmpty(charactersToAdd))
+        {
+            return;
+        }
+
+        japaneseFont.TryAddCharacters(
+            charactersToAdd,
+            out _,
+            false);
+        var remainingMissingCharacters = FindMissingCharacters(
+            japaneseFont,
+            charactersToAdd);
+        if (!string.IsNullOrEmpty(remainingMissingCharacters))
         {
             Debug.LogWarning(
-                $"HUD用フォントに追加できない文字があります: {missingCharacters}",
+                $"HUD用フォントに追加できない文字があります: " +
+                remainingMissingCharacters,
                 this);
         }
+    }
+
+    public static string FindMissingCharacters(
+        TMP_FontAsset font,
+        string requiredCharacters)
+    {
+        if (font == null || string.IsNullOrEmpty(requiredCharacters))
+        {
+            return requiredCharacters ?? string.Empty;
+        }
+
+        var uniqueCharacters = new HashSet<char>();
+        var missingCharacters = new StringBuilder();
+        for (var i = 0; i < requiredCharacters.Length; i++)
+        {
+            var character = requiredCharacters[i];
+            if (!uniqueCharacters.Add(character) ||
+                font.characterLookupTable.ContainsKey(character))
+            {
+                continue;
+            }
+
+            missingCharacters.Append(character);
+        }
+
+        return missingCharacters.ToString();
     }
 
     static void ConfigureText(
