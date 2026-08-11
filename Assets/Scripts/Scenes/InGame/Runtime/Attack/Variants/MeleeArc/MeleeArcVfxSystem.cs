@@ -39,7 +39,8 @@ public partial class MeleeArcVfxSystem : SystemBase
         meshFilter.sharedMesh = CreateArcMesh(request.Radius, request.AngleDegrees);
 
         var meshRenderer = root.AddComponent<MeshRenderer>();
-        meshRenderer.sharedMaterial = GetMaterial(request.Color);
+        meshRenderer.sharedMaterial = GetMaterial();
+        SetRendererColor(meshRenderer, request.Color);
 
         Object.Destroy(root, math.max(0.01f, request.Duration));
     }
@@ -83,7 +84,7 @@ public partial class MeleeArcVfxSystem : SystemBase
         return mesh;
     }
 
-    private static Material GetMaterial(float4 color)
+    private static Material GetMaterial()
     {
         if (sharedMaterial == null)
         {
@@ -97,7 +98,6 @@ public partial class MeleeArcVfxSystem : SystemBase
             ConfigureTransparentMaterial(sharedMaterial);
         }
 
-        SetMaterialColor(sharedMaterial, color);
         return sharedMaterial;
     }
 
@@ -113,17 +113,22 @@ public partial class MeleeArcVfxSystem : SystemBase
         material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
     }
 
-    private static void SetMaterialColor(Material material, float4 color)
+    private static void SetRendererColor(
+        MeshRenderer renderer,
+        float4 color)
     {
+        var material = renderer.sharedMaterial;
         var unityColor = new Color(color.x, color.y, color.z, color.w);
+        var properties = new MaterialPropertyBlock();
         if (material.HasProperty("_BaseColor"))
         {
-            material.SetColor("_BaseColor", unityColor);
+            properties.SetColor("_BaseColor", unityColor);
         }
         else if (material.HasProperty("_Color"))
         {
-            material.SetColor("_Color", unityColor);
+            properties.SetColor("_Color", unityColor);
         }
+        renderer.SetPropertyBlock(properties);
     }
 
     private static Vector3 ToVector3(float3 value)

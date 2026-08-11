@@ -15,6 +15,7 @@ public struct ProjectileAttackRequest : IComponentData
     public float Speed;
     public int Damage;
     public byte IsCritical;
+    public byte IsEvolved;
     public float HitRadius;
     public float Lifetime;
     public float Scale;

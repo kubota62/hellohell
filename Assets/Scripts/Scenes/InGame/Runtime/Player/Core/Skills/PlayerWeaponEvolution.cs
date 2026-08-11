@@ -23,6 +23,8 @@ public static class PlayerWeaponEvolutionUtility
             return;
         }
 
+        definition.IsEvolved = 1;
+
         switch (definition.Id)
         {
             case AttackMasterId.BasicMeleeArc:
@@ -92,6 +94,43 @@ public static class PlayerWeaponEvolutionUtility
             default:
                 return string.Empty;
         }
+    }
+
+    public static float4 ResolveVisualColor(
+        AttackMasterId attackMasterId,
+        bool isCritical,
+        float alpha = 1f)
+    {
+        float4 color;
+        switch (attackMasterId)
+        {
+            case AttackMasterId.BasicMeleeArc:
+                color = new float4(0.96f, 0.025f, 0.09f, 1f);
+                break;
+            case AttackMasterId.RapidBolt:
+                color = new float4(0.04f, 0.72f, 1f, 1f);
+                break;
+            case AttackMasterId.PiercingLance:
+                color = new float4(1f, 0.58f, 0.05f, 1f);
+                break;
+            case AttackMasterId.ExplosiveOrb:
+                color = new float4(1f, 0.12f, 0.025f, 1f);
+                break;
+            default:
+                color = new float4(1f, 1f, 1f, 1f);
+                break;
+        }
+
+        if (isCritical)
+        {
+            color = math.lerp(
+                color,
+                new float4(1f, 1f, 1f, 1f),
+                0.35f);
+        }
+
+        color.w = math.saturate(alpha);
+        return color;
     }
 
     static void ApplyMeleeArc(ref AttackMasterData definition)

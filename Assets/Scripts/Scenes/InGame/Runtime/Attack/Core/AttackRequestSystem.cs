@@ -591,6 +591,7 @@ public partial struct AttackRequestSystem : ISystem
             Speed = definition.ProjectileSpeed,
             Damage = definition.Damage,
             IsCritical = definition.IsCritical,
+            IsEvolved = definition.IsEvolved,
             HitRadius = definition.HitRadius,
             Lifetime = definition.Lifetime,
             Scale = definition.Scale,
@@ -642,6 +643,7 @@ public partial struct AttackRequestSystem : ISystem
             AngleDegrees = definition.ArcAngleDegrees,
             Damage = definition.Damage,
             IsCritical = definition.IsCritical,
+            IsEvolved = definition.IsEvolved,
             VisualDuration = definition.VisualDuration,
         });
     }

@@ -16,6 +16,7 @@ public struct MeleeArcAttackRequest : IComponentData
     public float AngleDegrees;
     public int Damage;
     public byte IsCritical;
+    public byte IsEvolved;
     public float VisualDuration;
 }
 

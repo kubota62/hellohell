@@ -101,10 +101,25 @@ public partial struct ProjectileSpawnSystem : ISystem
         transform.Scale = value.Scale;
         entityManager.SetComponentData(projectileEntity, transform);
 
-        if (entityManager.HasComponent<URPMaterialPropertyBaseColor>(value.Owner))
+        var ownerColor = new float4(1f, 1f, 1f, 1f);
+        if (entityManager.HasComponent<URPMaterialPropertyBaseColor>(
+                value.Owner))
         {
-            var color = entityManager.GetComponentData<URPMaterialPropertyBaseColor>(value.Owner);
-            entityManager.SetComponentData(projectileEntity, color);
+            ownerColor = entityManager
+                .GetComponentData<URPMaterialPropertyBaseColor>(value.Owner)
+                .Value;
+        }
+        if (entityManager.HasComponent<URPMaterialPropertyBaseColor>(
+                projectileEntity))
+        {
+            entityManager.SetComponentData(
+                projectileEntity,
+                new URPMaterialPropertyBaseColor
+                {
+                    Value = ResolveProjectileVisualColor(
+                        value,
+                        ownerColor),
+                });
         }
 
         entityManager.SetComponentData(projectileEntity, new ProjectileMotion
@@ -139,6 +154,17 @@ public partial struct ProjectileSpawnSystem : ISystem
                 SourcePrefab = projectilePrefab,
             });
         }
+    }
+
+    public static float4 ResolveProjectileVisualColor(
+        ProjectileAttackRequest request,
+        float4 ownerColor)
+    {
+        return request.IsEvolved != 0
+            ? PlayerWeaponEvolutionUtility.ResolveVisualColor(
+                request.AttackMasterId,
+                request.IsCritical != 0)
+            : ownerColor;
     }
 
     private static void ApplyProjectileModifiers(
