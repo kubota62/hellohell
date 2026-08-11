@@ -13,6 +13,7 @@ public static class EnemyMasterCatalog
     public const int SkeletonDrifterEnemy = 5;
     public const int RatRunnerEnemy = 6;
     public const int GraveSlimeEnemy = 7;
+    public const int BoneArcherEnemy = 8;
 
     public static readonly int[] AllTypeIds =
     {
@@ -23,6 +24,7 @@ public static class EnemyMasterCatalog
         SkeletonDrifterEnemy,
         RatRunnerEnemy,
         GraveSlimeEnemy,
+        BoneArcherEnemy,
     };
 
     public static int PickSpawnType(int spawnIndex)
@@ -80,6 +82,23 @@ public static class EnemyMasterCatalog
     {
         switch (typeId)
         {
+            case BoneArcherEnemy:
+                return CreateContactEnemy(
+                    typeId,
+                    EnemyMovementKind.Kite,
+                    maxHealth: 55,
+                    hitRadius: 1.15f,
+                    bodyScale: 0.72f,
+                    moveSpeed: 1.2f,
+                    attackRange: 13f,
+                    color: new float4(0.38f, 0.3f, 0.72f, 1f),
+                    experience: 2,
+                    score: 22,
+                    spawnWeight: 3,
+                    minPlayerLevel: 4,
+                    primaryAttack: AttackMasterId.BasicProjectile,
+                    minAttackRange: 5f);
+
             case MossSlimeEnemy:
                 return CreateContactEnemy(
                     typeId,
@@ -215,7 +234,9 @@ public static class EnemyMasterCatalog
         int experience,
         int score,
         int spawnWeight,
-        int minPlayerLevel)
+        int minPlayerLevel,
+        AttackMasterId primaryAttack = AttackMasterId.BasicAura,
+        float minAttackRange = 0f)
     {
         return new EnemyMasterData
         {
@@ -233,8 +254,8 @@ public static class EnemyMasterCatalog
             },
             Combat = new EnemyCombatMaster
             {
-                PrimaryAttack = AttackMasterId.BasicAura,
-                MinAttackRange = 0f,
+                PrimaryAttack = primaryAttack,
+                MinAttackRange = math.max(0f, minAttackRange),
                 MaxAttackRange = math.max(0f, attackRange),
             },
             Visual = new EnemyVisualMaster

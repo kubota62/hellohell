@@ -60,6 +60,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: cc526970e64b44968bfd2981c18d700d, type: 2}
   - {fileID: 11400000, guid: dd8d88ac2e6d46b1b43f62b67f82d21b, type: 2}
   - {fileID: 11400000, guid: ee3fd0ad70ea470c9a73851f1b092802, type: 2}
+  - {fileID: 11400000, guid: b8d97b65e2fb4bd388a905fa1f7fdc31, type: 2}
   SpawnMasters:
   - {fileID: 11400000, guid: a552fdd75d22c6341b4e58c9d76bc9c5, type: 2}
   PlayerMasters:

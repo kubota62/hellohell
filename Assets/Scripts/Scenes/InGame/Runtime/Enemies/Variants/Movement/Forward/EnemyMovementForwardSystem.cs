@@ -62,6 +62,7 @@ public partial struct EnemyMovementJob : IJobEntity
         in ActorBody actorBody,
         in EnemyMovementPattern pattern,
         in EnemyMoveSpeed moveSpeed,
+        in EnemyAttackRange attackRange,
         ref MoveIntent moveIntent)
     {
         var forward = PlayerPosition - transform.Position;
@@ -74,9 +75,29 @@ public partial struct EnemyMovementJob : IJobEntity
             return;
         }
 
-        forward = math.normalize(forward);
+        var distance = math.length(forward);
+        forward /= distance;
         var tangent = new float3(-forward.z, 0f, forward.x);
         var lateralOffset = GetLateralOffset(entity, pattern.Kind);
+
+        if (pattern.Kind == EnemyMovementKind.Kite)
+        {
+            var radialIntent = EnemyKiteMovementUtility.ResolveRadialIntent(
+                distance,
+                attackRange.Min,
+                attackRange.Max);
+            moveIntent.Direction =
+                EnemyKiteMovementUtility.ResolveDirection(
+                    forward,
+                    tangent,
+                    lateralOffset,
+                    radialIntent);
+            moveIntent.Magnitude = moveSpeed.Value *
+                EnemyKiteMovementUtility.ResolveSpeedMultiplier(
+                    radialIntent);
+            RotateTurret(actorBody.Turret);
+            return;
+        }
 
         moveIntent.Direction = math.normalizesafe(
             forward + tangent * lateralOffset,
@@ -101,6 +122,8 @@ public partial struct EnemyMovementJob : IJobEntity
                 return ((entity.Index % 5) - 2) * 0.025f;
 
             case EnemyMovementKind.Kite:
+                return (entity.Index & 1) == 0 ? 1f : -1f;
+
             case EnemyMovementKind.Forward:
             default:
                 return ((entity.Index % 7) - 3) * 0.04f;
@@ -119,5 +142,63 @@ public partial struct EnemyMovementJob : IJobEntity
             quaternion.RotateY(DeltaTime * math.PI),
             turretTransform.Rotation);
         TransformLookup[turretEntity] = turretTransform;
+    }
+}
+
+public static class EnemyKiteMovementUtility
+{
+    public static int ResolveRadialIntent(
+        float distance,
+        float minimumAttackRange,
+        float maximumAttackRange)
+    {
+        var safeMinimum = math.max(0f, minimumAttackRange);
+        var safeMaximum = math.max(safeMinimum + 1f, maximumAttackRange);
+        var retreatDistance = safeMinimum + 0.75f;
+        var approachDistance = math.max(
+            retreatDistance + 1f,
+            safeMaximum * 0.82f);
+
+        if (distance < retreatDistance)
+        {
+            return -1;
+        }
+
+        return distance > approachDistance ? 1 : 0;
+    }
+
+    public static float3 ResolveDirection(
+        float3 forward,
+        float3 tangent,
+        float orbitSide,
+        int radialIntent)
+    {
+        var safeForward = math.normalizesafe(
+            forward,
+            new float3(0f, 0f, 1f));
+        var safeTangent = math.normalizesafe(
+            tangent,
+            new float3(-safeForward.z, 0f, safeForward.x));
+        var side = orbitSide >= 0f ? 1f : -1f;
+        if (radialIntent < 0)
+        {
+            return math.normalizesafe(
+                -safeForward + safeTangent * side * 0.42f,
+                -safeForward);
+        }
+
+        if (radialIntent > 0)
+        {
+            return math.normalizesafe(
+                safeForward + safeTangent * side * 0.18f,
+                safeForward);
+        }
+
+        return safeTangent * side;
+    }
+
+    public static float ResolveSpeedMultiplier(int radialIntent)
+    {
+        return radialIntent == 0 ? 0.78f : 1f;
     }
 }
