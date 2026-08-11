@@ -12,4 +12,5 @@ public struct DamageDigit : IComponentData
     public float Lifetime;
     public byte IsCritical;
     public byte IsPlayerDamage;
+    public byte IsBarrierDamage;
 }

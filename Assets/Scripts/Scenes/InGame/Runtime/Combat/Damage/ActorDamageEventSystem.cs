@@ -194,6 +194,9 @@ public partial struct ActorDamageEventSystem : ISystem
                     Target = actorEntity,
                     IsCritical = damage.IsCritical,
                     IsPlayerDamage = isPlayerDamage ? (byte)1 : (byte)0,
+                    IsBarrierDamage = absorbedDamage > 0
+                        ? (byte)1
+                        : (byte)0,
                 });
             }
 
@@ -404,6 +407,7 @@ public struct VfxRequest : IComponentData
     public Entity Target;
     public byte IsCritical;
     public byte IsPlayerDamage;
+    public byte IsBarrierDamage;
 }
 
 /// <summary>
@@ -460,7 +464,8 @@ public partial struct VfxRequestSystem : ISystem
                     request.ValueRO.IntValue,
                     request.ValueRO.Position,
                     request.ValueRO.IsCritical != 0,
-                    request.ValueRO.IsPlayerDamage != 0);
+                    request.ValueRO.IsPlayerDamage != 0,
+                    request.ValueRO.IsBarrierDamage != 0);
                 CollectHitFlash(
                     state.EntityManager,
                     colorLookup,
@@ -525,7 +530,8 @@ public partial struct VfxRequestSystem : ISystem
             {
                 queuedFlash.FlashColor = ResolveHitFlashColor(
                     request.IsCritical != 0,
-                    request.IsPlayerDamage != 0);
+                    request.IsPlayerDamage != 0,
+                    request.IsBarrierDamage != 0);
             }
 
             queuedHitFlashes[request.Target] = queuedFlash;
@@ -540,7 +546,8 @@ public partial struct VfxRequestSystem : ISystem
             OriginalColor = originalColor,
             FlashColor = ResolveHitFlashColor(
                 request.IsCritical != 0,
-                request.IsPlayerDamage != 0),
+                request.IsPlayerDamage != 0,
+                request.IsBarrierDamage != 0),
             RemainingSeconds = duration,
             DurationSeconds = duration,
         };
@@ -558,9 +565,27 @@ public partial struct VfxRequestSystem : ISystem
         bool isCritical,
         bool isPlayerDamage)
     {
+        return ResolveHitFlashColor(
+            isCritical,
+            isPlayerDamage,
+            false);
+    }
+
+    public static float4 ResolveHitFlashColor(
+        bool isCritical,
+        bool isPlayerDamage,
+        bool isBarrierDamage)
+    {
         if (isPlayerDamage)
         {
             return new float4(1f, 0.16f, 0.12f, 1f);
+        }
+
+        if (isBarrierDamage)
+        {
+            return isCritical
+                ? new float4(0.25f, 1f, 1f, 1f)
+                : new float4(0.08f, 0.72f, 1f, 1f);
         }
 
         return isCritical

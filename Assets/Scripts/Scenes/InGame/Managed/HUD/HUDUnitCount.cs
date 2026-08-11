@@ -179,6 +179,8 @@ public class HUDUnitCount : MonoBehaviour
         int wardedEliteNum,
         int eliteCurrentHealth,
         int eliteMaxHealth,
+        float eliteBarrierCurrent,
+        float eliteBarrierMaximum,
         int championNum,
         int championCurrentHealth,
         int championMaxHealth,
@@ -223,6 +225,8 @@ public class HUDUnitCount : MonoBehaviour
             eliteNum,
             eliteCurrentHealth,
             eliteMaxHealth,
+            eliteBarrierCurrent,
+            eliteBarrierMaximum,
             championNum,
             championCurrentHealth,
             championMaxHealth,
@@ -1608,6 +1612,8 @@ public class HUDUnitCount : MonoBehaviour
         int eliteCount,
         int eliteCurrentHealth,
         int eliteMaximumHealth,
+        float eliteBarrierCurrent,
+        float eliteBarrierMaximum,
         int championCount,
         int currentHealth,
         int maximumHealth,
@@ -1629,6 +1635,10 @@ public class HUDUnitCount : MonoBehaviour
         var hasElite =
             eliteCount > 0 &&
             eliteMaximumHealth > 0;
+        var hasEliteBarrier =
+            hasElite && eliteBarrierMaximum > 0f;
+        var hasActiveEliteBarrier =
+            hasEliteBarrier && eliteBarrierCurrent > 0f;
         var isVisible =
             hasFinalBoss ||
             hasChampion ||
@@ -1640,18 +1650,18 @@ public class HUDUnitCount : MonoBehaviour
         }
 
         var displayedCurrentHealth = hasFinalBoss
-            ? finalBossCurrentHealth
+            ? (float)finalBossCurrentHealth
             : hasChampion
                 ? currentHealth
-                : eliteCurrentHealth;
+                : eliteCurrentHealth + eliteBarrierCurrent;
         var displayedMaximumHealth = hasFinalBoss
-            ? finalBossMaximumHealth
+            ? (float)finalBossMaximumHealth
             : hasChampion
                 ? maximumHealth
-                : eliteMaximumHealth;
-        var healthRatio = Mathf.Clamp01(
-            (float)Mathf.Max(0, displayedCurrentHealth) /
-            Mathf.Max(1, displayedMaximumHealth));
+                : eliteMaximumHealth + eliteBarrierMaximum;
+        var healthRatio = CalculateThreatHealthRatio(
+            displayedCurrentHealth,
+            displayedMaximumHealth);
         championHealthFill.sizeDelta = new Vector2(
             (ChampionBarWidth - 6f) * healthRatio,
             -6f);
@@ -1661,6 +1671,8 @@ public class HUDUnitCount : MonoBehaviour
                 ? new Color(0.92f, 0.08f, 0.12f, 0.98f)
                 : hasChampion
                     ? new Color(0.72f, 0.08f, 1f, 0.95f)
+                    : hasActiveEliteBarrier
+                        ? new Color(0.08f, 0.62f, 1f, 0.98f)
                     : new Color(1f, 0.36f, 0.06f, 0.95f);
         }
 
@@ -1668,6 +1680,8 @@ public class HUDUnitCount : MonoBehaviour
             eliteCount,
             eliteCurrentHealth,
             eliteMaximumHealth,
+            eliteBarrierCurrent,
+            eliteBarrierMaximum,
             championCount,
             currentHealth,
             maximumHealth,
@@ -1680,6 +1694,42 @@ public class HUDUnitCount : MonoBehaviour
         int eliteCount,
         int eliteCurrentHealth,
         int eliteMaximumHealth,
+        int championCount,
+        int championCurrentHealth,
+        int championMaximumHealth,
+        int finalBossCount,
+        int finalBossCurrentHealth,
+        int finalBossMaximumHealth)
+    {
+        return FormatThreatHealthLabel(
+            eliteCount,
+            eliteCurrentHealth,
+            eliteMaximumHealth,
+            0f,
+            0f,
+            championCount,
+            championCurrentHealth,
+            championMaximumHealth,
+            finalBossCount,
+            finalBossCurrentHealth,
+            finalBossMaximumHealth);
+    }
+
+    public static float CalculateThreatHealthRatio(
+        float currentHealth,
+        float maximumHealth)
+    {
+        return Mathf.Clamp01(
+            Mathf.Max(0f, currentHealth) /
+            Mathf.Max(1f, maximumHealth));
+    }
+
+    public static string FormatThreatHealthLabel(
+        int eliteCount,
+        int eliteCurrentHealth,
+        int eliteMaximumHealth,
+        float eliteBarrierCurrent,
+        float eliteBarrierMaximum,
         int championCount,
         int championCurrentHealth,
         int championMaximumHealth,
@@ -1702,6 +1752,18 @@ public class HUDUnitCount : MonoBehaviour
                     $"{Mathf.Max(1, championMaximumHealth)}"
                 : $"チャンピオン   {Mathf.Max(0, championCurrentHealth)}/" +
                     $"{Mathf.Max(1, championMaximumHealth)}";
+        }
+
+        if (eliteCount > 0 && eliteBarrierMaximum > 0f)
+        {
+            var eliteName = eliteCount > 1
+                ? $"エリート x{eliteCount}"
+                : "結界エリート";
+            return
+                $"{eliteName}   HP {Mathf.Max(0, eliteCurrentHealth)}/" +
+                $"{Mathf.Max(1, eliteMaximumHealth)}   結界 " +
+                $"{Mathf.Max(0, Mathf.CeilToInt(eliteBarrierCurrent))}/" +
+                $"{Mathf.Max(1, Mathf.CeilToInt(eliteBarrierMaximum))}";
         }
 
         return eliteCount > 1

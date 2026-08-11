@@ -76,6 +76,10 @@ public partial struct DamageDigitAnimationSystem : ISystem
             {
                 uniformScale *= 1.2f;
             }
+            else if (digit.ValueRO.IsBarrierDamage != 0)
+            {
+                uniformScale *= 1.15f;
+            }
 
             var position = startPos + localOffset;
             position.y = y;

@@ -138,6 +138,8 @@ public partial struct HUDSystem : ISystem
 
         var eliteCurrentHealth = 0;
         var eliteMaxHealth = 0;
+        var eliteBarrierCurrent = 0f;
+        var eliteBarrierMaximum = 0f;
         var nearestElitePosition = float3.zero;
         var nearestEliteDistanceSq = float.MaxValue;
         var hasElitePosition = false;
@@ -147,6 +149,8 @@ public partial struct HUDSystem : ISystem
         var wardedEliteCount = 0;
         var eliteAffixLookup =
             SystemAPI.GetComponentLookup<EliteAffix>(true);
+        var eliteBarrierLookup =
+            SystemAPI.GetComponentLookup<EliteBarrier>(true);
         foreach (var (eliteHealth, eliteTransform, eliteEntity) in
                  SystemAPI.Query<RefRO<Health>, RefRO<LocalTransform>>()
                      .WithAll<EliteEnemy, GameplayActive>()
@@ -155,6 +159,12 @@ public partial struct HUDSystem : ISystem
         {
             eliteCurrentHealth += eliteHealth.ValueRO.Current;
             eliteMaxHealth += eliteHealth.ValueRO.Max;
+            if (eliteBarrierLookup.HasComponent(eliteEntity))
+            {
+                var barrier = eliteBarrierLookup[eliteEntity];
+                eliteBarrierCurrent += math.max(0f, barrier.Current);
+                eliteBarrierMaximum += math.max(0f, barrier.Maximum);
+            }
             if (eliteAffixLookup.HasComponent(eliteEntity))
             {
                 var affix = eliteAffixLookup[eliteEntity].Kind;
@@ -223,6 +233,8 @@ public partial struct HUDSystem : ISystem
         hudBridge.SetChampionState(
             eliteCurrentHealth,
             eliteMaxHealth,
+            eliteBarrierCurrent,
+            eliteBarrierMaximum,
             championCountQuery.CalculateEntityCount(),
             championCurrentHealth,
             championMaxHealth,

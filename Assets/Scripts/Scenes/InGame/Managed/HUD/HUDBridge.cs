@@ -17,6 +17,8 @@ public class HUDBridge : MonoBehaviour
     int wardedEliteCount;
     int eliteCurrentHealth;
     int eliteMaxHealth;
+    float eliteBarrierCurrent;
+    float eliteBarrierMaximum;
     int championCount;
     int championCurrentHealth;
     int championMaxHealth;
@@ -163,6 +165,31 @@ public class HUDBridge : MonoBehaviour
         int nextFinalBossCurrentHealth,
         int nextFinalBossMaxHealth)
     {
+        SetChampionState(
+            nextEliteCurrentHealth,
+            nextEliteMaxHealth,
+            0f,
+            0f,
+            count,
+            currentHealth,
+            maximumHealth,
+            nextFinalBossCount,
+            nextFinalBossCurrentHealth,
+            nextFinalBossMaxHealth);
+    }
+
+    public void SetChampionState(
+        int nextEliteCurrentHealth,
+        int nextEliteMaxHealth,
+        float nextEliteBarrierCurrent,
+        float nextEliteBarrierMaximum,
+        int count,
+        int currentHealth,
+        int maximumHealth,
+        int nextFinalBossCount,
+        int nextFinalBossCurrentHealth,
+        int nextFinalBossMaxHealth)
+    {
         if (count > championCount)
         {
             statusNotification = "チャンピオン接近！";
@@ -171,6 +198,8 @@ public class HUDBridge : MonoBehaviour
 
         eliteCurrentHealth = Mathf.Max(0, nextEliteCurrentHealth);
         eliteMaxHealth = Mathf.Max(0, nextEliteMaxHealth);
+        eliteBarrierCurrent = Mathf.Max(0f, nextEliteBarrierCurrent);
+        eliteBarrierMaximum = Mathf.Max(0f, nextEliteBarrierMaximum);
         championCount = count;
         championCurrentHealth = currentHealth;
         championMaxHealth = maximumHealth;
@@ -464,6 +493,8 @@ public class HUDBridge : MonoBehaviour
             wardedEliteCount,
             eliteCurrentHealth,
             eliteMaxHealth,
+            eliteBarrierCurrent,
+            eliteBarrierMaximum,
             championCount,
             championCurrentHealth,
             championMaxHealth,
