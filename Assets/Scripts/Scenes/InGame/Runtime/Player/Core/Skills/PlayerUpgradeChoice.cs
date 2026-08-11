@@ -15,6 +15,7 @@ public struct PlayerUpgradeChoice : IComponentData
     public int RerollsRemaining;
     public int RerollGeneration;
     public int BanishesRemaining;
+    public PlayerUpgradeSource Source;
 }
 
 /// <summary>

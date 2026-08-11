@@ -239,6 +239,8 @@ public partial struct ExperiencePickupSystem : ISystem
             vacuumActive);
         var attractionRadiusSq = attractionRadius * attractionRadius;
         var deltaTime = SystemAPI.Time.DeltaTime;
+        var championPickupLookup =
+            SystemAPI.GetComponentLookup<ChampionRewardPickup>(true);
         var ecb = new EntityCommandBuffer(Allocator.Temp);
 
         foreach (var (transform, pickup, entity) in
@@ -261,6 +263,20 @@ public partial struct ExperiencePickupSystem : ISystem
                     Experience = pickup.ValueRO.Experience,
                     Score = pickup.ValueRO.Score,
                 });
+                if (championPickupLookup.HasComponent(entity))
+                {
+                    var treasureEvent = ecb.CreateEntity();
+                    var currentLevel = SystemAPI.HasComponent<PlayerProgress>(
+                        playerEntity)
+                            ? SystemAPI.GetComponent<PlayerProgress>(
+                                playerEntity).Level
+                            : 1;
+                    ecb.AddComponent(
+                        treasureEvent,
+                        CreateChampionTreasureUpgradeEvent(
+                            playerEntity,
+                            currentLevel));
+                }
                 ecb.DestroyEntity(entity);
                 continue;
             }
@@ -303,6 +319,19 @@ public partial struct ExperiencePickupSystem : ISystem
                 MinimumMoveSpeed,
                 MaximumMoveSpeed,
                 safeAttraction);
+    }
+
+    public static PlayerLevelUpEvent CreateChampionTreasureUpgradeEvent(
+        Entity playerEntity,
+        int currentLevel)
+    {
+        return new PlayerLevelUpEvent
+        {
+            Player = playerEntity,
+            NewLevel = math.max(1, currentLevel),
+            LevelsGained = 1,
+            Source = PlayerUpgradeSource.ChampionTreasure,
+        };
     }
 }
 
@@ -381,6 +410,7 @@ public partial struct PlayerProgressSystem : ISystem
                     Player = playerEntity,
                     NewLevel = value.Level,
                     LevelsGained = levelsGained,
+                    Source = PlayerUpgradeSource.LevelUp,
                 });
             }
         }

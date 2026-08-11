@@ -71,7 +71,8 @@ public partial struct PlayerAutoSkillSystem : ISystem
                     levelUpEvent.ValueRO.LevelsGained,
                     hasSkillMasters,
                     skillMasters,
-                    levelUpEvent.ValueRO.Player);
+                    levelUpEvent.ValueRO.Player,
+                    levelUpEvent.ValueRO.Source);
                 var choiceEntity = ecb.CreateEntity();
                 ecb.AddComponent(choiceEntity, choice);
                 SetUpgradePause(true);
@@ -118,6 +119,7 @@ public partial struct PlayerAutoSkillSystem : ISystem
                         hasSkillMasters,
                         skillMasters,
                         choice.Player,
+                        choice.Source,
                         choice.RerollGeneration + 1);
                     nextChoice.RerollsRemaining =
                         choice.RerollsRemaining;
@@ -163,6 +165,7 @@ public partial struct PlayerAutoSkillSystem : ISystem
                     hasSkillMasters,
                     skillMasters,
                     choice.Player,
+                    choice.Source,
                     choice.RerollGeneration + 1);
                 rerolledChoice.RerollsRemaining =
                     choice.RerollsRemaining - 1;
@@ -225,7 +228,8 @@ public partial struct PlayerAutoSkillSystem : ISystem
                             choice.PendingLevels,
                             hasSkillMasters,
                             skillMasters,
-                            choice.Player));
+                            choice.Player,
+                            choice.Source));
                 }
                 else
                 {
@@ -253,6 +257,7 @@ public partial struct PlayerAutoSkillSystem : ISystem
         bool hasSkillMasters,
         DynamicBuffer<PlayerSkillMasterElement> skillMasters,
         Entity playerEntity,
+        PlayerUpgradeSource source = PlayerUpgradeSource.LevelUp,
         int rerollGeneration = 0)
     {
         var generationOffset = math.max(0, rerollGeneration) * 101;
@@ -262,21 +267,24 @@ public partial struct PlayerAutoSkillSystem : ISystem
             default,
             default,
             hasSkillMasters,
-            skillMasters);
+            skillMasters,
+            source);
         var second = PickDistinctSkill(
             stats,
             newLevel + pendingLevels * 23 + generationOffset,
             first.Id,
             default,
             hasSkillMasters,
-            skillMasters);
+            skillMasters,
+            source);
         var third = PickDistinctSkill(
             stats,
             newLevel + pendingLevels * 37 + generationOffset,
             first.Id,
             second.Id,
             hasSkillMasters,
-            skillMasters);
+            skillMasters,
+            source);
 
         return new PlayerUpgradeChoice
         {
@@ -289,6 +297,7 @@ public partial struct PlayerAutoSkillSystem : ISystem
             RerollsRemaining = GetUpgradeRerollCount(stats),
             RerollGeneration = math.max(0, rerollGeneration),
             BanishesRemaining = GetUpgradeBanishCount(stats),
+            Source = source,
         };
     }
 
@@ -298,8 +307,22 @@ public partial struct PlayerAutoSkillSystem : ISystem
         PlayerSkillMasterId excludedFirst,
         PlayerSkillMasterId excludedSecond,
         bool hasSkillMasters,
-        DynamicBuffer<PlayerSkillMasterElement> skillMasters)
+        DynamicBuffer<PlayerSkillMasterElement> skillMasters,
+        PlayerUpgradeSource source)
     {
+        if (source == PlayerUpgradeSource.ChampionTreasure)
+        {
+            var treasureSkill = PickTreasureWeapon(
+                stats,
+                seed,
+                excludedFirst,
+                excludedSecond);
+            if (treasureSkill.Id != default)
+            {
+                return treasureSkill;
+            }
+        }
+
         for (var attempt = 0; attempt < 24; attempt++)
         {
             var skill = hasSkillMasters
@@ -319,6 +342,46 @@ public partial struct PlayerAutoSkillSystem : ISystem
         return hasSkillMasters
             ? PlayerSkillMasterCatalog.PickAutoSkill(skillMasters, seed, stats)
             : PlayerSkillMasterCatalog.GetByFallbackOrder(seed, stats);
+    }
+
+    static PlayerSkillMasterData PickTreasureWeapon(
+        PlayerSkillStats stats,
+        int seed,
+        PlayerSkillMasterId excludedFirst,
+        PlayerSkillMasterId excludedSecond)
+    {
+        var startIndex = math.abs(seed) % 4;
+        for (var offset = 0; offset < 4; offset++)
+        {
+            var skill = PlayerSkillMasterCatalog.Get(
+                GetTreasureWeaponId((startIndex + offset) % 4));
+            if (skill.Id == excludedFirst ||
+                skill.Id == excludedSecond ||
+                stats.IsSkillBanished(skill.Id) ||
+                GetCurrentSkillLevel(stats, skill.Kind) >= skill.MaxLevel)
+            {
+                continue;
+            }
+
+            return skill;
+        }
+
+        return default;
+    }
+
+    static PlayerSkillMasterId GetTreasureWeaponId(int index)
+    {
+        switch (index)
+        {
+            case 1:
+                return PlayerSkillMasterId.RapidBoltMastery;
+            case 2:
+                return PlayerSkillMasterId.PiercingLanceMastery;
+            case 3:
+                return PlayerSkillMasterId.ExplosiveOrbMastery;
+            default:
+                return PlayerSkillMasterId.MeleeArcMastery;
+        }
     }
 
     static PlayerSkillMasterData ResolveSelectedSkill(

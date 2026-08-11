@@ -26,7 +26,7 @@ public class HUDUnitCount : MonoBehaviour
         "解放強化被追加以下一度復活秒間無獲得飛び道具ごとの大群襲来第波" +
         "体接近上昇回復欠片激昂形態生存時間残" +
         "連続倍率最高後次まで＋与平均ダメージ戦闘俊敏巨躯／（）" +
-        "節目達成討伐報酬一斉収進化血月雷雨破城煉獄";
+        "節目達成討伐報酬一斉収進化血月雷雨破城煉獄宝箱祝福優先";
 
     public TMP_Text unitText;
     public TMP_Text bulletText;
@@ -468,9 +468,16 @@ public class HUDUnitCount : MonoBehaviour
         var banishHint = choice.BanishesRemaining > 0
             ? $"<color=#FF9E7A>[Q/W/E] 候補を除外 1/2/3</color>  <size=20>残り{choice.BanishesRemaining}回</size>"
             : "<color=#777788>[Q/W/E] 除外 使用済み</color>";
+        var isTreasure =
+            choice.Source == PlayerUpgradeSource.ChampionTreasure;
+        var title = isTreasure ? "宝箱の祝福！" : "レベルアップ！";
+        var titleColor = isTreasure ? "#FFB13B" : "#FFD75A";
+        var instruction = isTreasure
+            ? "武器強化を優先 — 1、2、3キー"
+            : "強化を選択 — 1、2、3キー";
         upgradeChoiceLabel.text =
-            $"<color=#FFD75A><size=48>レベルアップ！</size></color>{queuedLevels}\n" +
-            "<size=22>強化を選択 — 1、2、3キー</size>\n\n" +
+            $"<color={titleColor}><size=48>{title}</size></color>{queuedLevels}\n" +
+            $"<size=22>{instruction}</size>\n\n" +
             rerollHint + "     " + banishHint + "\n\n" +
             FormatUpgradeOption(1, choice.First, stats) + "\n\n" +
             FormatUpgradeOption(2, choice.Second, stats) + "\n\n" +
