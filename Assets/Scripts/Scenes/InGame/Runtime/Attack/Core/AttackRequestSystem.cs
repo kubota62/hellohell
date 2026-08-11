@@ -221,11 +221,10 @@ public partial struct AttackRequestSystem : ISystem
                     entityManager,
                     actorEntity,
                     ref chargedDefinition);
-                if (CreateAttackRequest(
+                if (CreateEnemyAttackRequests(
                         entityManager,
                         actorEntity,
                         chargedDefinition,
-                        true,
                         windup.Direction,
                         ecb))
                 {
@@ -268,6 +267,148 @@ public partial struct AttackRequestSystem : ISystem
                 attackMasterId,
                 playerPosition - transform.ValueRO.Position);
         }
+    }
+
+    private static bool CreateEnemyAttackRequests(
+        EntityManager entityManager,
+        Entity actorEntity,
+        AttackMasterData definition,
+        float3 direction,
+        EntityCommandBuffer ecb)
+    {
+        if (definition.Kind != AttackKind.Projectile)
+        {
+            return CreateAttackRequest(
+                entityManager,
+                actorEntity,
+                definition,
+                true,
+                direction,
+                ecb);
+        }
+
+        var isFinalBoss = entityManager.HasComponent<FinalBossEnemy>(
+            actorEntity);
+        var isChampion = entityManager.HasComponent<ChampionEnemy>(
+            actorEntity);
+        var isElite = entityManager.HasComponent<EliteEnemy>(actorEntity);
+        var isEnraged = isFinalBoss
+            ? entityManager.HasComponent<FinalBossPhaseState>(actorEntity) &&
+              entityManager.GetComponentData<FinalBossPhaseState>(actorEntity)
+                  .IsEnraged != 0
+            : isChampion &&
+              entityManager.HasComponent<ChampionPhaseState>(actorEntity) &&
+              entityManager.GetComponentData<ChampionPhaseState>(actorEntity)
+                  .IsEnraged != 0;
+        var projectileCount = ResolveEnemyProjectileVolleyCount(
+            isElite,
+            isChampion,
+            isFinalBoss,
+            isEnraged);
+        var spreadDegrees = ResolveEnemyProjectileVolleySpreadDegrees(
+            isElite,
+            isChampion,
+            isFinalBoss,
+            isEnraged);
+        var projectileDefinition = definition;
+        projectileDefinition.Damage = ResolveEnemyProjectileVolleyDamage(
+            definition.Damage,
+            projectileCount);
+
+        var createdAttack = false;
+        for (var projectileIndex = 0;
+             projectileIndex < projectileCount;
+             projectileIndex++)
+        {
+            createdAttack |= CreateAttackRequest(
+                entityManager,
+                actorEntity,
+                projectileDefinition,
+                true,
+                ResolveEnemyProjectileVolleyDirection(
+                    direction,
+                    projectileIndex,
+                    projectileCount,
+                    spreadDegrees),
+                ecb);
+        }
+
+        return createdAttack;
+    }
+
+    public static int ResolveEnemyProjectileVolleyCount(
+        bool isElite,
+        bool isChampion,
+        bool isFinalBoss,
+        bool isEnraged)
+    {
+        if (isFinalBoss)
+        {
+            return isEnraged ? 9 : 7;
+        }
+
+        if (isChampion)
+        {
+            return isEnraged ? 7 : 5;
+        }
+
+        return isElite ? 3 : 1;
+    }
+
+    public static float ResolveEnemyProjectileVolleySpreadDegrees(
+        bool isElite,
+        bool isChampion,
+        bool isFinalBoss,
+        bool isEnraged)
+    {
+        if (isFinalBoss)
+        {
+            return isEnraged ? 120f : 96f;
+        }
+
+        if (isChampion)
+        {
+            return isEnraged ? 84f : 64f;
+        }
+
+        return isElite ? 36f : 0f;
+    }
+
+    public static int ResolveEnemyProjectileVolleyDamage(
+        int totalDamage,
+        int projectileCount)
+    {
+        return math.max(
+            1,
+            (int)math.round(
+                math.max(1, totalDamage) /
+                (float)math.max(1, projectileCount)));
+    }
+
+    public static float3 ResolveEnemyProjectileVolleyDirection(
+        float3 centerDirection,
+        int projectileIndex,
+        int projectileCount,
+        float spreadDegrees)
+    {
+        var safeDirection = FlattenDirection(centerDirection);
+        var safeCount = math.max(1, projectileCount);
+        var safeIndex = math.clamp(projectileIndex, 0, safeCount - 1);
+        if (safeCount == 1 || spreadDegrees <= 0f)
+        {
+            return safeDirection;
+        }
+
+        var progress = safeIndex / (float)(safeCount - 1);
+        var yawDegrees = math.lerp(
+            -spreadDegrees * 0.5f,
+            spreadDegrees * 0.5f,
+            progress);
+        return math.normalizesafe(
+            math.mul(
+                quaternion.RotateY(math.radians(yawDegrees)),
+                safeDirection),
+            safeDirection);
     }
 
     private static AttackMasterData ResolveDefinition(
