@@ -133,6 +133,7 @@ public partial struct HUDSystem : ISystem
         var hasElitePosition = false;
         var swiftEliteCount = 0;
         var juggernautEliteCount = 0;
+        var volatileEliteCount = 0;
         var eliteAffixLookup =
             SystemAPI.GetComponentLookup<EliteAffix>(true);
         foreach (var (eliteHealth, eliteTransform, eliteEntity) in
@@ -149,6 +150,8 @@ public partial struct HUDSystem : ISystem
                 swiftEliteCount += affix == EliteAffixKind.Swift ? 1 : 0;
                 juggernautEliteCount +=
                     affix == EliteAffixKind.Juggernaut ? 1 : 0;
+                volatileEliteCount +=
+                    affix == EliteAffixKind.Volatile ? 1 : 0;
             }
             SelectNearestThreat(
                 playerPosition,
@@ -161,7 +164,8 @@ public partial struct HUDSystem : ISystem
         hudBridge.SetEliteCount(
             eliteCountQuery.CalculateEntityCount(),
             swiftEliteCount,
-            juggernautEliteCount);
+            juggernautEliteCount,
+            volatileEliteCount);
 
         var championCurrentHealth = 0;
         var championMaxHealth = 0;

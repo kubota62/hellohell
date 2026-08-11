@@ -67,6 +67,7 @@ public enum EliteAffixKind : byte
     None,
     Swift,
     Juggernaut,
+    Volatile,
 }
 
 /// <summary>
@@ -91,23 +92,30 @@ public static class EliteAffixUtility
             return EliteAffixKind.None;
         }
 
-        return math.abs(spawnOrdinal) % 2 == 0
-            ? EliteAffixKind.Swift
-            : EliteAffixKind.Juggernaut;
+        return (math.abs(spawnOrdinal) % 3) switch
+        {
+            0 => EliteAffixKind.Swift,
+            1 => EliteAffixKind.Juggernaut,
+            _ => EliteAffixKind.Volatile,
+        };
     }
 
     public static float ResolveHealthMultiplier(EliteAffixKind kind)
     {
         return kind == EliteAffixKind.Juggernaut
             ? 1.6f
-            : kind == EliteAffixKind.Swift ? 0.8f : 1f;
+            : kind == EliteAffixKind.Swift
+                ? 0.8f
+                : kind == EliteAffixKind.Volatile ? 1.1f : 1f;
     }
 
     public static float ResolveSpeedMultiplier(EliteAffixKind kind)
     {
         return kind == EliteAffixKind.Swift
             ? 1.4f
-            : kind == EliteAffixKind.Juggernaut ? 0.72f : 1f;
+            : kind == EliteAffixKind.Juggernaut
+                ? 0.72f
+                : kind == EliteAffixKind.Volatile ? 0.95f : 1f;
     }
 
     public static float ResolveScaleMultiplier(EliteAffixKind kind)
@@ -121,7 +129,9 @@ public static class EliteAffixUtility
     {
         return kind == EliteAffixKind.Juggernaut
             ? 1.4f
-            : kind == EliteAffixKind.Swift ? 1.15f : 1f;
+            : kind == EliteAffixKind.Swift
+                ? 1.15f
+                : kind == EliteAffixKind.Volatile ? 1.3f : 1f;
     }
 
     public static float4 ResolveColor(EliteAffixKind kind)
@@ -130,7 +140,9 @@ public static class EliteAffixUtility
             ? new float4(0.06f, 0.72f, 1f, 1f)
             : kind == EliteAffixKind.Juggernaut
                 ? new float4(1f, 0.58f, 0.04f, 1f)
-                : new float4(1f, 0.22f, 0.04f, 1f);
+                : kind == EliteAffixKind.Volatile
+                    ? new float4(1f, 0.04f, 0.32f, 1f)
+                    : new float4(1f, 0.22f, 0.04f, 1f);
     }
 }
 

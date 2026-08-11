@@ -170,6 +170,7 @@ public class HUDUnitCount : MonoBehaviour
         int eliteNum,
         int swiftEliteNum,
         int juggernautEliteNum,
+        int volatileEliteNum,
         int eliteCurrentHealth,
         int eliteMaxHealth,
         int championNum,
@@ -261,7 +262,8 @@ public class HUDUnitCount : MonoBehaviour
             FormatEliteSummary(
                 eliteNum,
                 swiftEliteNum,
-                juggernautEliteNum) + "   " +
+                juggernautEliteNum,
+                volatileEliteNum) + "   " +
             $"チャンピオン {Mathf.Max(0, championNum)}   " +
             $"撃破 {Mathf.Max(0, enemiesDefeated)}   " +
             $"弾数 {bulletNum}   攻撃 {attackMode}\n" +
@@ -275,18 +277,20 @@ public class HUDUnitCount : MonoBehaviour
     public static string FormatEliteSummary(
         int eliteNum,
         int swiftEliteNum,
-        int juggernautEliteNum)
+        int juggernautEliteNum,
+        int volatileEliteNum)
     {
         var safeTotal = Mathf.Max(0, eliteNum);
         var safeSwift = Mathf.Max(0, swiftEliteNum);
         var safeJuggernaut = Mathf.Max(0, juggernautEliteNum);
-        if (safeSwift <= 0 && safeJuggernaut <= 0)
+        var safeVolatile = Mathf.Max(0, volatileEliteNum);
+        if (safeSwift <= 0 && safeJuggernaut <= 0 && safeVolatile <= 0)
         {
             return $"エリート {safeTotal}";
         }
 
         return
-            $"エリート {safeTotal}（俊敏 {safeSwift}／巨躯 {safeJuggernaut}）";
+            $"エリート {safeTotal}（俊敏 {safeSwift}／巨躯 {safeJuggernaut}／爆裂 {safeVolatile}）";
     }
 
     public static string FormatCombatStats(

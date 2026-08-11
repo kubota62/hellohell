@@ -15,12 +15,14 @@ public partial struct ActorDeathSystem : ISystem
     private const int MaximumExperiencePickups = 500;
     private const int MaximumHealthPickups = 60;
     private const int MaximumDeathBurstParticles = 700;
+    private const int MaximumVolatileHazards = 24;
     public const float KillStreakDurationSeconds = 3f;
     public const int SlaughterMilestoneInterval = 100;
 
     private EntityQuery experiencePickupQuery;
     private EntityQuery healthPickupQuery;
     private EntityQuery deathBurstQuery;
+    private EntityQuery volatileHazardQuery;
 
     [BurstCompile]
     public void OnCreate(ref SystemState state)
@@ -33,6 +35,9 @@ public partial struct ActorDeathSystem : ISystem
             .Build();
         deathBurstQuery = SystemAPI.QueryBuilder()
             .WithAll<DeathBurstParticle>()
+            .Build();
+        volatileHazardQuery = SystemAPI.QueryBuilder()
+            .WithAll<VolatileDeathHazard>()
             .Build();
         state.RequireForUpdate<Config>();
         state.RequireForUpdate<EndSimulationEntityCommandBufferSystem.Singleton>();
@@ -48,6 +53,10 @@ public partial struct ActorDeathSystem : ISystem
         var championLookup = SystemAPI.GetComponentLookup<ChampionEnemy>(true);
         var finalBossLookup =
             SystemAPI.GetComponentLookup<FinalBossEnemy>(true);
+        var eliteAffixLookup =
+            SystemAPI.GetComponentLookup<EliteAffix>(true);
+        var enemyDamageMultiplierLookup =
+            SystemAPI.GetComponentLookup<EnemyDamageMultiplier>(true);
         var enemyLookup = SystemAPI.GetComponentLookup<Enemy>(true);
         var colorLookup = SystemAPI.GetComponentLookup<
             URPMaterialPropertyBaseColor>(true);
@@ -55,6 +64,8 @@ public partial struct ActorDeathSystem : ISystem
         var experiencePickupCount = experiencePickupQuery.CalculateEntityCount();
         var healthPickupCount = healthPickupQuery.CalculateEntityCount();
         var deathBurstCount = deathBurstQuery.CalculateEntityCount();
+        var volatileHazardCount =
+            volatileHazardQuery.CalculateEntityCount();
         var defeatedEnemyCount = 0;
         var hasRunState = SystemAPI.TryGetSingleton<RunState>(out var runState);
 
@@ -73,6 +84,9 @@ public partial struct ActorDeathSystem : ISystem
             var isElite = eliteLookup.HasComponent(entity);
             var isChampion = championLookup.HasComponent(entity);
             var isFinalBoss = finalBossLookup.HasComponent(entity);
+            var isVolatile =
+                eliteAffixLookup.HasComponent(entity) &&
+                eliteAffixLookup[entity].Kind == EliteAffixKind.Volatile;
             if (isEnemy)
             {
                 defeatedEnemyCount++;
@@ -171,6 +185,23 @@ public partial struct ActorDeathSystem : ISystem
                     isChampion,
                     isFinalBoss);
                 deathBurstCount += particleCount;
+            }
+
+            if (isVolatile &&
+                volatileHazardCount < MaximumVolatileHazards)
+            {
+                var damageMultiplier =
+                    enemyDamageMultiplierLookup.HasComponent(entity)
+                        ? enemyDamageMultiplierLookup[entity].Value
+                        : 1f;
+                VolatileDeathHazardUtility.Spawn(
+                    state.EntityManager,
+                    ecb,
+                    config.ProjectilePrefab,
+                    transform.ValueRO.Position,
+                    VolatileDeathHazardUtility.ResolveDamage(
+                        damageMultiplier));
+                volatileHazardCount++;
             }
 
             ecb.DestroyEntity(entity);
