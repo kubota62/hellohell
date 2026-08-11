@@ -168,6 +168,56 @@ public struct EliteBarrierBrokenEvent : IComponentData
     public Entity Enemy;
 }
 
+/// <summary>結界破壊後、エリートの移動と攻撃を一時的に止めるひるみ状態。</summary>
+public struct EliteBarrierBreakStagger : IComponentData
+{
+    public float RemainingSeconds;
+}
+
+public static class EliteBarrierBreakStaggerUtility
+{
+    public const float DurationSeconds = 1.25f;
+
+    public static EliteBarrierBreakStagger Begin(
+        EliteBarrierBreakStagger current)
+    {
+        current.RemainingSeconds = math.max(
+            math.max(0f, current.RemainingSeconds),
+            DurationSeconds);
+        return current;
+    }
+
+    public static EliteBarrierBreakStagger Advance(
+        EliteBarrierBreakStagger current,
+        float deltaTime)
+    {
+        current.RemainingSeconds = math.max(
+            0f,
+            current.RemainingSeconds - math.max(0f, deltaTime));
+        return current;
+    }
+
+    public static bool IsActive(EliteBarrierBreakStagger current)
+    {
+        return current.RemainingSeconds > 0f;
+    }
+
+    public static void AdvanceAndSuppressMovement(
+        ref EliteBarrierBreakStagger current,
+        ref MoveIntent moveIntent,
+        float deltaTime)
+    {
+        current = Advance(current, deltaTime);
+        if (!IsActive(current))
+        {
+            return;
+        }
+
+        moveIntent.Direction = float3.zero;
+        moveIntent.Magnitude = 0f;
+    }
+}
+
 public static class EliteBarrierUtility
 {
     public const float HealthFraction = 0.35f;
@@ -277,6 +327,42 @@ public partial struct EliteBarrierRechargeSystem : ISystem
                 barrier.ValueRO,
                 deltaTime,
                 isPaused);
+        }
+    }
+}
+
+[BurstCompile]
+[UpdateAfter(typeof(EnemyMovementSystem))]
+[UpdateAfter(typeof(EnemySeparationSystem))]
+[UpdateBefore(typeof(EnemyMoveIntentApplySystem))]
+public partial struct EliteBarrierBreakStaggerSystem : ISystem
+{
+    [BurstCompile]
+    public void OnCreate(ref SystemState state)
+    {
+        state.RequireForUpdate<EliteBarrierBreakStagger>();
+    }
+
+    [BurstCompile]
+    public void OnUpdate(ref SystemState state)
+    {
+        if (SystemAPI.TryGetSingleton<RunState>(out var runState) &&
+            (runState.IsGameOver != 0 || runState.IsChoosingUpgrade != 0))
+        {
+            return;
+        }
+
+        var deltaTime = SystemAPI.Time.DeltaTime;
+        foreach (var (stagger, moveIntent) in
+                 SystemAPI.Query<
+                         RefRW<EliteBarrierBreakStagger>,
+                         RefRW<MoveIntent>>()
+                     .WithAll<EliteEnemy, GameplayActive>())
+        {
+            EliteBarrierBreakStaggerUtility.AdvanceAndSuppressMovement(
+                ref stagger.ValueRW,
+                ref moveIntent.ValueRW,
+                deltaTime);
         }
     }
 }

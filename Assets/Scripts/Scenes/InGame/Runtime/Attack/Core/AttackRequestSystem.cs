@@ -194,6 +194,14 @@ public partial struct AttackRequestSystem : ISystem
                      .WithAll<Enemy>()
                      .WithEntityAccess())
         {
+            if (entityManager.HasComponent<EliteBarrierBreakStagger>(actorEntity) &&
+                EliteBarrierBreakStaggerUtility.IsActive(
+                    entityManager.GetComponentData<EliteBarrierBreakStagger>(
+                        actorEntity)))
+            {
+                continue;
+            }
+
             if (entityManager.HasComponent<EnemyAttackWindup>(actorEntity))
             {
                 var windup = entityManager.GetComponentData<EnemyAttackWindup>(

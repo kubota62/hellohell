@@ -38,6 +38,8 @@ public partial struct ActorDamageEventSystem : ISystem
         var playerLookup = SystemAPI.GetComponentLookup<Player>(true);
         var barrierLookup =
             SystemAPI.GetComponentLookup<EliteBarrier>();
+        var barrierStaggerLookup =
+            SystemAPI.GetComponentLookup<EliteBarrierBreakStagger>(true);
         var cameraShakeAmplitude = 0f;
         var cameraShakeDuration = 0f;
         var hitStopDuration = 0f;
@@ -230,6 +232,23 @@ public partial struct ActorDamageEventSystem : ISystem
                 barrierLookup[actorEntity] = barrier;
                 if (barrierBroken)
                 {
+                    var stagger = barrierStaggerLookup.HasComponent(actorEntity)
+                        ? barrierStaggerLookup[actorEntity]
+                        : new EliteBarrierBreakStagger();
+                    stagger = EliteBarrierBreakStaggerUtility.Begin(stagger);
+                    if (barrierStaggerLookup.HasComponent(actorEntity))
+                    {
+                        ecb.SetComponent(actorEntity, stagger);
+                    }
+                    else
+                    {
+                        ecb.AddComponent(actorEntity, stagger);
+                    }
+                    if (SystemAPI.HasComponent<EnemyAttackWindup>(actorEntity))
+                    {
+                        ecb.RemoveComponent<EnemyAttackWindup>(actorEntity);
+                    }
+
                     var barrierEvent = ecb.CreateEntity();
                     ecb.AddComponent(barrierEvent, new EliteBarrierBrokenEvent
                     {

@@ -355,7 +355,7 @@ public class HUDBridge : MonoBehaviour
 
     public void ShowEliteBarrierBroken()
     {
-        statusNotification = "結界破壊！  エリートへ直接攻撃可能";
+        statusNotification = "結界破壊！  エリートが1.25秒ひるむ";
         notificationRemaining = 2.8f;
         unitCount.ShowThreatAnnouncement(
             "結界破壊！",

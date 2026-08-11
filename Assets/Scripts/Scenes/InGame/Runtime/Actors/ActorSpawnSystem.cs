@@ -672,6 +672,10 @@ public partial struct ActorSpawnSystem : ISystem
                         entityManager,
                         actorEntity,
                         EliteBarrierUtility.Create(scaledHealth));
+                    SetOrAddComponent(
+                        entityManager,
+                        actorEntity,
+                        new EliteBarrierBreakStagger());
                 }
             }
         }
