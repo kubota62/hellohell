@@ -69,6 +69,7 @@ public enum EliteAffixKind : byte
     Juggernaut,
     Volatile,
     Warded,
+    Regenerating,
 }
 
 /// <summary>
@@ -78,6 +79,7 @@ public enum EliteAffixKind : byte
 public struct EliteAffix : IComponentData
 {
     public EliteAffixKind Kind;
+    public float RegenerationProgress;
 }
 
 public static class EliteAffixUtility
@@ -93,12 +95,13 @@ public static class EliteAffixUtility
             return EliteAffixKind.None;
         }
 
-        return (math.abs(spawnOrdinal) % 4) switch
+        return (math.abs(spawnOrdinal) % 5) switch
         {
             0 => EliteAffixKind.Swift,
             1 => EliteAffixKind.Juggernaut,
             2 => EliteAffixKind.Volatile,
-            _ => EliteAffixKind.Warded,
+            3 => EliteAffixKind.Warded,
+            _ => EliteAffixKind.Regenerating,
         };
     }
 
@@ -110,7 +113,9 @@ public static class EliteAffixUtility
                 ? 0.8f
                 : kind == EliteAffixKind.Volatile
                     ? 1.1f
-                    : kind == EliteAffixKind.Warded ? 0.95f : 1f;
+                    : kind == EliteAffixKind.Warded
+                        ? 0.95f
+                        : kind == EliteAffixKind.Regenerating ? 1.05f : 1f;
     }
 
     public static float ResolveSpeedMultiplier(EliteAffixKind kind)
@@ -126,7 +131,9 @@ public static class EliteAffixUtility
     {
         return kind == EliteAffixKind.Juggernaut
             ? 1.22f
-            : kind == EliteAffixKind.Swift ? 0.92f : 1f;
+            : kind == EliteAffixKind.Swift
+                ? 0.92f
+                : kind == EliteAffixKind.Regenerating ? 1.05f : 1f;
     }
 
     public static float ResolveRewardMultiplier(EliteAffixKind kind)
@@ -137,7 +144,9 @@ public static class EliteAffixUtility
                 ? 1.15f
                 : kind == EliteAffixKind.Volatile
                     ? 1.3f
-                    : kind == EliteAffixKind.Warded ? 1.35f : 1f;
+                    : kind == EliteAffixKind.Warded
+                        ? 1.35f
+                        : kind == EliteAffixKind.Regenerating ? 1.45f : 1f;
     }
 
     public static float4 ResolveColor(EliteAffixKind kind)
@@ -150,7 +159,86 @@ public static class EliteAffixUtility
                     ? new float4(1f, 0.04f, 0.32f, 1f)
                     : kind == EliteAffixKind.Warded
                         ? new float4(0.16f, 0.42f, 1f, 1f)
-                    : new float4(1f, 0.22f, 0.04f, 1f);
+                        : kind == EliteAffixKind.Regenerating
+                            ? new float4(0.12f, 0.9f, 0.28f, 1f)
+                            : new float4(1f, 0.22f, 0.04f, 1f);
+    }
+
+    public const float RegenerationFractionPerSecond = 0.01f;
+
+    public static Health AdvanceRegeneration(
+        Health health,
+        float regenerationProgress,
+        float deltaTime,
+        out float nextRegenerationProgress)
+    {
+        nextRegenerationProgress = math.max(0f, regenerationProgress);
+        if (health.Max <= 0 ||
+            health.Current <= 0 ||
+            health.Current >= health.Max)
+        {
+            nextRegenerationProgress = 0f;
+            return health;
+        }
+
+        var accumulatedHealing = nextRegenerationProgress +
+            health.Max * RegenerationFractionPerSecond *
+            math.max(0f, deltaTime);
+        var wholeHealing = accumulatedHealing >= int.MaxValue
+            ? int.MaxValue
+            : (int)math.floor(accumulatedHealing);
+        nextRegenerationProgress = accumulatedHealing - wholeHealing;
+        var appliedHealing = math.min(
+            wholeHealing,
+            health.Max - health.Current);
+        health.Current += appliedHealing;
+        if (health.Current >= health.Max)
+        {
+            nextRegenerationProgress = 0f;
+        }
+
+        return health;
+    }
+}
+
+[BurstCompile]
+[UpdateAfter(typeof(ActorDamageEventSystem))]
+[UpdateBefore(typeof(ActorDeathSystem))]
+public partial struct EliteRegenerationSystem : ISystem
+{
+    [BurstCompile]
+    public void OnCreate(ref SystemState state)
+    {
+        state.RequireForUpdate<EliteAffix>();
+    }
+
+    [BurstCompile]
+    public void OnUpdate(ref SystemState state)
+    {
+        if (SystemAPI.TryGetSingleton<RunState>(out var runState) &&
+            (runState.IsGameOver != 0 || runState.IsChoosingUpgrade != 0))
+        {
+            return;
+        }
+
+        var deltaTime = SystemAPI.Time.DeltaTime;
+        foreach (var (health, affix) in
+                 SystemAPI.Query<RefRW<Health>, RefRW<EliteAffix>>()
+                     .WithAll<EliteEnemy, GameplayActive>()
+                     .WithNone<ChampionEnemy>())
+        {
+            if (affix.ValueRO.Kind != EliteAffixKind.Regenerating)
+            {
+                continue;
+            }
+
+            health.ValueRW = EliteAffixUtility.AdvanceRegeneration(
+                health.ValueRO,
+                affix.ValueRO.RegenerationProgress,
+                deltaTime,
+                out var nextProgress);
+            affix.ValueRW.RegenerationProgress = nextProgress;
+        }
     }
 }
 

@@ -178,6 +178,7 @@ public class HUDUnitCount : MonoBehaviour
         int juggernautEliteNum,
         int volatileEliteNum,
         int wardedEliteNum,
+        int regeneratingEliteNum,
         int eliteCurrentHealth,
         int eliteMaxHealth,
         float eliteBarrierCurrent,
@@ -279,7 +280,8 @@ public class HUDUnitCount : MonoBehaviour
                 swiftEliteNum,
                 juggernautEliteNum,
                 volatileEliteNum,
-                wardedEliteNum) + "   " +
+                wardedEliteNum,
+                regeneratingEliteNum) + "   " +
             $"チャンピオン {Mathf.Max(0, championNum)}   " +
             $"撃破 {Mathf.Max(0, enemiesDefeated)}   " +
             $"弾数 {bulletNum}   攻撃 {attackMode}\n" +
@@ -334,6 +336,7 @@ public class HUDUnitCount : MonoBehaviour
             swiftEliteNum,
             juggernautEliteNum,
             volatileEliteNum,
+            0,
             0);
     }
 
@@ -344,22 +347,42 @@ public class HUDUnitCount : MonoBehaviour
         int volatileEliteNum,
         int wardedEliteNum)
     {
+        return FormatEliteSummary(
+            eliteNum,
+            swiftEliteNum,
+            juggernautEliteNum,
+            volatileEliteNum,
+            wardedEliteNum,
+            0);
+    }
+
+    public static string FormatEliteSummary(
+        int eliteNum,
+        int swiftEliteNum,
+        int juggernautEliteNum,
+        int volatileEliteNum,
+        int wardedEliteNum,
+        int regeneratingEliteNum)
+    {
         var safeTotal = Mathf.Max(0, eliteNum);
         var safeSwift = Mathf.Max(0, swiftEliteNum);
         var safeJuggernaut = Mathf.Max(0, juggernautEliteNum);
         var safeVolatile = Mathf.Max(0, volatileEliteNum);
         var safeWarded = Mathf.Max(0, wardedEliteNum);
+        var safeRegenerating = Mathf.Max(0, regeneratingEliteNum);
         if (safeSwift <= 0 &&
             safeJuggernaut <= 0 &&
             safeVolatile <= 0 &&
-            safeWarded <= 0)
+            safeWarded <= 0 &&
+            safeRegenerating <= 0)
         {
             return $"エリート {safeTotal}";
         }
 
         return
             $"エリート {safeTotal}（俊敏 {safeSwift}／巨躯 {safeJuggernaut}／" +
-            $"爆裂 {safeVolatile}／結界 {safeWarded}）";
+            $"爆裂 {safeVolatile}／結界 {safeWarded}／" +
+            $"再生 {safeRegenerating}）";
     }
 
     public static string FormatCombatStats(

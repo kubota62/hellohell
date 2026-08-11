@@ -15,6 +15,7 @@ public class HUDBridge : MonoBehaviour
     int juggernautEliteCount;
     int volatileEliteCount;
     int wardedEliteCount;
+    int regeneratingEliteCount;
     int eliteCurrentHealth;
     int eliteMaxHealth;
     float eliteBarrierCurrent;
@@ -96,7 +97,7 @@ public class HUDBridge : MonoBehaviour
 
     public void SetEliteCount(int count)
     {
-        SetEliteCount(count, 0, 0, 0, 0);
+        SetEliteCount(count, 0, 0, 0, 0, 0);
     }
 
     public void SetEliteCount(
@@ -110,6 +111,7 @@ public class HUDBridge : MonoBehaviour
             nextSwiftEliteCount,
             nextJuggernautEliteCount,
             nextVolatileEliteCount,
+            0,
             0);
     }
 
@@ -119,6 +121,23 @@ public class HUDBridge : MonoBehaviour
         int nextJuggernautEliteCount,
         int nextVolatileEliteCount,
         int nextWardedEliteCount)
+    {
+        SetEliteCount(
+            count,
+            nextSwiftEliteCount,
+            nextJuggernautEliteCount,
+            nextVolatileEliteCount,
+            nextWardedEliteCount,
+            0);
+    }
+
+    public void SetEliteCount(
+        int count,
+        int nextSwiftEliteCount,
+        int nextJuggernautEliteCount,
+        int nextVolatileEliteCount,
+        int nextWardedEliteCount,
+        int nextRegeneratingEliteCount)
     {
         eliteCount = Mathf.Max(0, count);
         swiftEliteCount = Mathf.Max(0, nextSwiftEliteCount);
@@ -131,6 +150,9 @@ public class HUDBridge : MonoBehaviour
         wardedEliteCount = Mathf.Max(
             0,
             nextWardedEliteCount);
+        regeneratingEliteCount = Mathf.Max(
+            0,
+            nextRegeneratingEliteCount);
         Refresh();
     }
 
@@ -594,6 +616,7 @@ public class HUDBridge : MonoBehaviour
             juggernautEliteCount,
             volatileEliteCount,
             wardedEliteCount,
+            regeneratingEliteCount,
             eliteCurrentHealth,
             eliteMaxHealth,
             eliteBarrierCurrent,
