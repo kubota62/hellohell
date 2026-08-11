@@ -287,21 +287,38 @@ public class HUDBridge : MonoBehaviour
         var evolved =
             newLevel >= PlayerWeaponEvolutionUtility.EvolutionLevel &&
             !string.IsNullOrEmpty(evolutionName);
+        var unlockedWeapon = IsNewWeaponUnlock(kind, newLevel);
         var qualityPrefix = quality == PlayerUpgradeQuality.Normal
             ? string.Empty
             : HUDUnitCount.GetUpgradeQualityName(quality) + " ";
         statusNotification = evolved
             ? $"{qualityPrefix}武器進化！  {evolutionName}"
-            : $"{qualityPrefix}強化！  {GetSkillName(kind)} → Lv{newLevel}";
+            : unlockedWeapon
+                ? $"{qualityPrefix}新武器獲得！  {GetSkillName(kind)}"
+                : $"{qualityPrefix}強化！  {GetSkillName(kind)} → Lv{newLevel}";
         notificationRemaining = evolved
             ? 4f
-            : quality == PlayerUpgradeQuality.Rare ? 3.5f : 2.5f;
+            : unlockedWeapon ||
+              quality == PlayerUpgradeQuality.Rare
+                ? 3.5f
+                : 2.5f;
         if (evolved)
         {
             unitCount.ShowThreatAnnouncement(
                 $"{qualityPrefix}武器進化！\n{evolutionName}",
                 3.5f,
                 new Color(1f, 0.72f, 0.12f, 1f));
+        }
+        else if (unlockedWeapon)
+        {
+            unitCount.ShowThreatAnnouncement(
+                $"{qualityPrefix}新武器獲得！\n{GetSkillName(kind)} Lv1",
+                3f,
+                quality == PlayerUpgradeQuality.Rare
+                    ? new Color(0.78f, 0.42f, 1f, 1f)
+                    : quality == PlayerUpgradeQuality.Fine
+                        ? new Color(0.34f, 0.92f, 0.56f, 1f)
+                        : new Color(0.18f, 0.78f, 1f, 1f));
         }
         else if (quality == PlayerUpgradeQuality.Rare)
         {
@@ -311,6 +328,14 @@ public class HUDBridge : MonoBehaviour
                 new Color(0.78f, 0.42f, 1f, 1f));
         }
         Refresh();
+    }
+
+    public static bool IsNewWeaponUnlock(
+        PlayerSkillKind kind,
+        int newLevel)
+    {
+        return newLevel == 1 &&
+            PlayerSkillMasterCatalog.IsWeaponSkill(kind);
     }
 
     public void ShowChampionDefeated(int experience, int scoreReward)
