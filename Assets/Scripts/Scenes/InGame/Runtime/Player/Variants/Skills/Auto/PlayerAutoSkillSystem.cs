@@ -378,23 +378,38 @@ public partial struct PlayerAutoSkillSystem : ISystem
         PlayerSkillMasterId excludedFirst,
         PlayerSkillMasterId excludedSecond)
     {
-        var startIndex = math.abs(seed) % 4;
-        for (var offset = 0; offset < 4; offset++)
+        var startIndex = math.abs(seed % 4);
+        for (var priorityPass = 0; priorityPass < 2; priorityPass++)
         {
-            var skill = PlayerSkillMasterCatalog.Get(
-                GetTreasureWeaponId((startIndex + offset) % 4));
-            if (skill.Id == excludedFirst ||
-                skill.Id == excludedSecond ||
-                stats.IsSkillBanished(skill.Id) ||
-                GetCurrentSkillLevel(stats, skill.Kind) >= skill.MaxLevel)
+            var requiresEvolutionReady = priorityPass == 0;
+            for (var offset = 0; offset < 4; offset++)
             {
-                continue;
-            }
+                var skill = PlayerSkillMasterCatalog.Get(
+                    GetTreasureWeaponId((startIndex + offset) % 4));
+                if (skill.Id == excludedFirst ||
+                    skill.Id == excludedSecond ||
+                    stats.IsSkillBanished(skill.Id) ||
+                    GetCurrentSkillLevel(stats, skill.Kind) >= skill.MaxLevel ||
+                    (requiresEvolutionReady &&
+                     !IsReadyForWeaponEvolution(stats, skill)))
+                {
+                    continue;
+                }
 
-            return skill;
+                return skill;
+            }
         }
 
         return default;
+    }
+
+    public static bool IsReadyForWeaponEvolution(
+        PlayerSkillStats stats,
+        PlayerSkillMasterData skill)
+    {
+        return skill.MaxLevel >= PlayerWeaponEvolutionUtility.EvolutionLevel &&
+            GetCurrentSkillLevel(stats, skill.Kind) ==
+                PlayerWeaponEvolutionUtility.EvolutionLevel - 1;
     }
 
     static PlayerSkillMasterId GetTreasureWeaponId(int index)
