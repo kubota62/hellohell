@@ -206,6 +206,37 @@ public static class ThreatAuraSpawnUtility
         return isEnraged ? 1.8f : 1f;
     }
 
+    public static float ResolveWardedScaleMultiplier(
+        float barrierRatio,
+        float elapsedSeconds)
+    {
+        var ratio = math.saturate(barrierRatio);
+        var pulse = 0.5f + 0.5f * math.sin(
+            math.max(0f, elapsedSeconds) * 7f);
+        return math.lerp(
+            0.48f + pulse * 0.08f,
+            1.05f + pulse * 0.24f,
+            ratio);
+    }
+
+    public static float4 ResolveWardedColor(
+        float4 baseColor,
+        float barrierRatio,
+        float elapsedSeconds)
+    {
+        var ratio = math.saturate(barrierRatio);
+        var pulse = 0.5f + 0.5f * math.sin(
+            math.max(0f, elapsedSeconds) * 7f);
+        var depleted = new float4(0.08f, 0.12f, 0.24f, 0.3f);
+        var charged = math.lerp(
+            baseColor,
+            new float4(0.12f, 0.78f, 1f, 1f),
+            0.35f + pulse * 0.3f);
+        var result = math.lerp(depleted, charged, ratio);
+        result.w *= math.lerp(0.72f, 1f, pulse);
+        return result;
+    }
+
     static void SetOrAddColor(
         EntityManager entityManager,
         Entity entity,
@@ -260,6 +291,8 @@ public partial struct ThreatAuraSystem : ISystem
             SystemAPI.GetComponentLookup<LocalTransform>(true);
         var championPhases =
             SystemAPI.GetComponentLookup<ChampionPhaseState>(true);
+        var barriers =
+            SystemAPI.GetComponentLookup<EliteBarrier>(true);
         var ecb = new EntityCommandBuffer(Allocator.Temp);
 
         foreach (var (aura, transform, color, entity) in
@@ -286,6 +319,19 @@ public partial struct ThreatAuraSystem : ISystem
                 out var position,
                 out var scale,
                 out var nextColor);
+            if (barriers.HasComponent(aura.ValueRO.Owner))
+            {
+                var barrierRatio = EliteBarrierUtility.ResolveRatio(
+                    barriers[aura.ValueRO.Owner]);
+                scale *= ThreatAuraSpawnUtility
+                    .ResolveWardedScaleMultiplier(
+                        barrierRatio,
+                        aura.ValueRO.Elapsed);
+                nextColor = ThreatAuraSpawnUtility.ResolveWardedColor(
+                    nextColor,
+                    barrierRatio,
+                    aura.ValueRO.Elapsed);
+            }
             transform.ValueRW.Position = position;
             transform.ValueRW.Rotation = quaternion.RotateY(
                 -aura.ValueRO.Angle -

@@ -144,6 +144,7 @@ public partial struct HUDSystem : ISystem
         var swiftEliteCount = 0;
         var juggernautEliteCount = 0;
         var volatileEliteCount = 0;
+        var wardedEliteCount = 0;
         var eliteAffixLookup =
             SystemAPI.GetComponentLookup<EliteAffix>(true);
         foreach (var (eliteHealth, eliteTransform, eliteEntity) in
@@ -162,6 +163,8 @@ public partial struct HUDSystem : ISystem
                     affix == EliteAffixKind.Juggernaut ? 1 : 0;
                 volatileEliteCount +=
                     affix == EliteAffixKind.Volatile ? 1 : 0;
+                wardedEliteCount +=
+                    affix == EliteAffixKind.Warded ? 1 : 0;
             }
             SelectNearestThreat(
                 playerPosition,
@@ -175,7 +178,8 @@ public partial struct HUDSystem : ISystem
             eliteCountQuery.CalculateEntityCount(),
             swiftEliteCount,
             juggernautEliteCount,
-            volatileEliteCount);
+            volatileEliteCount,
+            wardedEliteCount);
 
         var championCurrentHealth = 0;
         var championMaxHealth = 0;
@@ -315,6 +319,14 @@ public partial struct HUDSystem : ISystem
                 shardEvent.ValueRO.DurationSeconds,
                 shardEvent.ValueRO.DamageMultiplier,
                 shardEvent.ValueRO.CooldownMultiplier);
+            ecb.DestroyEntity(eventEntity);
+        }
+
+        foreach (var (_, eventEntity) in
+                 SystemAPI.Query<RefRO<EliteBarrierBrokenEvent>>()
+                     .WithEntityAccess())
+        {
+            hudBridge.ShowEliteBarrierBroken();
             ecb.DestroyEntity(eventEntity);
         }
 

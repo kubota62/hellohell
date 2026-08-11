@@ -36,6 +36,8 @@ public partial struct ActorDamageEventSystem : ISystem
         var attackerTransformLookup = SystemAPI.GetComponentLookup<
             LocalTransform>(true);
         var playerLookup = SystemAPI.GetComponentLookup<Player>(true);
+        var barrierLookup =
+            SystemAPI.GetComponentLookup<EliteBarrier>();
         var cameraShakeAmplitude = 0f;
         var cameraShakeDuration = 0f;
         var hitStopDuration = 0f;
@@ -65,6 +67,11 @@ public partial struct ActorDamageEventSystem : ISystem
             var remainingHealth = health.ValueRO.Current;
             var acceptedPlayerHit = false;
             var accumulatedKnockback = float3.zero;
+            var hasBarrier = barrierLookup.HasComponent(actorEntity);
+            var barrier = hasBarrier
+                ? barrierLookup[actorEntity]
+                : new EliteBarrier();
+            var barrierBroken = false;
             var damageReduction =
                 SystemAPI.HasComponent<Player>(actorEntity) &&
                 SystemAPI.HasComponent<PlayerSkillStats>(actorEntity)
@@ -103,16 +110,31 @@ public partial struct ActorDamageEventSystem : ISystem
                 var resolvedDamage = ResolveIncomingDamage(
                     executionDamage,
                     damageReduction);
+                var healthDamage = resolvedDamage;
+                var absorbedDamage = 0;
+                if (hasBarrier)
+                {
+                    var barrierWasActive = barrier.Current > 0f;
+                    healthDamage = EliteBarrierUtility.AbsorbDamage(
+                        ref barrier,
+                        resolvedDamage,
+                        out absorbedDamage);
+                    barrierBroken |=
+                        barrierWasActive &&
+                        absorbedDamage > 0 &&
+                        barrier.Current <= 0f;
+                }
                 var appliedDamage = ResolveAppliedDamage(
                     remainingHealth,
-                    resolvedDamage);
+                    healthDamage);
                 remainingHealth -= appliedDamage;
                 if (!isPlayerDamage &&
-                    appliedDamage > 0 &&
+                    (absorbedDamage > 0 || appliedDamage > 0) &&
                     damage.Attacker != Entity.Null &&
                     playerLookup.HasComponent(damage.Attacker))
                 {
-                    playerDamageThisFrame += appliedDamage;
+                    playerDamageThisFrame +=
+                        absorbedDamage + appliedDamage;
                 }
 
                 acceptedPlayerHit =
@@ -200,6 +222,18 @@ public partial struct ActorDamageEventSystem : ISystem
             }
 
             health.ValueRW.Current = remainingHealth;
+            if (hasBarrier)
+            {
+                barrierLookup[actorEntity] = barrier;
+                if (barrierBroken)
+                {
+                    var barrierEvent = ecb.CreateEntity();
+                    ecb.AddComponent(barrierEvent, new EliteBarrierBrokenEvent
+                    {
+                        Enemy = actorEntity,
+                    });
+                }
+            }
             damageEventBuffer.Clear();
         }
 

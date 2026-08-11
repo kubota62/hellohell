@@ -68,6 +68,7 @@ public enum EliteAffixKind : byte
     Swift,
     Juggernaut,
     Volatile,
+    Warded,
 }
 
 /// <summary>
@@ -92,11 +93,12 @@ public static class EliteAffixUtility
             return EliteAffixKind.None;
         }
 
-        return (math.abs(spawnOrdinal) % 3) switch
+        return (math.abs(spawnOrdinal) % 4) switch
         {
             0 => EliteAffixKind.Swift,
             1 => EliteAffixKind.Juggernaut,
-            _ => EliteAffixKind.Volatile,
+            2 => EliteAffixKind.Volatile,
+            _ => EliteAffixKind.Warded,
         };
     }
 
@@ -106,7 +108,9 @@ public static class EliteAffixUtility
             ? 1.6f
             : kind == EliteAffixKind.Swift
                 ? 0.8f
-                : kind == EliteAffixKind.Volatile ? 1.1f : 1f;
+                : kind == EliteAffixKind.Volatile
+                    ? 1.1f
+                    : kind == EliteAffixKind.Warded ? 0.95f : 1f;
     }
 
     public static float ResolveSpeedMultiplier(EliteAffixKind kind)
@@ -131,7 +135,9 @@ public static class EliteAffixUtility
             ? 1.4f
             : kind == EliteAffixKind.Swift
                 ? 1.15f
-                : kind == EliteAffixKind.Volatile ? 1.3f : 1f;
+                : kind == EliteAffixKind.Volatile
+                    ? 1.3f
+                    : kind == EliteAffixKind.Warded ? 1.35f : 1f;
     }
 
     public static float4 ResolveColor(EliteAffixKind kind)
@@ -142,7 +148,136 @@ public static class EliteAffixUtility
                 ? new float4(1f, 0.58f, 0.04f, 1f)
                 : kind == EliteAffixKind.Volatile
                     ? new float4(1f, 0.04f, 0.32f, 1f)
+                    : kind == EliteAffixKind.Warded
+                        ? new float4(0.16f, 0.42f, 1f, 1f)
                     : new float4(1f, 0.22f, 0.04f, 1f);
+    }
+}
+
+/// <summary>結界エリートが持つ、体力より先にダメージを受ける再充填式の防壁。</summary>
+public struct EliteBarrier : IComponentData
+{
+    public float Current;
+    public float Maximum;
+    public float RechargeDelayRemaining;
+}
+
+/// <summary>結界を破壊した瞬間をHUDへ通知する一度きりのイベント。</summary>
+public struct EliteBarrierBrokenEvent : IComponentData
+{
+    public Entity Enemy;
+}
+
+public static class EliteBarrierUtility
+{
+    public const float HealthFraction = 0.35f;
+    public const float RechargeDelaySeconds = 4f;
+    public const float RechargeFractionPerSecond = 0.15f;
+
+    public static EliteBarrier Create(int maximumHealth)
+    {
+        var maximum = math.max(
+            1f,
+            math.ceil(math.max(1, maximumHealth) * HealthFraction));
+        return new EliteBarrier
+        {
+            Current = maximum,
+            Maximum = maximum,
+        };
+    }
+
+    public static int AbsorbDamage(
+        ref EliteBarrier barrier,
+        int incomingDamage,
+        out int absorbedDamage)
+    {
+        var safeDamage = math.max(0, incomingDamage);
+        if (safeDamage <= 0)
+        {
+            absorbedDamage = 0;
+            return safeDamage;
+        }
+
+        barrier.RechargeDelayRemaining = RechargeDelaySeconds;
+        if (barrier.Current <= 0f)
+        {
+            absorbedDamage = 0;
+            return safeDamage;
+        }
+
+        absorbedDamage = math.min(
+            safeDamage,
+            math.max(0, (int)math.ceil(barrier.Current)));
+        barrier.Current = math.max(
+            0f,
+            barrier.Current - absorbedDamage);
+        return safeDamage - absorbedDamage;
+    }
+
+    public static EliteBarrier Advance(
+        EliteBarrier barrier,
+        float deltaTime,
+        bool isPaused)
+    {
+        if (isPaused || barrier.Maximum <= 0f)
+        {
+            return barrier;
+        }
+
+        var remainingDelta = math.max(0f, deltaTime);
+        var delayConsumed = math.min(
+            math.max(0f, barrier.RechargeDelayRemaining),
+            remainingDelta);
+        barrier.RechargeDelayRemaining = math.max(
+            0f,
+            barrier.RechargeDelayRemaining - delayConsumed);
+        remainingDelta -= delayConsumed;
+        if (remainingDelta > 0f && barrier.Current < barrier.Maximum)
+        {
+            barrier.Current = math.min(
+                barrier.Maximum,
+                math.max(0f, barrier.Current) +
+                    barrier.Maximum * RechargeFractionPerSecond *
+                    remainingDelta);
+        }
+
+        return barrier;
+    }
+
+    public static float ResolveRatio(EliteBarrier barrier)
+    {
+        return barrier.Maximum > 0f
+            ? math.saturate(barrier.Current / barrier.Maximum)
+            : 0f;
+    }
+}
+
+[BurstCompile]
+[UpdateAfter(typeof(ActorDamageEventSystem))]
+public partial struct EliteBarrierRechargeSystem : ISystem
+{
+    [BurstCompile]
+    public void OnCreate(ref SystemState state)
+    {
+        state.RequireForUpdate<EliteBarrier>();
+    }
+
+    [BurstCompile]
+    public void OnUpdate(ref SystemState state)
+    {
+        var isPaused =
+            SystemAPI.TryGetSingleton<RunState>(out var runState) &&
+            (runState.IsGameOver != 0 || runState.IsChoosingUpgrade != 0);
+        var deltaTime = SystemAPI.Time.DeltaTime;
+        foreach (var barrier in
+                 SystemAPI.Query<RefRW<EliteBarrier>>()
+                     .WithAll<EliteEnemy, GameplayActive>())
+        {
+            barrier.ValueRW = EliteBarrierUtility.Advance(
+                barrier.ValueRO,
+                deltaTime,
+                isPaused);
+        }
     }
 }
 

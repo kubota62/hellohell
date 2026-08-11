@@ -666,6 +666,13 @@ public partial struct ActorSpawnSystem : ISystem
                     entityManager,
                     actorEntity,
                     new EliteAffix { Kind = eliteAffix });
+                if (eliteAffix == EliteAffixKind.Warded)
+                {
+                    SetOrAddComponent(
+                        entityManager,
+                        actorEntity,
+                        EliteBarrierUtility.Create(scaledHealth));
+                }
             }
         }
         if (isChampion)

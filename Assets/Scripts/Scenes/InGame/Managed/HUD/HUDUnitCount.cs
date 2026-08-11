@@ -26,7 +26,7 @@ public class HUDUnitCount : MonoBehaviour
         "武器斬速射貫通槍爆裂球補助移動磁力英知遠幸運抽選候補除外使用済み" +
         "早業俊足広域化活力強靭剣術慧眼獰猛鉄壁人狩り剛力間隔最大吸引" +
         "解放強化被追加以下一度復活秒間無獲得飛び道具ごとの大群襲来第波" +
-        "体接近上昇回復欠片激昂形態生存時間残" +
+        "体接近上昇回復欠片激昂形態生存時間残結界壊直可能" +
         "連続倍率最高後次まで＋与平均ダメージ戦闘俊敏巨躯／（）" +
         "節目達成討伐報酬一斉収進化血月雷雨破城煉獄宝箱祝福優先血潮";
 
@@ -176,6 +176,7 @@ public class HUDUnitCount : MonoBehaviour
         int swiftEliteNum,
         int juggernautEliteNum,
         int volatileEliteNum,
+        int wardedEliteNum,
         int eliteCurrentHealth,
         int eliteMaxHealth,
         int championNum,
@@ -272,7 +273,8 @@ public class HUDUnitCount : MonoBehaviour
                 eliteNum,
                 swiftEliteNum,
                 juggernautEliteNum,
-                volatileEliteNum) + "   " +
+                volatileEliteNum,
+                wardedEliteNum) + "   " +
             $"チャンピオン {Mathf.Max(0, championNum)}   " +
             $"撃破 {Mathf.Max(0, enemiesDefeated)}   " +
             $"弾数 {bulletNum}   攻撃 {attackMode}\n" +
@@ -322,17 +324,37 @@ public class HUDUnitCount : MonoBehaviour
         int juggernautEliteNum,
         int volatileEliteNum)
     {
+        return FormatEliteSummary(
+            eliteNum,
+            swiftEliteNum,
+            juggernautEliteNum,
+            volatileEliteNum,
+            0);
+    }
+
+    public static string FormatEliteSummary(
+        int eliteNum,
+        int swiftEliteNum,
+        int juggernautEliteNum,
+        int volatileEliteNum,
+        int wardedEliteNum)
+    {
         var safeTotal = Mathf.Max(0, eliteNum);
         var safeSwift = Mathf.Max(0, swiftEliteNum);
         var safeJuggernaut = Mathf.Max(0, juggernautEliteNum);
         var safeVolatile = Mathf.Max(0, volatileEliteNum);
-        if (safeSwift <= 0 && safeJuggernaut <= 0 && safeVolatile <= 0)
+        var safeWarded = Mathf.Max(0, wardedEliteNum);
+        if (safeSwift <= 0 &&
+            safeJuggernaut <= 0 &&
+            safeVolatile <= 0 &&
+            safeWarded <= 0)
         {
             return $"エリート {safeTotal}";
         }
 
         return
-            $"エリート {safeTotal}（俊敏 {safeSwift}／巨躯 {safeJuggernaut}／爆裂 {safeVolatile}）";
+            $"エリート {safeTotal}（俊敏 {safeSwift}／巨躯 {safeJuggernaut}／" +
+            $"爆裂 {safeVolatile}／結界 {safeWarded}）";
     }
 
     public static string FormatCombatStats(

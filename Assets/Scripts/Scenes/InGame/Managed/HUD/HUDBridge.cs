@@ -14,6 +14,7 @@ public class HUDBridge : MonoBehaviour
     int swiftEliteCount;
     int juggernautEliteCount;
     int volatileEliteCount;
+    int wardedEliteCount;
     int eliteCurrentHealth;
     int eliteMaxHealth;
     int championCount;
@@ -93,7 +94,7 @@ public class HUDBridge : MonoBehaviour
 
     public void SetEliteCount(int count)
     {
-        SetEliteCount(count, 0, 0, 0);
+        SetEliteCount(count, 0, 0, 0, 0);
     }
 
     public void SetEliteCount(
@@ -101,6 +102,21 @@ public class HUDBridge : MonoBehaviour
         int nextSwiftEliteCount,
         int nextJuggernautEliteCount,
         int nextVolatileEliteCount)
+    {
+        SetEliteCount(
+            count,
+            nextSwiftEliteCount,
+            nextJuggernautEliteCount,
+            nextVolatileEliteCount,
+            0);
+    }
+
+    public void SetEliteCount(
+        int count,
+        int nextSwiftEliteCount,
+        int nextJuggernautEliteCount,
+        int nextVolatileEliteCount,
+        int nextWardedEliteCount)
     {
         eliteCount = Mathf.Max(0, count);
         swiftEliteCount = Mathf.Max(0, nextSwiftEliteCount);
@@ -110,6 +126,9 @@ public class HUDBridge : MonoBehaviour
         volatileEliteCount = Mathf.Max(
             0,
             nextVolatileEliteCount);
+        wardedEliteCount = Mathf.Max(
+            0,
+            nextWardedEliteCount);
         Refresh();
     }
 
@@ -305,6 +324,17 @@ public class HUDBridge : MonoBehaviour
         Refresh();
     }
 
+    public void ShowEliteBarrierBroken()
+    {
+        statusNotification = "結界破壊！  エリートへ直接攻撃可能";
+        notificationRemaining = 2.8f;
+        unitCount.ShowThreatAnnouncement(
+            "結界破壊！",
+            1.5f,
+            new Color(0.12f, 0.72f, 1f, 1f));
+        Refresh();
+    }
+
     public void ShowPlayerRevived(int restoredHealth, int chargesRemaining)
     {
         statusNotification =
@@ -431,6 +461,7 @@ public class HUDBridge : MonoBehaviour
             swiftEliteCount,
             juggernautEliteCount,
             volatileEliteCount,
+            wardedEliteCount,
             eliteCurrentHealth,
             eliteMaxHealth,
             championCount,
