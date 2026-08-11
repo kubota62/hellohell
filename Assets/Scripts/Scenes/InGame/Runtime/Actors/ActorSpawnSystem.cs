@@ -249,10 +249,10 @@ public partial struct ActorSpawnSystem : ISystem
             return;
         }
 
-        var spawnInterval = math.max(
-            0.12f,
-            spawnMaster.SpawnInterval /
-            (1f + runState.ElapsedSeconds / 120f));
+        var spawnInterval = ResolveSpawnInterval(
+            spawnMaster.SpawnInterval,
+            runState.ElapsedSeconds,
+            runState.KillStreak);
         if (enemySpawnTimer <= spawnInterval)
         {
             SystemAPI.SetSingleton(runState);
@@ -266,9 +266,10 @@ public partial struct ActorSpawnSystem : ISystem
             return;
         }
 
-        var batchSize = math.min(
+        var batchSize = ResolveSpawnBatchSize(
+            runState.ThreatLevel,
             availableSlots,
-            math.min(4, 1 + (runState.ThreatLevel - 1) / 3));
+            runState.KillStreak);
         for (var i = 0; i < batchSize; i++)
         {
             var nextEnemyOrdinal = runState.EnemiesSpawned + 1;
@@ -293,6 +294,51 @@ public partial struct ActorSpawnSystem : ISystem
     {
         var desiredSize = 10 + math.clamp(threatLevel, 1, 14);
         return math.clamp(desiredSize, 0, math.max(0, availableSlots));
+    }
+
+    public static float ResolveSpawnInterval(
+        float baseInterval,
+        float elapsedSeconds,
+        int killStreak)
+    {
+        var pressureMultiplier = 1f -
+            ResolveKillStreakSpawnRateBonusPercent(killStreak) / 100f;
+        return math.max(
+            0.12f,
+            math.max(0.01f, baseInterval) *
+            pressureMultiplier /
+            (1f + math.max(0f, elapsedSeconds) / 120f));
+    }
+
+    public static int ResolveSpawnBatchSize(
+        int threatLevel,
+        int availableSlots,
+        int killStreak)
+    {
+        var baseBatchSize = math.min(
+            4,
+            1 + (math.max(1, threatLevel) - 1) / 3);
+        var desiredBatchSize = math.min(
+            6,
+            baseBatchSize +
+            ResolveKillStreakSpawnBatchBonus(killStreak));
+        return math.clamp(
+            desiredBatchSize,
+            0,
+            math.max(0, availableSlots));
+    }
+
+    public static int ResolveKillStreakSpawnRateBonusPercent(
+        int killStreak)
+    {
+        return AttackRequestSystem.ResolveKillStreakMomentumTier(
+            killStreak) * 8;
+    }
+
+    public static int ResolveKillStreakSpawnBatchBonus(int killStreak)
+    {
+        return AttackRequestSystem.ResolveKillStreakMomentumTier(
+            killStreak);
     }
 
     public static UpcomingThreatEventKind ResolveUpcomingThreatEvent(
