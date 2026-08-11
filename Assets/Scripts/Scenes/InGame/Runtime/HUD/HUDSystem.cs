@@ -53,6 +53,7 @@ public partial struct HUDSystem : ISystem
             var health = new Health { Max = 1, Current = 1 };
             var skillStats = new PlayerSkillStats();
             var combatStats = new PlayerCombatStats();
+            var powerShardBuff = new PowerShardBuff();
             if (SystemAPI.TryGetSingletonEntity<Player>(out var playerEntity) &&
                 SystemAPI.HasComponent<Health>(playerEntity))
             {
@@ -65,6 +66,11 @@ public partial struct HUDSystem : ISystem
                 if (SystemAPI.HasComponent<PlayerCombatStats>(playerEntity))
                 {
                     combatStats = SystemAPI.GetComponent<PlayerCombatStats>(
+                        playerEntity);
+                }
+                if (SystemAPI.HasComponent<PowerShardBuff>(playerEntity))
+                {
+                    powerShardBuff = SystemAPI.GetComponent<PowerShardBuff>(
                         playerEntity);
                 }
             }
@@ -99,6 +105,10 @@ public partial struct HUDSystem : ISystem
                 runState.IsVictory != 0,
                 autoAttackEnabled,
                 skillStats);
+            hudBridge.SetPowerShardBuff(
+                powerShardBuff.RemainingSeconds,
+                powerShardBuff.DamageMultiplier,
+                powerShardBuff.CooldownMultiplier);
 
             var upcomingThreat =
                 ActorSpawnSystem.ResolveUpcomingThreatEvent(
@@ -294,6 +304,17 @@ public partial struct HUDSystem : ISystem
                      .WithEntityAccess())
         {
             hudBridge.ShowPlayerHealed(healedEvent.ValueRO.Amount);
+            ecb.DestroyEntity(eventEntity);
+        }
+
+        foreach (var (shardEvent, eventEntity) in
+                 SystemAPI.Query<RefRO<PowerShardCollectedEvent>>()
+                     .WithEntityAccess())
+        {
+            hudBridge.ShowPowerShardCollected(
+                shardEvent.ValueRO.DurationSeconds,
+                shardEvent.ValueRO.DamageMultiplier,
+                shardEvent.ValueRO.CooldownMultiplier);
             ecb.DestroyEntity(eventEntity);
         }
 

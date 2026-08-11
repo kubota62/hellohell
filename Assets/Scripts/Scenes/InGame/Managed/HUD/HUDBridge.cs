@@ -39,6 +39,9 @@ public class HUDBridge : MonoBehaviour
     long totalDamageDealt;
     float currentDps;
     float peakDps;
+    float powerShardRemainingSeconds;
+    float powerShardDamageMultiplier = 1f;
+    float powerShardCooldownMultiplier = 1f;
     bool isGameOver;
     bool isVictory;
     bool autoAttackEnabled;
@@ -274,6 +277,34 @@ public class HUDBridge : MonoBehaviour
         Refresh();
     }
 
+    public void SetPowerShardBuff(
+        float remainingSeconds,
+        float damageMultiplier,
+        float cooldownMultiplier)
+    {
+        powerShardRemainingSeconds = Mathf.Max(0f, remainingSeconds);
+        powerShardDamageMultiplier = Mathf.Max(1f, damageMultiplier);
+        powerShardCooldownMultiplier = Mathf.Clamp(
+            cooldownMultiplier,
+            0.1f,
+            1f);
+        Refresh();
+    }
+
+    public void ShowPowerShardCollected(
+        float durationSeconds,
+        float damageMultiplier,
+        float cooldownMultiplier)
+    {
+        statusNotification =
+            "力の欠片を獲得！  " +
+            $"威力 +{Mathf.RoundToInt((Mathf.Max(1f, damageMultiplier) - 1f) * 100f)}%  " +
+            $"攻撃間隔 -{Mathf.RoundToInt((1f - Mathf.Clamp(cooldownMultiplier, 0.1f, 1f)) * 100f)}%  " +
+            $"{Mathf.Max(0f, durationSeconds):0}秒間";
+        notificationRemaining = 3.5f;
+        Refresh();
+    }
+
     public void ShowPlayerRevived(int restoredHealth, int chargesRemaining)
     {
         statusNotification =
@@ -389,6 +420,10 @@ public class HUDBridge : MonoBehaviour
 
     void Refresh()
     {
+        unitCount.SetPowerShardBuff(
+            powerShardRemainingSeconds,
+            powerShardDamageMultiplier,
+            powerShardCooldownMultiplier);
         unitCount.SetCount(
             actorCount,
             projectileCount,

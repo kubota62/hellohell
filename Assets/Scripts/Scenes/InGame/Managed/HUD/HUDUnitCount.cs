@@ -69,6 +69,9 @@ public class HUDUnitCount : MonoBehaviour
     GameObject upgradeChoiceRoot;
     TMP_Text upgradeChoiceLabel;
     TMP_FontAsset japaneseFont;
+    float powerShardRemainingSeconds;
+    float powerShardDamageMultiplier = 1f;
+    float powerShardCooldownMultiplier = 1f;
 
     void Awake()
     {
@@ -255,6 +258,10 @@ public class HUDUnitCount : MonoBehaviour
             (string.IsNullOrEmpty(statusNotification)
                 ? string.Empty
                 : $"{statusNotification}\n") +
+            FormatPowerShardBuff(
+                powerShardRemainingSeconds,
+                powerShardDamageMultiplier,
+                powerShardCooldownMultiplier) +
             FormatKillStreak(
                 killStreak,
                 bestKillStreak,
@@ -274,6 +281,39 @@ public class HUDUnitCount : MonoBehaviour
                 currentDps,
                 peakDps) + "\n" +
             FormatBuildStats(skillStats);
+    }
+
+    public void SetPowerShardBuff(
+        float remainingSeconds,
+        float damageMultiplier,
+        float cooldownMultiplier)
+    {
+        powerShardRemainingSeconds = Mathf.Max(0f, remainingSeconds);
+        powerShardDamageMultiplier = Mathf.Max(1f, damageMultiplier);
+        powerShardCooldownMultiplier = Mathf.Clamp(
+            cooldownMultiplier,
+            0.1f,
+            1f);
+    }
+
+    public static string FormatPowerShardBuff(
+        float remainingSeconds,
+        float damageMultiplier,
+        float cooldownMultiplier)
+    {
+        if (remainingSeconds <= 0f)
+        {
+            return string.Empty;
+        }
+
+        var damagePercent = Mathf.RoundToInt(
+            (Mathf.Max(1f, damageMultiplier) - 1f) * 100f);
+        var cooldownPercent = Mathf.RoundToInt(
+            (1f - Mathf.Clamp(cooldownMultiplier, 0.1f, 1f)) * 100f);
+        return
+            $"力の欠片  威力 +{damagePercent}%  " +
+            $"攻撃間隔 -{cooldownPercent}%  " +
+            $"残り {Mathf.Max(0f, remainingSeconds):0.0}秒\n";
     }
 
     public static string FormatEliteSummary(

@@ -472,6 +472,10 @@ public partial struct AttackRequestSystem : ISystem
                 definition.PierceCount);
         }
         PlayerWeaponEvolutionUtility.Apply(ref definition, stats);
+        ApplyPowerShardBuff(
+            entityManager,
+            actorEntity,
+            ref definition);
         definition.Damage = ResolveCriticalDamage(
             definition.Damage,
             stats,
@@ -479,6 +483,34 @@ public partial struct AttackRequestSystem : ISystem
             out var isCritical);
         definition.IsCritical = isCritical ? (byte)1 : (byte)0;
         return ResolveAttackCount(stats, multistrikeRoll);
+    }
+
+    public static void ApplyPowerShardBuff(
+        EntityManager entityManager,
+        Entity actorEntity,
+        ref AttackMasterData definition)
+    {
+        if (!entityManager.HasComponent<PowerShardBuff>(actorEntity))
+        {
+            return;
+        }
+
+        var buff = entityManager.GetComponentData<PowerShardBuff>(
+            actorEntity);
+        if (buff.RemainingSeconds <= 0f)
+        {
+            return;
+        }
+
+        definition.Damage = math.max(
+            1,
+            (int)math.round(
+                math.max(1, definition.Damage) *
+                PowerShardBuffUtility.ResolveDamageMultiplier(buff)));
+        definition.Cooldown = math.max(
+            0.05f,
+            definition.Cooldown *
+            PowerShardBuffUtility.ResolveCooldownMultiplier(buff));
     }
 
     public static float ResolveProjectileLifetime(

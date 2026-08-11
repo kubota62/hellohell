@@ -14,6 +14,7 @@ public partial struct ActorDeathSystem : ISystem
 {
     private const int MaximumExperiencePickups = 500;
     private const int MaximumHealthPickups = 60;
+    private const int MaximumPowerShardPickups = 30;
     private const int MaximumDeathBurstParticles = 700;
     private const int MaximumVolatileHazards = 24;
     public const float KillStreakDurationSeconds = 3f;
@@ -21,6 +22,7 @@ public partial struct ActorDeathSystem : ISystem
 
     private EntityQuery experiencePickupQuery;
     private EntityQuery healthPickupQuery;
+    private EntityQuery powerShardPickupQuery;
     private EntityQuery deathBurstQuery;
     private EntityQuery volatileHazardQuery;
 
@@ -32,6 +34,9 @@ public partial struct ActorDeathSystem : ISystem
             .Build();
         healthPickupQuery = SystemAPI.QueryBuilder()
             .WithAll<HealthPickup>()
+            .Build();
+        powerShardPickupQuery = SystemAPI.QueryBuilder()
+            .WithAll<PowerShardPickup>()
             .Build();
         deathBurstQuery = SystemAPI.QueryBuilder()
             .WithAll<DeathBurstParticle>()
@@ -63,6 +68,8 @@ public partial struct ActorDeathSystem : ISystem
         var config = SystemAPI.GetSingleton<Config>();
         var experiencePickupCount = experiencePickupQuery.CalculateEntityCount();
         var healthPickupCount = healthPickupQuery.CalculateEntityCount();
+        var powerShardPickupCount =
+            powerShardPickupQuery.CalculateEntityCount();
         var deathBurstCount = deathBurstQuery.CalculateEntityCount();
         var volatileHazardCount =
             volatileHazardQuery.CalculateEntityCount();
@@ -160,6 +167,18 @@ public partial struct ActorDeathSystem : ISystem
                         isElite,
                         isChampion);
                     healthPickupCount++;
+                }
+
+                if (isElite &&
+                    !isFinalBoss &&
+                    powerShardPickupCount < MaximumPowerShardPickups)
+                {
+                    CreatePowerShardPickup(
+                        ecb,
+                        config.ProjectilePrefab,
+                        transform.ValueRO.Position,
+                        isChampion);
+                    powerShardPickupCount++;
                 }
             }
 
@@ -358,6 +377,43 @@ public partial struct ActorDeathSystem : ISystem
                 pickupScale,
                 isChampion,
                 true));
+        ecb.RemoveComponent<ProjectileMotion>(pickupEntity);
+        ecb.RemoveComponent<Projectile>(pickupEntity);
+        ecb.RemoveComponent<Lifetime>(pickupEntity);
+        ecb.RemoveComponent<GameplayActive>(pickupEntity);
+    }
+
+    private static void CreatePowerShardPickup(
+        EntityCommandBuffer ecb,
+        Entity projectilePrefab,
+        float3 position,
+        bool isChampion)
+    {
+        var pickupPosition = position + new float3(-0.45f, 0.48f, 0f);
+        var pickupScale = isChampion ? 0.95f : 0.7f;
+        var pickupEntity = ecb.Instantiate(projectilePrefab);
+        ecb.SetComponent(
+            pickupEntity,
+            LocalTransform.FromPositionRotationScale(
+                pickupPosition,
+                quaternion.identity,
+                pickupScale));
+        ecb.SetComponent(pickupEntity, new URPMaterialPropertyBaseColor
+        {
+            Value = isChampion
+                ? new float4(0.78f, 0.22f, 1f, 1f)
+                : new float4(0.08f, 0.72f, 1f, 1f),
+        });
+        ecb.AddComponent(
+            pickupEntity,
+            PowerShardBuffUtility.CreatePickup(isChampion));
+        ecb.AddComponent(
+            pickupEntity,
+            RewardPickupVisualSystem.Create(
+                pickupPosition,
+                pickupScale,
+                isChampion,
+                false));
         ecb.RemoveComponent<ProjectileMotion>(pickupEntity);
         ecb.RemoveComponent<Projectile>(pickupEntity);
         ecb.RemoveComponent<Lifetime>(pickupEntity);
