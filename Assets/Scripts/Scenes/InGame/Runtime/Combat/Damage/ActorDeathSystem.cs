@@ -115,6 +115,13 @@ public partial struct ActorDeathSystem : ISystem
                 var scoreMultiplier = hasRunState
                     ? ResolveKillStreakScoreMultiplier(runState.KillStreak)
                     : 1;
+                var experienceMultiplier = hasRunState
+                    ? ResolveKillStreakExperienceMultiplier(
+                        runState.KillStreak)
+                    : 1f;
+                pickupReward.Experience = ApplyExperienceMultiplier(
+                    pickupReward.Experience,
+                    experienceMultiplier);
                 pickupReward.Score = ApplyScoreMultiplier(
                     pickupReward.Score,
                     scoreMultiplier);
@@ -149,6 +156,8 @@ public partial struct ActorDeathSystem : ISystem
                 if (isChampion)
                 {
                     var displayedReward = reward;
+                    displayedReward.Experience =
+                        pickupReward.Experience;
                     displayedReward.Score = ApplyScoreMultiplier(
                         displayedReward.Score,
                         scoreMultiplier);
@@ -264,6 +273,31 @@ public partial struct ActorDeathSystem : ISystem
     public static int ResolveKillStreakScoreMultiplier(int killStreak)
     {
         return 1 + math.clamp(math.max(0, killStreak) / 10, 0, 2);
+    }
+
+    public static float ResolveKillStreakExperienceMultiplier(
+        int killStreak)
+    {
+        return 1f +
+            AttackRequestSystem.ResolveKillStreakMomentumTier(killStreak) *
+            0.1f;
+    }
+
+    public static int ApplyExperienceMultiplier(
+        int baseExperience,
+        float multiplier)
+    {
+        var safeExperience = math.max(0, baseExperience);
+        if (safeExperience <= 0)
+        {
+            return 0;
+        }
+
+        var scaledExperience =
+            safeExperience * math.clamp(multiplier, 1f, 1.3f);
+        return scaledExperience >= int.MaxValue
+            ? int.MaxValue
+            : math.max(1, (int)math.round(scaledExperience));
     }
 
     public static int ApplyScoreMultiplier(int baseScore, int multiplier)

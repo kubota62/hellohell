@@ -393,7 +393,8 @@ public class HUDUnitCount : MonoBehaviour
         var momentum = momentumTier > 0
             ? $"血潮 {momentumTier}  威力 +" +
               $"{Mathf.RoundToInt((AttackRequestSystem.ResolveKillStreakDamageMultiplier(killStreak) - 1f) * 100f)}%  " +
-              $"攻撃間隔 -{Mathf.RoundToInt((1f - AttackRequestSystem.ResolveKillStreakCooldownMultiplier(killStreak)) * 100f)}%   "
+              $"攻撃間隔 -{Mathf.RoundToInt((1f - AttackRequestSystem.ResolveKillStreakCooldownMultiplier(killStreak)) * 100f)}%  " +
+              $"経験値 +{Mathf.RoundToInt((ActorDeathSystem.ResolveKillStreakExperienceMultiplier(killStreak) - 1f) * 100f)}%   "
             : string.Empty;
         return
             $"連続撃破 {killStreak}   スコア x{Mathf.Clamp(scoreMultiplier, 1, 3)}   " +
