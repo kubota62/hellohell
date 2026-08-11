@@ -37,7 +37,8 @@ public partial struct AttackRequestSystem : ISystem
             ecb,
             hasAttackMasters,
             attackMasters,
-            deltaTime);
+            deltaTime,
+            runState.KillStreak);
         RequestEnemyAttacks(
             ref state,
             ecb,
@@ -55,7 +56,8 @@ public partial struct AttackRequestSystem : ISystem
         EntityCommandBuffer ecb,
         bool hasAttackMasters,
         DynamicBuffer<AttackMasterElement> attackMasters,
-        float deltaTime)
+        float deltaTime,
+        int killStreak)
     {
         var input = SystemAPI.GetSingleton<PlayerInput>();
         var entityManager = state.EntityManager;
@@ -99,6 +101,9 @@ public partial struct AttackRequestSystem : ISystem
                     ref definition,
                     criticalRandom.NextUInt(),
                     criticalRandom.NextUInt());
+                ApplyKillStreakMomentum(
+                    ref definition,
+                    killStreak);
 
                 var createdAttack = false;
                 for (var attackIndex = 0; attackIndex < attackCount; attackIndex++)
@@ -120,6 +125,53 @@ public partial struct AttackRequestSystem : ISystem
                 attackSlots[i] = slot;
             }
         }
+    }
+
+    public static int ResolveKillStreakMomentumTier(int killStreak)
+    {
+        var safeStreak = math.max(0, killStreak);
+        if (safeStreak >= 50)
+        {
+            return 3;
+        }
+
+        if (safeStreak >= 25)
+        {
+            return 2;
+        }
+
+        return safeStreak >= 10 ? 1 : 0;
+    }
+
+    public static float ResolveKillStreakDamageMultiplier(int killStreak)
+    {
+        return 1f + ResolveKillStreakMomentumTier(killStreak) * 0.08f;
+    }
+
+    public static float ResolveKillStreakCooldownMultiplier(int killStreak)
+    {
+        return 1f - ResolveKillStreakMomentumTier(killStreak) * 0.05f;
+    }
+
+    public static void ApplyKillStreakMomentum(
+        ref AttackMasterData definition,
+        int killStreak)
+    {
+        var tier = ResolveKillStreakMomentumTier(killStreak);
+        if (tier <= 0)
+        {
+            return;
+        }
+
+        definition.Damage = math.max(
+            1,
+            (int)math.round(
+                math.max(1, definition.Damage) *
+                ResolveKillStreakDamageMultiplier(killStreak)));
+        definition.Cooldown = math.max(
+            0.05f,
+            definition.Cooldown *
+            ResolveKillStreakCooldownMultiplier(killStreak));
     }
 
     private void RequestEnemyAttacks(

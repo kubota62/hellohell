@@ -26,7 +26,7 @@ public class HUDUnitCount : MonoBehaviour
         "解放強化被追加以下一度復活秒間無獲得飛び道具ごとの大群襲来第波" +
         "体接近上昇回復欠片激昂形態生存時間残" +
         "連続倍率最高後次まで＋与平均ダメージ戦闘俊敏巨躯／（）" +
-        "節目達成討伐報酬一斉収進化血月雷雨破城煉獄宝箱祝福優先";
+        "節目達成討伐報酬一斉収進化血月雷雨破城煉獄宝箱祝福優先血潮";
 
     public TMP_Text unitText;
     public TMP_Text bulletText;
@@ -315,8 +315,16 @@ public class HUDUnitCount : MonoBehaviour
                 : string.Empty;
         }
 
+        var momentumTier =
+            AttackRequestSystem.ResolveKillStreakMomentumTier(killStreak);
+        var momentum = momentumTier > 0
+            ? $"血潮 {momentumTier}  威力 +" +
+              $"{Mathf.RoundToInt((AttackRequestSystem.ResolveKillStreakDamageMultiplier(killStreak) - 1f) * 100f)}%  " +
+              $"攻撃間隔 -{Mathf.RoundToInt((1f - AttackRequestSystem.ResolveKillStreakCooldownMultiplier(killStreak)) * 100f)}%   "
+            : string.Empty;
         return
             $"連続撃破 {killStreak}   スコア x{Mathf.Clamp(scoreMultiplier, 1, 3)}   " +
+            momentum +
             $"残り {Mathf.Max(0f, remainingSeconds):0.0}秒   " +
             $"最高 {Mathf.Max(safeBest, killStreak)}\n";
     }
