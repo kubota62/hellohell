@@ -295,15 +295,18 @@ public partial struct PlayerAutoSkillSystem : ISystem
         var firstQuality = PlayerUpgradeQualityUtility.Resolve(
             firstSeed + 7919,
             newLevel,
-            source);
+            source,
+            stats.FortuneLevel);
         var secondQuality = PlayerUpgradeQualityUtility.Resolve(
             secondSeed + 15401,
             newLevel,
-            source);
+            source,
+            stats.FortuneLevel);
         var thirdQuality = PlayerUpgradeQualityUtility.Resolve(
             thirdSeed + 23819,
             newLevel,
-            source);
+            source,
+            stats.FortuneLevel);
         first = PlayerUpgradeQualityUtility.Apply(first, firstQuality);
         second = PlayerUpgradeQualityUtility.Apply(second, secondQuality);
         third = PlayerUpgradeQualityUtility.Apply(third, thirdQuality);

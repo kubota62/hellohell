@@ -460,7 +460,8 @@ public class HUDUnitCount : MonoBehaviour
             $"貫通 Lv{skillStats.PenetrationLevel} " +
             $"+{PlayerAutoSkillSystem.GetProjectilePierceAdd(skillStats)}   " +
             $"幸運 Lv{skillStats.FortuneLevel} " +
-            $"再抽選{PlayerAutoSkillSystem.GetUpgradeRerollCount(skillStats)}回";
+            $"再抽選{PlayerAutoSkillSystem.GetUpgradeRerollCount(skillStats)}回 " +
+            $"品質率 +{PlayerUpgradeQualityUtility.ResolveFortuneQualityBonus(skillStats.FortuneLevel)}%";
     }
 
     public static string FormatWeaponStatus(
@@ -772,7 +773,9 @@ public class HUDUnitCount : MonoBehaviour
             case PlayerSkillKind.Penetration:
                 return $"飛び道具の貫通数 +{skill.EffectPerLevel:0}";
             case PlayerSkillKind.Fortune:
-                return $"強化選択ごとの再抽選 +{skill.EffectPerLevel:0}回";
+                return
+                    $"強化選択ごとの再抽選 +{skill.EffectPerLevel:0}回、" +
+                    "品質率 +5%";
             case PlayerSkillKind.Berserker:
                 return $"HP50%以下でダメージ +{skill.EffectPerLevel * 100f:0}%";
             case PlayerSkillKind.Damage:

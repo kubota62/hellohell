@@ -15,14 +15,28 @@ public static class PlayerUpgradeQualityUtility
         int playerLevel,
         PlayerUpgradeSource source)
     {
+        return Resolve(seed, playerLevel, source, 0);
+    }
+
+    public static PlayerUpgradeQuality Resolve(
+        int seed,
+        int playerLevel,
+        PlayerUpgradeSource source,
+        int fortuneLevel)
+    {
         if (source == PlayerUpgradeSource.ChampionTreasure)
         {
             return PlayerUpgradeQuality.Rare;
         }
 
         var safeLevel = math.max(1, playerLevel);
-        var rareChance = math.min(18, 6 + safeLevel / 6);
-        var fineChance = math.min(38, 24 + safeLevel / 8);
+        var safeFortuneLevel = math.clamp(fortuneLevel, 0, 3);
+        var rareChance =
+            math.min(18, 6 + safeLevel / 6) +
+            safeFortuneLevel * 2;
+        var fineChance =
+            math.min(38, 24 + safeLevel / 8) +
+            safeFortuneLevel * 3;
         var roll = (int)(math.hash(new int3(
             seed,
             safeLevel,
@@ -42,6 +56,11 @@ public static class PlayerUpgradeQualityUtility
         return quality == PlayerUpgradeQuality.Rare
             ? 1.75f
             : quality == PlayerUpgradeQuality.Fine ? 1.35f : 1f;
+    }
+
+    public static int ResolveFortuneQualityBonus(int fortuneLevel)
+    {
+        return math.clamp(fortuneLevel, 0, 3) * 5;
     }
 
     public static PlayerSkillMasterData Apply(
