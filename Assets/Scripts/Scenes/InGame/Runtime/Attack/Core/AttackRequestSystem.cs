@@ -278,6 +278,7 @@ public partial struct AttackRequestSystem : ISystem
                 definition.ProjectileModifiers,
                 definition.PierceCount);
         }
+        PlayerWeaponEvolutionUtility.Apply(ref definition, stats);
         definition.Damage = ResolveCriticalDamage(
             definition.Damage,
             stats,

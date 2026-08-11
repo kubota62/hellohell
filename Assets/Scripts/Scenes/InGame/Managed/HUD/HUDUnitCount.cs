@@ -26,7 +26,7 @@ public class HUDUnitCount : MonoBehaviour
         "解放強化被追加以下一度復活秒間無獲得飛び道具ごとの大群襲来第波" +
         "体接近上昇回復欠片激昂形態生存時間残" +
         "連続倍率最高後次まで＋与平均ダメージ戦闘俊敏巨躯／（）" +
-        "節目達成討伐報酬一斉収";
+        "節目達成討伐報酬一斉収進化血月雷雨破城煉獄";
 
     public TMP_Text unitText;
     public TMP_Text bulletText;
@@ -366,10 +366,10 @@ public class HUDUnitCount : MonoBehaviour
             $"再生 Lv{skillStats.RegenerationLevel} {skillStats.HealthRegenerationPerSecond:0.0}/秒   " +
             $"生命 Lv{skillStats.MaxHealthLevel} +{skillStats.MaxHealthAdd:0} HP   " +
             $"起死回生 Lv{skillStats.SecondWindLevel} 残り {skillStats.SecondWindChargesRemaining}\n" +
-            $"武器  斬撃 Lv{skillStats.MeleeArcLevel}   " +
-            $"速射 Lv{skillStats.RapidBoltLevel}   " +
-            $"貫通槍 Lv{skillStats.PiercingLanceLevel}   " +
-            $"爆裂球 Lv{skillStats.ExplosiveOrbLevel}\n" +
+            $"武器  {FormatWeaponStatus(AttackMasterId.BasicMeleeArc, skillStats.MeleeArcLevel)}   " +
+            $"{FormatWeaponStatus(AttackMasterId.RapidBolt, skillStats.RapidBoltLevel)}   " +
+            $"{FormatWeaponStatus(AttackMasterId.PiercingLance, skillStats.PiercingLanceLevel)}   " +
+            $"{FormatWeaponStatus(AttackMasterId.ExplosiveOrb, skillStats.ExplosiveOrbLevel)}\n" +
             $"補助  移動 Lv{skillStats.MoveSpeedLevel} x{1f + skillStats.MoveSpeedMultiplierAdd:0.00}   " +
             $"磁力 Lv{skillStats.PickupRangeLevel} +{skillStats.PickupRadiusAdd:0.0}m   " +
             $"英知 Lv{skillStats.WisdomLevel} " +
@@ -380,6 +380,20 @@ public class HUDUnitCount : MonoBehaviour
             $"+{PlayerAutoSkillSystem.GetProjectilePierceAdd(skillStats)}   " +
             $"幸運 Lv{skillStats.FortuneLevel} " +
             $"再抽選{PlayerAutoSkillSystem.GetUpgradeRerollCount(skillStats)}回";
+    }
+
+    public static string FormatWeaponStatus(
+        AttackMasterId attackMasterId,
+        int level)
+    {
+        var baseName = PlayerWeaponEvolutionUtility.GetBaseName(
+            attackMasterId);
+        var evolutionName = PlayerWeaponEvolutionUtility.GetEvolutionName(
+            attackMasterId);
+        return level >= PlayerWeaponEvolutionUtility.EvolutionLevel &&
+            !string.IsNullOrEmpty(evolutionName)
+                ? $"<color=#FFD75A>{evolutionName}</color> Lv{level}〈進化〉"
+                : $"{baseName} Lv{level}";
     }
 
     void CreateUpgradeChoiceOverlay()
@@ -473,11 +487,19 @@ public class HUDUnitCount : MonoBehaviour
             skill.MaxLevel > 0 ? skill.MaxLevel : int.MaxValue,
             currentLevel + Mathf.Max(1, skill.AddLevel));
         var effect = GetSkillEffectDescription(skill);
+        var evolutionName =
+            PlayerWeaponEvolutionUtility.GetEvolutionName(skill.Kind);
+        var evolution =
+            currentLevel < PlayerWeaponEvolutionUtility.EvolutionLevel &&
+            nextLevel >= PlayerWeaponEvolutionUtility.EvolutionLevel &&
+            !string.IsNullOrEmpty(evolutionName)
+                ? $"\n<color=#FFD75A>武器進化：{evolutionName}</color>"
+                : string.Empty;
         return
             $"<color=#FFD75A>[{index}]</color>  " +
             $"<size=34>{GetUpgradeName(skill.Kind)}</size>  " +
             $"<color=#B7B7C8>Lv{currentLevel} → Lv{nextLevel}</color>\n" +
-            $"<size=22>{effect}</size>";
+            $"<size=22>{effect}{evolution}</size>";
     }
 
     static int GetSkillLevel(PlayerSkillKind kind, PlayerSkillStats stats)

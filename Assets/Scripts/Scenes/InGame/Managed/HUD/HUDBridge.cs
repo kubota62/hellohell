@@ -215,8 +215,22 @@ public class HUDBridge : MonoBehaviour
 
     public void ShowSkillApplied(PlayerSkillKind kind, int newLevel)
     {
-        statusNotification = $"レベルアップ！  {GetSkillName(kind)} → Lv{newLevel}";
-        notificationRemaining = 2.5f;
+        var evolutionName =
+            PlayerWeaponEvolutionUtility.GetEvolutionName(kind);
+        var evolved =
+            newLevel >= PlayerWeaponEvolutionUtility.EvolutionLevel &&
+            !string.IsNullOrEmpty(evolutionName);
+        statusNotification = evolved
+            ? $"武器進化！  {evolutionName}"
+            : $"レベルアップ！  {GetSkillName(kind)} → Lv{newLevel}";
+        notificationRemaining = evolved ? 4f : 2.5f;
+        if (evolved)
+        {
+            unitCount.ShowThreatAnnouncement(
+                $"武器進化！\n{evolutionName}",
+                3.5f,
+                new Color(1f, 0.72f, 0.12f, 1f));
+        }
         Refresh();
     }
 
