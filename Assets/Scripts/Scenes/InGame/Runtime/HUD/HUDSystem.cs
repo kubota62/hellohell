@@ -148,6 +148,7 @@ public partial struct HUDSystem : ISystem
         var volatileEliteCount = 0;
         var wardedEliteCount = 0;
         var regeneratingEliteCount = 0;
+        var berserkerEliteCount = 0;
         var eliteAffixLookup =
             SystemAPI.GetComponentLookup<EliteAffix>(true);
         var eliteBarrierLookup =
@@ -178,6 +179,8 @@ public partial struct HUDSystem : ISystem
                     affix == EliteAffixKind.Warded ? 1 : 0;
                 regeneratingEliteCount +=
                     affix == EliteAffixKind.Regenerating ? 1 : 0;
+                berserkerEliteCount +=
+                    affix == EliteAffixKind.Berserker ? 1 : 0;
             }
             SelectNearestThreat(
                 playerPosition,
@@ -193,7 +196,8 @@ public partial struct HUDSystem : ISystem
             juggernautEliteCount,
             volatileEliteCount,
             wardedEliteCount,
-            regeneratingEliteCount);
+            regeneratingEliteCount,
+            berserkerEliteCount);
 
         var championCurrentHealth = 0;
         var championMaxHealth = 0;

@@ -16,6 +16,7 @@ public class HUDBridge : MonoBehaviour
     int volatileEliteCount;
     int wardedEliteCount;
     int regeneratingEliteCount;
+    int berserkerEliteCount;
     int eliteCurrentHealth;
     int eliteMaxHealth;
     float eliteBarrierCurrent;
@@ -97,7 +98,7 @@ public class HUDBridge : MonoBehaviour
 
     public void SetEliteCount(int count)
     {
-        SetEliteCount(count, 0, 0, 0, 0, 0);
+        SetEliteCount(count, 0, 0, 0, 0, 0, 0);
     }
 
     public void SetEliteCount(
@@ -111,6 +112,7 @@ public class HUDBridge : MonoBehaviour
             nextSwiftEliteCount,
             nextJuggernautEliteCount,
             nextVolatileEliteCount,
+            0,
             0,
             0);
     }
@@ -128,6 +130,7 @@ public class HUDBridge : MonoBehaviour
             nextJuggernautEliteCount,
             nextVolatileEliteCount,
             nextWardedEliteCount,
+            0,
             0);
     }
 
@@ -138,6 +141,25 @@ public class HUDBridge : MonoBehaviour
         int nextVolatileEliteCount,
         int nextWardedEliteCount,
         int nextRegeneratingEliteCount)
+    {
+        SetEliteCount(
+            count,
+            nextSwiftEliteCount,
+            nextJuggernautEliteCount,
+            nextVolatileEliteCount,
+            nextWardedEliteCount,
+            nextRegeneratingEliteCount,
+            0);
+    }
+
+    public void SetEliteCount(
+        int count,
+        int nextSwiftEliteCount,
+        int nextJuggernautEliteCount,
+        int nextVolatileEliteCount,
+        int nextWardedEliteCount,
+        int nextRegeneratingEliteCount,
+        int nextBerserkerEliteCount)
     {
         eliteCount = Mathf.Max(0, count);
         swiftEliteCount = Mathf.Max(0, nextSwiftEliteCount);
@@ -153,6 +175,9 @@ public class HUDBridge : MonoBehaviour
         regeneratingEliteCount = Mathf.Max(
             0,
             nextRegeneratingEliteCount);
+        berserkerEliteCount = Mathf.Max(
+            0,
+            nextBerserkerEliteCount);
         Refresh();
     }
 
@@ -617,6 +642,7 @@ public class HUDBridge : MonoBehaviour
             volatileEliteCount,
             wardedEliteCount,
             regeneratingEliteCount,
+            berserkerEliteCount,
             eliteCurrentHealth,
             eliteMaxHealth,
             eliteBarrierCurrent,

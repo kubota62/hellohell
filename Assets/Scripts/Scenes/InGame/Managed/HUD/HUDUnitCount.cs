@@ -179,6 +179,7 @@ public class HUDUnitCount : MonoBehaviour
         int volatileEliteNum,
         int wardedEliteNum,
         int regeneratingEliteNum,
+        int berserkerEliteNum,
         int eliteCurrentHealth,
         int eliteMaxHealth,
         float eliteBarrierCurrent,
@@ -281,7 +282,8 @@ public class HUDUnitCount : MonoBehaviour
                 juggernautEliteNum,
                 volatileEliteNum,
                 wardedEliteNum,
-                regeneratingEliteNum) + "   " +
+                regeneratingEliteNum,
+                berserkerEliteNum) + "   " +
             $"チャンピオン {Mathf.Max(0, championNum)}   " +
             $"撃破 {Mathf.Max(0, enemiesDefeated)}   " +
             $"弾数 {bulletNum}   攻撃 {attackMode}\n" +
@@ -337,6 +339,7 @@ public class HUDUnitCount : MonoBehaviour
             juggernautEliteNum,
             volatileEliteNum,
             0,
+            0,
             0);
     }
 
@@ -353,6 +356,7 @@ public class HUDUnitCount : MonoBehaviour
             juggernautEliteNum,
             volatileEliteNum,
             wardedEliteNum,
+            0,
             0);
     }
 
@@ -364,17 +368,38 @@ public class HUDUnitCount : MonoBehaviour
         int wardedEliteNum,
         int regeneratingEliteNum)
     {
+        return FormatEliteSummary(
+            eliteNum,
+            swiftEliteNum,
+            juggernautEliteNum,
+            volatileEliteNum,
+            wardedEliteNum,
+            regeneratingEliteNum,
+            0);
+    }
+
+    public static string FormatEliteSummary(
+        int eliteNum,
+        int swiftEliteNum,
+        int juggernautEliteNum,
+        int volatileEliteNum,
+        int wardedEliteNum,
+        int regeneratingEliteNum,
+        int berserkerEliteNum)
+    {
         var safeTotal = Mathf.Max(0, eliteNum);
         var safeSwift = Mathf.Max(0, swiftEliteNum);
         var safeJuggernaut = Mathf.Max(0, juggernautEliteNum);
         var safeVolatile = Mathf.Max(0, volatileEliteNum);
         var safeWarded = Mathf.Max(0, wardedEliteNum);
         var safeRegenerating = Mathf.Max(0, regeneratingEliteNum);
+        var safeBerserker = Mathf.Max(0, berserkerEliteNum);
         if (safeSwift <= 0 &&
             safeJuggernaut <= 0 &&
             safeVolatile <= 0 &&
             safeWarded <= 0 &&
-            safeRegenerating <= 0)
+            safeRegenerating <= 0 &&
+            safeBerserker <= 0)
         {
             return $"エリート {safeTotal}";
         }
@@ -382,7 +407,7 @@ public class HUDUnitCount : MonoBehaviour
         return
             $"エリート {safeTotal}（俊敏 {safeSwift}／巨躯 {safeJuggernaut}／" +
             $"爆裂 {safeVolatile}／結界 {safeWarded}／" +
-            $"再生 {safeRegenerating}）";
+            $"再生 {safeRegenerating}／狂戦士 {safeBerserker}）";
     }
 
     public static string FormatCombatStats(

@@ -70,6 +70,7 @@ public enum EliteAffixKind : byte
     Volatile,
     Warded,
     Regenerating,
+    Berserker,
 }
 
 /// <summary>
@@ -80,6 +81,7 @@ public struct EliteAffix : IComponentData
 {
     public EliteAffixKind Kind;
     public float RegenerationProgress;
+    public float BerserkerAppliedMultiplier;
 }
 
 public static class EliteAffixUtility
@@ -95,13 +97,14 @@ public static class EliteAffixUtility
             return EliteAffixKind.None;
         }
 
-        return (math.abs(spawnOrdinal) % 5) switch
+        return (math.abs(spawnOrdinal) % 6) switch
         {
             0 => EliteAffixKind.Swift,
             1 => EliteAffixKind.Juggernaut,
             2 => EliteAffixKind.Volatile,
             3 => EliteAffixKind.Warded,
-            _ => EliteAffixKind.Regenerating,
+            4 => EliteAffixKind.Regenerating,
+            _ => EliteAffixKind.Berserker,
         };
     }
 
@@ -115,7 +118,9 @@ public static class EliteAffixUtility
                     ? 1.1f
                     : kind == EliteAffixKind.Warded
                         ? 0.95f
-                        : kind == EliteAffixKind.Regenerating ? 1.05f : 1f;
+                        : kind == EliteAffixKind.Regenerating
+                            ? 1.05f
+                            : kind == EliteAffixKind.Berserker ? 1.1f : 1f;
     }
 
     public static float ResolveSpeedMultiplier(EliteAffixKind kind)
@@ -146,7 +151,9 @@ public static class EliteAffixUtility
                     ? 1.3f
                     : kind == EliteAffixKind.Warded
                         ? 1.35f
-                        : kind == EliteAffixKind.Regenerating ? 1.45f : 1f;
+                        : kind == EliteAffixKind.Regenerating
+                            ? 1.45f
+                            : kind == EliteAffixKind.Berserker ? 1.5f : 1f;
     }
 
     public static float4 ResolveColor(EliteAffixKind kind)
@@ -161,10 +168,52 @@ public static class EliteAffixUtility
                         ? new float4(0.16f, 0.42f, 1f, 1f)
                         : kind == EliteAffixKind.Regenerating
                             ? new float4(0.12f, 0.9f, 0.28f, 1f)
-                            : new float4(1f, 0.22f, 0.04f, 1f);
+                            : kind == EliteAffixKind.Berserker
+                                ? new float4(0.9f, 0.05f, 0.72f, 1f)
+                                : new float4(1f, 0.22f, 0.04f, 1f);
     }
 
     public const float RegenerationFractionPerSecond = 0.01f;
+
+    public static float ResolveBerserkerMultiplier(
+        int currentHealth,
+        int maximumHealth)
+    {
+        if (maximumHealth <= 0 || currentHealth <= 0)
+        {
+            return 1f;
+        }
+
+        var healthRatio = math.saturate(
+            (float)currentHealth / maximumHealth);
+        return healthRatio <= 0.25f
+            ? 1.5f
+            : healthRatio <= 0.5f
+                ? 1.3f
+                : healthRatio <= 0.75f ? 1.15f : 1f;
+    }
+
+    public static void ApplyBerserkerScaling(
+        Health health,
+        ref EliteAffix affix,
+        ref EnemyMoveSpeed moveSpeed,
+        ref EnemyDamageMultiplier damageMultiplier)
+    {
+        var previousMultiplier = math.max(
+            1f,
+            affix.BerserkerAppliedMultiplier);
+        var nextMultiplier = ResolveBerserkerMultiplier(
+            health.Current,
+            health.Max);
+        var relativeMultiplier = nextMultiplier / previousMultiplier;
+        moveSpeed.Value = math.max(
+            0.01f,
+            moveSpeed.Value * relativeMultiplier);
+        damageMultiplier.Value = math.max(
+            1f,
+            damageMultiplier.Value * relativeMultiplier);
+        affix.BerserkerAppliedMultiplier = nextMultiplier;
+    }
 
     public static Health AdvanceRegeneration(
         Health health,
@@ -238,6 +287,50 @@ public partial struct EliteRegenerationSystem : ISystem
                 deltaTime,
                 out var nextProgress);
             affix.ValueRW.RegenerationProgress = nextProgress;
+        }
+    }
+}
+
+[BurstCompile]
+[UpdateAfter(typeof(ActorDamageEventSystem))]
+[UpdateBefore(typeof(EnemyMovementSystem))]
+[UpdateBefore(typeof(AttackRequestSystem))]
+public partial struct EliteBerserkerSystem : ISystem
+{
+    [BurstCompile]
+    public void OnCreate(ref SystemState state)
+    {
+        state.RequireForUpdate<EliteAffix>();
+    }
+
+    [BurstCompile]
+    public void OnUpdate(ref SystemState state)
+    {
+        if (SystemAPI.TryGetSingleton<RunState>(out var runState) &&
+            (runState.IsGameOver != 0 || runState.IsChoosingUpgrade != 0))
+        {
+            return;
+        }
+
+        foreach (var (health, affix, moveSpeed, damageMultiplier) in
+                 SystemAPI.Query<
+                         RefRO<Health>,
+                         RefRW<EliteAffix>,
+                         RefRW<EnemyMoveSpeed>,
+                         RefRW<EnemyDamageMultiplier>>()
+                     .WithAll<EliteEnemy, GameplayActive>()
+                     .WithNone<ChampionEnemy>())
+        {
+            if (affix.ValueRO.Kind != EliteAffixKind.Berserker)
+            {
+                continue;
+            }
+
+            EliteAffixUtility.ApplyBerserkerScaling(
+                health.ValueRO,
+                ref affix.ValueRW,
+                ref moveSpeed.ValueRW,
+                ref damageMultiplier.ValueRW);
         }
     }
 }
