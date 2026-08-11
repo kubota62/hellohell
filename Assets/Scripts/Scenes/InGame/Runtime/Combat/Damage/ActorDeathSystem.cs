@@ -167,7 +167,9 @@ public partial struct ActorDeathSystem : ISystem
                         immediateReward);
                 }
 
-                if (experiencePickupCount < MaximumExperiencePickups)
+                if (ShouldCreateExperiencePickup(
+                        experiencePickupCount,
+                        isChampion))
                 {
                     CreateExperiencePickup(
                         ecb,
@@ -343,6 +345,16 @@ public partial struct ActorDeathSystem : ISystem
         return safeScore > int.MaxValue / safeMultiplier
             ? int.MaxValue
             : safeScore * safeMultiplier;
+    }
+
+    public static bool ShouldCreateExperiencePickup(
+        int activePickupCount,
+        bool isChampion)
+    {
+        // Champion pickups also carry the treasure-upgrade marker, so they
+        // must remain physical even when ordinary experience is at its cap.
+        return isChampion ||
+            math.max(0, activePickupCount) < MaximumExperiencePickups;
     }
 
     public static int AccumulateDefeatedEnemies(
