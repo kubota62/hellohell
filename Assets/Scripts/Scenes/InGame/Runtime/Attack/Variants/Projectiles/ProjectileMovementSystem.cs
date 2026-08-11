@@ -5,7 +5,8 @@ using Unity.Transforms;
 
 /// <summary>
 /// Attack/Variants/Projectiles の移動システム。
-/// ProjectileMotion に従って Projectile を移動し、地面より下へ落ちた弾の寿命を切る。
+/// ProjectileMotion に従って Projectile をトップダウン平面上で移動する。
+/// 寿命は LifetimeSystem が管理し、通常弾へ重力を加えないことで攻撃マスタの射程を保証する。
 /// GameplayActive が有効な弾だけを処理し、非アクティブなプール待機弾は動かさない。
 /// </summary>
 [BurstCompile]
@@ -45,16 +46,22 @@ public partial struct ProjectileMovementJob : IJobEntity
 {
     public float DeltaTime;
 
-    void Execute(ref ProjectileMotion motion, ref LocalTransform transform, ref Lifetime lifetime)
+    void Execute(in ProjectileMotion motion, ref LocalTransform transform)
     {
-        var gravity = new float3(0, -9.81f, 0);
-        transform.Position += motion.Velocity * DeltaTime;
+        transform.Position = ProjectileMovementUtility.Advance(
+            transform.Position,
+            motion.Velocity,
+            DeltaTime);
+    }
+}
 
-        if (transform.Position.y < 0)
-        {
-            lifetime.Remaining = 0f;
-        }
-
-        motion.Velocity += gravity * DeltaTime;
+public static class ProjectileMovementUtility
+{
+    public static float3 Advance(
+        float3 position,
+        float3 velocity,
+        float deltaTime)
+    {
+        return position + velocity * math.max(0f, deltaTime);
     }
 }

@@ -99,6 +99,8 @@ public partial struct ProjectileSpawnSystem : ISystem
     {
         var transform = LocalTransform.FromPosition(value.Position);
         transform.Scale = value.Scale;
+        transform.Rotation = ProjectileVisualUtility.ResolveRotation(
+            value.Direction);
         entityManager.SetComponentData(projectileEntity, transform);
 
         var ownerColor = new float4(1f, 1f, 1f, 1f);
@@ -109,6 +111,7 @@ public partial struct ProjectileSpawnSystem : ISystem
                 .GetComponentData<URPMaterialPropertyBaseColor>(value.Owner)
                 .Value;
         }
+        var visualColor = ResolveProjectileVisualColor(value, ownerColor);
         if (entityManager.HasComponent<URPMaterialPropertyBaseColor>(
                 projectileEntity))
         {
@@ -116,10 +119,36 @@ public partial struct ProjectileSpawnSystem : ISystem
                 projectileEntity,
                 new URPMaterialPropertyBaseColor
                 {
-                    Value = ResolveProjectileVisualColor(
-                        value,
-                        ownerColor),
+                    Value = visualColor,
                 });
+        }
+
+        var visualState = ProjectileVisualUtility.Create(
+            value.Team,
+            value.Scale,
+            value.Position,
+            visualColor);
+        if (entityManager.HasComponent<ProjectileVisualState>(
+                projectileEntity))
+        {
+            entityManager.SetComponentData(projectileEntity, visualState);
+        }
+        else
+        {
+            entityManager.AddComponentData(projectileEntity, visualState);
+        }
+
+        var shape = new PostTransformMatrix
+        {
+            Value = ProjectileVisualUtility.ResolveShape(value.Team),
+        };
+        if (entityManager.HasComponent<PostTransformMatrix>(projectileEntity))
+        {
+            entityManager.SetComponentData(projectileEntity, shape);
+        }
+        else
+        {
+            entityManager.AddComponentData(projectileEntity, shape);
         }
 
         entityManager.SetComponentData(projectileEntity, new ProjectileMotion
@@ -160,11 +189,16 @@ public partial struct ProjectileSpawnSystem : ISystem
         ProjectileAttackRequest request,
         float4 ownerColor)
     {
-        return request.IsEvolved != 0
-            ? PlayerWeaponEvolutionUtility.ResolveVisualColor(
+        if (request.IsEvolved != 0)
+        {
+            return PlayerWeaponEvolutionUtility.ResolveVisualColor(
                 request.AttackMasterId,
-                request.IsCritical != 0)
-            : ownerColor;
+                request.IsCritical != 0);
+        }
+
+        return ProjectileVisualUtility.ResolveBaseColor(
+            request.Team,
+            ownerColor);
     }
 
     private static void ApplyProjectileModifiers(

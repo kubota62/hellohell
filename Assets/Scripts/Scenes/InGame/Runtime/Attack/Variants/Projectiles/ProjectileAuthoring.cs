@@ -1,5 +1,7 @@
 using Unity.Entities;
+using Unity.Mathematics;
 using Unity.Rendering;
+using Unity.Transforms;
 using UnityEngine;
 
 /// <summary>
@@ -33,6 +35,11 @@ public class ProjectileAuthoring : MonoBehaviour
             AddComponent<SpatialHashTarget>(entity);
             AddComponent<GameplayActive>(entity);
             AddComponent<URPMaterialPropertyBaseColor>(entity);
+            AddComponent<ProjectileVisualState>(entity);
+            AddComponent(entity, new PostTransformMatrix
+            {
+                Value = float4x4.identity,
+            });
             AddComponent<ProjectileModifierState>(entity);
             AddBuffer<ProjectileHitRecord>(entity);
         }
