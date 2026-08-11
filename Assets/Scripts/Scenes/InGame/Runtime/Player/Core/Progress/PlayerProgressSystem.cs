@@ -14,6 +14,7 @@ public partial struct HealthPickupSystem : ISystem
     private const float BaseAttractionRadius = 2.75f;
     private const float AttractionRadiusPerLevel = 0.18f;
     private const float MaximumAttractionRadius = 14f;
+    private const float MaximumDesperationAttractionRadius = 35f;
     private const float CollectRadius = 1.2f;
 
     public void OnCreate(ref SystemState state)
@@ -46,9 +47,13 @@ public partial struct HealthPickupSystem : ISystem
             BaseAttractionRadius +
             (playerLevel - 1) * AttractionRadiusPerLevel +
             pickupRadiusAdd);
+        var playerHealth = SystemAPI.GetComponent<Health>(playerEntity);
+        attractionRadius = ResolveAttractionRadius(
+            attractionRadius,
+            playerHealth.Current,
+            playerHealth.Max);
         var attractionRadiusSq = attractionRadius * attractionRadius;
         var deltaTime = SystemAPI.Time.DeltaTime;
-        var playerHealth = SystemAPI.GetComponent<Health>(playerEntity);
         var totalHealed = 0;
         var ecb = new EntityCommandBuffer(Allocator.Temp);
 
@@ -108,6 +113,38 @@ public partial struct HealthPickupSystem : ISystem
             health.Max,
             before + math.max(0, requestedHealing));
         return health.Current - before;
+    }
+
+    public static float ResolveAttractionMultiplier(
+        int currentHealth,
+        int maximumHealth)
+    {
+        if (currentHealth <= 0 || maximumHealth <= 0)
+        {
+            return 1f;
+        }
+
+        var ratio = math.saturate(
+            (float)math.max(0, currentHealth) /
+            math.max(1, maximumHealth));
+        if (ratio <= 0.25f)
+        {
+            return 2.75f;
+        }
+
+        return ratio <= 0.5f ? 1.6f : 1f;
+    }
+
+    public static float ResolveAttractionRadius(
+        float naturalRadius,
+        int currentHealth,
+        int maximumHealth)
+    {
+        return math.min(
+            MaximumDesperationAttractionRadius,
+            math.max(0f, naturalRadius) * ResolveAttractionMultiplier(
+                currentHealth,
+                maximumHealth));
     }
 }
 

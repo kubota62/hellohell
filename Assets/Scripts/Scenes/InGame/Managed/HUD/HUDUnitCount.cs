@@ -1458,7 +1458,9 @@ public class HUDUnitCount : MonoBehaviour
             (PlayerHealthBarWidth - 6f) * healthRatio,
             -6f);
         playerHealthFillImage.color = GetPlayerHealthColor(healthRatio);
-        playerHealthLabel.text = $"HP {safeHealth}/{safeMaximumHealth}";
+        playerHealthLabel.text = FormatPlayerHealthLabel(
+            safeHealth,
+            safeMaximumHealth);
         SetLowHealthWarningActive(
             ShouldShowLowHealthWarning(safeHealth, safeMaximumHealth));
     }
@@ -1567,6 +1569,22 @@ public class HUDUnitCount : MonoBehaviour
         return health > 0 &&
             CalculatePlayerHealthRatio(health, maximumHealth) <=
                 LowHealthThreshold;
+    }
+
+    public static string FormatPlayerHealthLabel(
+        int health,
+        int maximumHealth)
+    {
+        var safeHealth = Mathf.Max(0, health);
+        var safeMaximumHealth = Mathf.Max(1, maximumHealth);
+        var attractionMultiplier =
+            HealthPickupSystem.ResolveAttractionMultiplier(
+                safeHealth,
+                safeMaximumHealth);
+        return attractionMultiplier > 1f
+            ? $"HP {safeHealth}/{safeMaximumHealth}   " +
+                $"回復吸引 x{attractionMultiplier:0.##}"
+            : $"HP {safeHealth}/{safeMaximumHealth}";
     }
 
     public static float CalculateLowHealthPulse(float unscaledTime)
