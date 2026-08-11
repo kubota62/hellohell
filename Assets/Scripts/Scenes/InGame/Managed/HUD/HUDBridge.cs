@@ -341,6 +341,43 @@ public class HUDBridge : MonoBehaviour
         Refresh();
     }
 
+    public void ShowKillStreakTierReached(int tier, int killStreak)
+    {
+        var safeTier = Mathf.Clamp(tier, 1, 3);
+        var safeKillStreak = Mathf.Max(0, killStreak);
+        var title = GetKillStreakTierTitle(safeTier);
+        var damageBonus = Mathf.RoundToInt(
+            (AttackRequestSystem.ResolveKillStreakDamageMultiplier(
+                safeKillStreak) - 1f) * 100f);
+        var cooldownBonus = Mathf.RoundToInt(
+            (1f - AttackRequestSystem.ResolveKillStreakCooldownMultiplier(
+                safeKillStreak)) * 100f);
+        var experienceBonus = Mathf.RoundToInt(
+            (ActorDeathSystem.ResolveKillStreakExperienceMultiplier(
+                safeKillStreak) - 1f) * 100f);
+        statusNotification =
+            $"{title}  連続撃破 {safeKillStreak}  " +
+            $"威力 +{damageBonus}%  攻撃間隔 -{cooldownBonus}%  " +
+            $"経験値 +{experienceBonus}%";
+        notificationRemaining = safeTier >= 3 ? 4f : 3f;
+        unitCount.ShowThreatAnnouncement(
+            $"{title}\n威力 +{damageBonus}%  経験値 +{experienceBonus}%",
+            safeTier >= 3 ? 3.5f : 2.5f,
+            safeTier >= 3
+                ? new Color(1f, 0.12f, 0.62f, 1f)
+                : safeTier == 2
+                    ? new Color(1f, 0.24f, 0.08f, 1f)
+                    : new Color(0.92f, 0.12f, 0.08f, 1f));
+        Refresh();
+    }
+
+    public static string GetKillStreakTierTitle(int tier)
+    {
+        return tier >= 3
+            ? "血潮極致！"
+            : tier == 2 ? "血潮激化！" : "血潮発動！";
+    }
+
     public void ShowPlayerHealed(int amount)
     {
         statusNotification = $"回復の欠片  HP +{Mathf.Max(0, amount)}";

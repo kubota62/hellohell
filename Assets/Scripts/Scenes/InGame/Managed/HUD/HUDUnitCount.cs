@@ -29,7 +29,7 @@ public class HUDUnitCount : MonoBehaviour
         "体接近上昇回復欠片激昂形態生存時間残結界壊直可能" +
         "連続倍率最高後次まで＋与平均ダメージ戦闘俊敏巨躯／（）" +
         "節目達成討伐報酬一斉収進化血月雷雨破城煉獄宝箱祝福優先血潮" +
-        "通常上質希少品質";
+        "通常上質希少品質発動激化極致";
 
     public TMP_Text unitText;
     public TMP_Text bulletText;

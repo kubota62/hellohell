@@ -316,6 +316,16 @@ public partial struct HUDSystem : ISystem
             ecb.DestroyEntity(eventEntity);
         }
 
+        foreach (var (tierEvent, eventEntity) in
+                 SystemAPI.Query<RefRO<KillStreakTierReachedEvent>>()
+                     .WithEntityAccess())
+        {
+            hudBridge.ShowKillStreakTierReached(
+                tierEvent.ValueRO.Tier,
+                tierEvent.ValueRO.KillStreak);
+            ecb.DestroyEntity(eventEntity);
+        }
+
         foreach (var (healedEvent, eventEntity) in
                  SystemAPI.Query<RefRO<PlayerHealedEvent>>()
                      .WithEntityAccess())

@@ -5,6 +5,15 @@ using Unity.Rendering;
 using Unity.Transforms;
 
 /// <summary>
+/// 連続撃破が新しい血潮Tierへ到達した時のHUD通知。
+/// </summary>
+public struct KillStreakTierReachedEvent : IComponentData
+{
+    public int Tier;
+    public int KillStreak;
+}
+
+/// <summary>
 /// Health が 0 以下になった ActorBody をゲーム世界から除去するシステム。
 /// Player のゲームオーバー処理は未設計のため、現時点では非 Player だけを破棄する。
 /// </summary>
@@ -99,10 +108,27 @@ public partial struct ActorDeathSystem : ISystem
                 defeatedEnemyCount++;
                 if (hasRunState)
                 {
+                    var previousTier =
+                        AttackRequestSystem.ResolveKillStreakMomentumTier(
+                            runState.KillStreak);
                     RegisterKillStreak(
                         ref runState,
                         1,
                         KillStreakDurationSeconds);
+                    var currentTier =
+                        AttackRequestSystem.ResolveKillStreakMomentumTier(
+                            runState.KillStreak);
+                    if (currentTier > previousTier)
+                    {
+                        var tierEvent = ecb.CreateEntity();
+                        ecb.AddComponent(
+                            tierEvent,
+                            new KillStreakTierReachedEvent
+                            {
+                                Tier = currentTier,
+                                KillStreak = runState.KillStreak,
+                            });
+                    }
                 }
             }
 
