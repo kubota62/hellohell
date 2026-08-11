@@ -219,9 +219,12 @@ public static class PlayerSkillMasterCatalog
         for (var i = 0; i < masters.Length; i++)
         {
             // 上限到達済みのスキルは候補から外し、レベルアップが空振りしないようにする。
-            if (CanApply(masters[i].ToRuntimeMaster(), stats))
+            var master = masters[i].ToRuntimeMaster();
+            if (CanApply(master, stats))
             {
-                totalWeight += math.max(0, masters[i].Weight);
+                totalWeight = AddWeightSaturated(
+                    totalWeight,
+                    ResolveSelectionWeight(master, stats));
             }
         }
 
@@ -240,7 +243,9 @@ public static class PlayerSkillMasterCatalog
                 continue;
             }
 
-            accumulatedWeight += math.max(0, masters[i].Weight);
+            accumulatedWeight = AddWeightSaturated(
+                accumulatedWeight,
+                ResolveSelectionWeight(master, stats));
             if (targetWeight < accumulatedWeight)
             {
                 return master;
@@ -248,6 +253,38 @@ public static class PlayerSkillMasterCatalog
         }
 
         return masters[masters.Length - 1].ToRuntimeMaster();
+    }
+
+    public static int ResolveSelectionWeight(
+        PlayerSkillMasterData master,
+        PlayerSkillStats stats)
+    {
+        var baseWeight = math.max(0, master.Weight);
+        if (baseWeight <= 0 ||
+            !IsWeaponSkill(master.Kind) ||
+            GetCurrentLevel(stats, master.Kind) <= 0)
+        {
+            return baseWeight;
+        }
+
+        return baseWeight > int.MaxValue / 2
+            ? int.MaxValue
+            : baseWeight * 2;
+    }
+
+    public static bool IsWeaponSkill(PlayerSkillKind kind)
+    {
+        switch (kind)
+        {
+            case PlayerSkillKind.MeleeArc:
+            case PlayerSkillKind.RapidBolt:
+            case PlayerSkillKind.PiercingLance:
+            case PlayerSkillKind.ExplosiveOrb:
+                return true;
+
+            default:
+                return false;
+        }
     }
 
     public static PlayerSkillMasterData GetByFallbackOrder(int pickIndex)
@@ -445,6 +482,17 @@ public static class PlayerSkillMasterCatalog
         var safeIndex = (uint)math.max(0, pickIndex);
         var hash = math.hash(new uint2(safeIndex + 1u, 0x9E3779B9u));
         return (int)(hash % (uint)totalWeight);
+    }
+
+    private static int AddWeightSaturated(
+        int accumulatedWeight,
+        int addedWeight)
+    {
+        var safeAccumulated = math.max(0, accumulatedWeight);
+        var safeAdded = math.max(0, addedWeight);
+        return safeAdded > int.MaxValue - safeAccumulated
+            ? int.MaxValue
+            : safeAccumulated + safeAdded;
     }
 
     private static PlayerSkillMasterData Create(

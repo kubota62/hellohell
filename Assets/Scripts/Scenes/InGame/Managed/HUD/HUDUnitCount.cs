@@ -29,7 +29,7 @@ public class HUDUnitCount : MonoBehaviour
         "体接近上昇回復欠片激昂形態生存時間残結界壊直可能" +
         "連続倍率最高後次まで＋与平均ダメージ戦闘俊敏巨躯／（）" +
         "節目達成討伐報酬一斉収進化血月雷雨破城煉獄宝箱祝福優先血潮" +
-        "通常上質希少品質発動激化極致";
+        "通常上質希少品質発動激化極致愛用新";
 
     public TMP_Text unitText;
     public TMP_Text bulletText;
@@ -598,12 +598,19 @@ public class HUDUnitCount : MonoBehaviour
             !string.IsNullOrEmpty(evolutionName)
                 ? $"\n<color=#FFD75A>武器進化：{evolutionName}</color>"
                 : string.Empty;
+        var weaponFocus = PlayerSkillMasterCatalog.IsWeaponSkill(
+            skill.Kind)
+                ? currentLevel > 0
+                    ? "<color=#69E59B>〈愛用武器〉</color>  "
+                    : "<color=#7ED8FF>〈新武器〉</color>  "
+                : string.Empty;
         var qualityColor = GetUpgradeQualityColor(quality);
         return
             $"<color={qualityColor}>[{index}]  " +
             $"{GetUpgradeQualityName(quality)} " +
             $"x{PlayerUpgradeQualityUtility.ResolveEffectMultiplier(quality):0.##}</color>  " +
             $"<size=34>{GetUpgradeName(skill.Kind)}</size>  " +
+            weaponFocus +
             $"<color=#B7B7C8>Lv{currentLevel} → Lv{nextLevel}</color>\n" +
             $"<size=22>{effect}{evolution}</size>";
     }
